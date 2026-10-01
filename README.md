@@ -207,7 +207,3 @@ If you deploy the app or change ports, update both places.
 ## 🙏 Acknowledgements
 
 Weather and geocoding data by [Open-Meteo](https://open-meteo.com/).
-
-## 📄 License
-
-No license specified yet. Consider adding one (for example MIT).
