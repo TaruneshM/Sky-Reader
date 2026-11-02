@@ -72,7 +72,7 @@ async def get_hourly_forecast(latitude: float, longitude: float):
             "weather_code",
             "wind_speed_10m",
         ]),
-        "forcast_day":2,
+        "forecast_days": 2,
         "timezone":"auto",
     }
     async with httpx.AsyncClient() as client:
