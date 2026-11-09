@@ -1,41 +1,68 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import ChatHeader from "./components/ChatHeader";
+import ChatMessage from "./components/ChatMessage";
+import ThinkingIndicator from "./components/ThinkingIndicator";
+import ChatInput from "./components/ChatInput";
+import WelcomeHero from "./components/WelcomeHero";
+import CityLookup from "./components/CityLookup";
 import "./App.css";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-function App() {
+export default function App() {
   const [activeTab, setActiveTab] = useState("agent"); // "agent" or "lookup"
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // AI Agent state
-  const [agentQuery, setAgentQuery] = useState("");
-  const [agentResponse, setAgentResponse] = useState(null);
-  const [agentLoading, setAgentLoading] = useState(false);
-  const [agentError, setAgentError] = useState("");
+  const messagesEndRef = useRef(null);
 
-  // Direct Lookup state (Phase 1)
-  const [location, setLocation] = useState("");
-  const [weather, setWeather] = useState(null);
-  const [lookupError, setLookupError] = useState("");
-  const [lookupLoading, setLookupLoading] = useState(false);
+  // Auto-scroll to bottom of conversation
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-  const suggestedQuestions = [
-    "Should I carry an umbrella tomorrow in Dehradun?",
-    "Is the temperature increasing or decreasing in Dehradun?",
-    "What is the best time for outdoor activities in Dehradun tomorrow?",
-    "Is tomorrow suitable for travelling in Dehradun?",
-    "How will tomorrow's weather compare with today's in Dehradun?",
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]);
+
+  const followUpSuggestions = [
+    "Should I carry an umbrella?",
+    "Is it suitable for travelling?",
+    "What are the temperature trends?",
+    "What is the best time for outdoor activities?",
   ];
 
-  async function handleAskAgent(queryToAsk) {
-    const question = (queryToAsk || agentQuery).trim();
-    if (!question) {
-      setAgentError("Please enter a question.");
-      return;
-    }
+  // Send message to agent with multi-turn conversation history
+  async function handleSendMessage(customText) {
+    const queryText = (customText !== undefined ? customText : input).trim();
+    if (!queryText || loading) return;
 
-    setAgentLoading(true);
-    setAgentError("");
-    setAgentResponse(null);
+    setError("");
+    setInput("");
+
+    const timestamp = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const userMsg = {
+      id: `usr_${Date.now()}`,
+      sender: "user",
+      text: queryText,
+      timestamp,
+    };
+
+    // Prepare history BEFORE adding the new user message (since backend takes message + previous history)
+    const historyPayload = messages.map((m) => ({
+      role: m.sender === "user" ? "user" : "assistant",
+      content: m.text,
+    }));
+
+    // Update UI immediately with user message
+    setMessages((prev) => [...prev, userMsg]);
+    setLoading(true);
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/agent/chat`, {
@@ -43,256 +70,98 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: question }),
+        body: JSON.stringify({
+          message: queryText,
+          conversation_history: historyPayload,
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Agent could not process request.");
+        throw new Error(data.detail || "Sky Reader agent failed to process request.");
       }
 
-      setAgentResponse({
-        query: question,
-        text: data.response,
+      const assistantMsg = {
+        id: `asst_${Date.now()}`,
+        sender: "assistant",
+        text: data.response || "No response received.",
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
         toolCalls: data.tool_calls || [],
         iterations: data.iterations || 1,
-      });
+        claims: data.claims || [],
+        validationReport: data.validation_report || null,
+        explanation: data.explanation || null,
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
-      setAgentError(err.message || "Failed to communicate with AI agent.");
+      setError(err.message || "Failed to communicate with Sky Reader backend.");
     } finally {
-      setAgentLoading(false);
+      setLoading(false);
     }
   }
 
-  async function searchWeather() {
-    if (!location.trim()) {
-      setLookupError("Please enter a city name.");
-      return;
-    }
-
-    setLookupLoading(true);
-    setLookupError("");
-    setWeather(null);
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/weather?location=${encodeURIComponent(location)}`
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Could not fetch weather.");
-      }
-
-      setWeather(data);
-    } catch (err) {
-      setLookupError(err.message);
-    } finally {
-      setLookupLoading(false);
-    }
+  // Reset entire conversation state and context
+  function handleNewChat() {
+    setMessages([]);
+    setInput("");
+    setError("");
+    setLoading(false);
   }
 
   return (
-    <div className="app">
-      <div className="container">
-        <header className="header">
-          <h1>🌦️ Sky Reader</h1>
-          <p>Agentic AI Weather Intelligence System</p>
-        </header>
+    <div className="skyreader-chat-app">
+      <div className="chat-layout-container">
+        {/* Header with Navigation and New Chat */}
+        <ChatHeader
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onNewChat={handleNewChat}
+          messageCount={messages.length}
+        />
 
-        {/* Tab navigation */}
-        <div className="mode-tabs">
-          <button
-            className={`tab-btn ${activeTab === "agent" ? "active" : ""}`}
-            onClick={() => setActiveTab("agent")}
-          >
-            🤖 AI Agent Chat
-          </button>
-          <button
-            className={`tab-btn ${activeTab === "lookup" ? "active" : ""}`}
-            onClick={() => setActiveTab("lookup")}
-          >
-            📍 City Lookup
-          </button>
-        </div>
-
-        {/* --- TAB 1: AI Agent --- */}
+        {/* Tab 1: ChatGPT-style Agentic Chatbot */}
         {activeTab === "agent" && (
-          <div>
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="Ask anything, e.g. 'What's the weather in Dehradun right now?'"
-                value={agentQuery}
-                onChange={(e) => setAgentQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !agentLoading) {
-                    handleAskAgent();
-                  }
-                }}
-              />
-              <button
-                onClick={() => handleAskAgent()}
-                disabled={agentLoading}
-              >
-                {agentLoading ? "Thinking..." : "Ask Agent"}
-              </button>
-            </div>
+          <main className="chat-interface-wrapper">
+            <div className="chat-messages-scroll-area">
+              {messages.length === 0 ? (
+                <WelcomeHero onSelectPrompt={(q) => handleSendMessage(q)} />
+              ) : (
+                <div className="chat-thread-list">
+                  {messages.map((msg) => (
+                    <ChatMessage key={msg.id} message={msg} />
+                  ))}
 
-            {/* Quick suggested chips */}
-            <div className="suggested-chips">
-              {suggestedQuestions.map((q, idx) => (
-                <button
-                  key={idx}
-                  className="chip-btn"
-                  onClick={() => {
-                    setAgentQuery(q);
-                    handleAskAgent(q);
-                  }}
-                  disabled={agentLoading}
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-
-            {agentError && <div className="error">⚠️ {agentError}</div>}
-
-            {agentLoading && (
-              <div className="agent-response-card" style={{ textAlign: "center", color: "#6b7280" }}>
-                <p>⏳ Sky Reader is reasoning and calling weather tools...</p>
-              </div>
-            )}
-
-            {agentResponse && !agentLoading && (
-              <div className="agent-response-card">
-                <div className="agent-query-header">
-                  <h3>💬 {agentResponse.query}</h3>
-                  <span className="agent-iterations-badge">
-                    {agentResponse.iterations} iteration{agentResponse.iterations > 1 ? "s" : ""}
-                  </span>
+                  {loading && <ThinkingIndicator />}
+                  <div ref={messagesEndRef} />
                 </div>
+              )}
+            </div>
 
-                <div className="agent-text">{agentResponse.text}</div>
-
-                {agentResponse.toolCalls && agentResponse.toolCalls.length > 0 && (
-                  <div className="agent-tools-used">
-                    <span className="agent-tools-label">Tools Executed:</span>
-                    <div className="tool-tags-list">
-                      {agentResponse.toolCalls.map((tc, index) => (
-                        <span key={index} className="tool-tag">
-                          🔧 {tc.tool}
-                          {tc.arguments?.location
-                            ? ` (${tc.arguments.location})`
-                            : tc.arguments?.latitude
-                            ? ` (${tc.arguments.latitude.toFixed(2)}, ${tc.arguments.longitude.toFixed(2)})`
-                            : ""}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+            {/* Sticky Bottom Input Bar */}
+            <ChatInput
+              input={input}
+              setInput={setInput}
+              onSend={() => handleSendMessage()}
+              loading={loading}
+              error={error}
+              suggestions={messages.length > 0 ? followUpSuggestions : []}
+              onSelectSuggestion={(q) => handleSendMessage(q)}
+            />
+          </main>
         )}
 
-        {/* --- TAB 2: Direct City Lookup (Phase 1 preserved) --- */}
+        {/* Tab 2: Preserved Phase 1 City Lookup */}
         {activeTab === "lookup" && (
-          <div>
-            <div className="search-box">
-              <input
-                type="text"
-                placeholder="Enter a city name..."
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !lookupLoading) {
-                    searchWeather();
-                  }
-                }}
-              />
-              <button onClick={searchWeather} disabled={lookupLoading}>
-                {lookupLoading ? "Searching..." : "Search"}
-              </button>
-            </div>
-
-            {lookupError && <div className="error">⚠️ {lookupError}</div>}
-
-            {weather && (
-              <div className="weather-card">
-                <div className="location">
-                  <h2>{weather.location.name}</h2>
-                  <p>
-                    {weather.location.region}, {weather.location.country}
-                  </p>
-                </div>
-
-                <div className="temperature">{weather.current.temperature}°C</div>
-                <div className="condition">
-                  <span className="condition-icon">{weather.current.icon}</span>
-                  <span>{weather.current.condition}</span>
-                </div>
-
-                <div className="weather-details">
-                  <div className="detail">
-                    <span>🌡️</span>
-                    <p>Feels like</p>
-                    <strong>{weather.current.feels_like}°C</strong>
-                  </div>
-
-                  <div className="detail">
-                    <span>💧</span>
-                    <p>Humidity</p>
-                    <strong>{weather.current.humidity}%</strong>
-                  </div>
-
-                  <div className="detail">
-                    <span>💨</span>
-                    <p>Wind</p>
-                    <strong>{weather.current.wind_speed} km/h</strong>
-                  </div>
-                </div>
-
-                <div className="forecast-section">
-                  <h3>Next 24 Hours</h3>
-                  <div className="forecast-list">
-                    {weather.forecast.map((hour) => (
-                      <div className="forecast-item" key={hour.time}>
-                        <span className="forecast-time">
-                          {new Date(hour.time).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                        <span className="forecast-icon">{hour.icon}</span>
-                        <span className="forecast-temperature">
-                          {hour.temperature}°C
-                        </span>
-                        <span className="forecast-condition">
-                          {hour.condition}
-                        </span>
-                        <span className="forecast-rain">
-                          🌧️ {hour.precipitation_probability}%
-                        </span>
-                        <span className="forecast-wind">
-                          💨 {hour.wind_speed} km/h
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="updated">Updated: {weather.current.time}</div>
-              </div>
-            )}
-          </div>
+          <main className="city-lookup-wrapper">
+            <CityLookup />
+          </main>
         )}
       </div>
     </div>
   );
 }
-
-export default App;

@@ -1,6 +1,21 @@
+import asyncio
 import httpx
 from datetime import datetime
 from .weather_codes import get_weather_description
+
+
+async def _fetch_with_retry(url: str, params: dict, retries: int = 2) -> dict:
+    """Helper to fetch from Open-Meteo with retry on transient network timeouts."""
+    for attempt in range(retries):
+        try:
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                response = await client.get(url, params=params)
+                response.raise_for_status()
+                return response.json()
+        except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError):
+            if attempt == retries - 1:
+                raise
+            await asyncio.sleep(1.0)
 
 
 async def geocode_location(location: str):
@@ -13,11 +28,7 @@ async def geocode_location(location: str):
         "format": "json",
     }
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        response = await client.get(url, params=params)
-
-    response.raise_for_status()
-    data = response.json()
+    data = await _fetch_with_retry(url, params)
 
     if "results" not in data or not data["results"]:
         return None
@@ -52,11 +63,7 @@ async def get_current_weather(latitude: float, longitude: float):
         "timezone": "auto",
     }
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        response = await client.get(url, params=params)
-
-    response.raise_for_status()
-    return response.json()
+    return await _fetch_with_retry(url, params)
 
 
 async def get_hourly_forecast(latitude: float, longitude: float):
@@ -79,11 +86,7 @@ async def get_hourly_forecast(latitude: float, longitude: float):
         "forecast_days": 2,
         "timezone": "auto",
     }
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        response = await client.get(url, params=params)
-
-    response.raise_for_status()
-    return response.json()
+    return await _fetch_with_retry(url, params)
 
 
 async def get_daily_forecast(latitude: float, longitude: float, days: int = 3):
@@ -103,11 +106,7 @@ async def get_daily_forecast(latitude: float, longitude: float, days: int = 3):
         "forecast_days": max(1, min(days, 7)),
         "timezone": "auto",
     }
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        response = await client.get(url, params=params)
-
-    response.raise_for_status()
-    return response.json()
+    return await _fetch_with_retry(url, params)
 
 
 def format_hourly_forecast(weather_data: dict, current_time: str, hours: int = 24):

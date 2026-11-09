@@ -19,9 +19,15 @@ else:
 try:
     from backend.agent.tools import tools
     from backend.agent.executor import execute_tool
+    from backend.evidence.evidence_engine import EvidenceEngine
+    from backend.evidence.hallucination_controller import HallucinationController
+    from backend.evidence.explanation_engine import ExplanationEngine
 except ImportError:
     from agent.tools import tools
     from agent.executor import execute_tool
+    from evidence.evidence_engine import EvidenceEngine
+    from evidence.hallucination_controller import HallucinationController
+    from evidence.explanation_engine import ExplanationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +98,14 @@ async def run_agent(
     messages.append({"role": "user", "content": user_message})
 
     executed_tools: List[Dict[str, Any]] = []
+    location_meta: Optional[Dict[str, Any]] = None
+    current_data: Optional[Dict[str, Any]] = None
+    hourly_data: Optional[Dict[str, Any]] = None
+    analysis_results: Optional[Dict[str, Any]] = None
+
+    evidence_engine = EvidenceEngine()
+    hallucination_controller = HallucinationController()
+    explanation_engine = ExplanationEngine()
 
     for iteration in range(max_iterations):
         attempts = 0
@@ -125,10 +139,71 @@ async def run_agent(
 
         # If model did not request any tools, we have reached the final answer
         if not assistant_message.tool_calls:
+            candidate_response = assistant_message.content or ""
+
+            # If weather tools were executed, run evidence generation & validation
+            if current_data or hourly_data or analysis_results:
+                loc_meta = location_meta
+                if not loc_meta and executed_tools:
+                    for ex in executed_tools:
+                        args = ex.get("arguments", {})
+                        if isinstance(args, dict) and "location" in args:
+                            loc_meta = {"name": args["location"]}
+                            break
+
+                evidence = evidence_engine.generate_evidence(
+                    current_data=current_data,
+                    hourly_data=hourly_data,
+                    location_meta=loc_meta,
+                    analysis_results=analysis_results,
+                )
+
+                async def regenerate_fn(prompt: str) -> str:
+                    retry_messages = list(messages) + [
+                        {"role": "user", "content": prompt}
+                    ]
+                    reg_resp = await client.chat.completions.create(
+                        model=active_model,
+                        messages=retry_messages,
+                    )
+                    return reg_resp.choices[0].message.content or ""
+
+                final_text, report, _ = await hallucination_controller.verify_and_correct(
+                    query=user_message,
+                    response_text=candidate_response,
+                    evidence=evidence,
+                    regenerate_fn=regenerate_fn,
+                    max_retries=1,
+                )
+
+                claims = hallucination_controller.extractor.extract_claims(
+                    final_text, default_location=evidence.location_name
+                )
+                val_results = hallucination_controller.validator.validate_all(claims, evidence)
+                proof = explanation_engine.generate_proof(
+                    query=user_message,
+                    response_text=final_text,
+                    evidence=evidence,
+                    report=report,
+                    validation_results=val_results,
+                )
+
+                return {
+                    "response": final_text,
+                    "tool_calls": executed_tools,
+                    "iterations": iteration + 1,
+                    "claims": [c.dict() for c in claims],
+                    "validation_report": report.dict(),
+                    "explanation": proof.dict(),
+                }
+
             return {
-                "response": assistant_message.content or "",
+                "response": candidate_response,
                 "tool_calls": executed_tools,
                 "iterations": iteration + 1,
+                "claims": [],
+                "validation_report": None,
+                "explanation": None,
             }
 
         # Model requested one or more tool calls
@@ -189,6 +264,18 @@ async def run_agent(
                 "result": tool_result,
             })
 
+            # Record evidence sources
+            if fn_name == "geocode_location" and isinstance(tool_result, dict) and "latitude" in tool_result:
+                location_meta = tool_result
+            elif fn_name == "get_current_weather" and isinstance(tool_result, dict):
+                current_data = tool_result
+            elif fn_name == "get_hourly_forecast" and isinstance(tool_result, dict):
+                hourly_data = tool_result
+            elif fn_name in ("analyze_weather", "get_weather_recommendations") and isinstance(tool_result, dict):
+                if analysis_results is None:
+                    analysis_results = {}
+                analysis_results.update(tool_result)
+
             # Send tool response back to Groq
             messages.append({
                 "role": "tool",
@@ -204,6 +291,9 @@ async def run_agent(
         ),
         "tool_calls": executed_tools,
         "iterations": max_iterations,
+        "claims": [],
+        "validation_report": None,
+        "explanation": None,
     }
 
 
