@@ -72,9 +72,77 @@ forecast_tool = {
     }
 }
 
+analysis_tool = {
+    "type": "function",
+    "function": {
+        "name": "analyze_weather",
+        "description": (
+            "Performs in-depth meteorological analysis on temperature trends (rising/falling/min/max), "
+            "precipitation accumulation vs probability, wind patterns, atmospheric stability, 6-hour "
+            "aggregated time periods, and today-vs-tomorrow comparisons using forecast data."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "latitude": {
+                    "type": "number",
+                    "description": "The latitude of the location."
+                },
+                "longitude": {
+                    "type": "number",
+                    "description": "The longitude of the location."
+                },
+                "focus": {
+                    "type": "string",
+                    "enum": ["all", "temperature", "precipitation", "wind", "humidity", "patterns", "comparison"],
+                    "description": "Specific analytical focus area: 'temperature', 'precipitation', 'wind', 'humidity', 'patterns', 'comparison', or 'all' (default)."
+                },
+                "day_offset": {
+                    "type": "integer",
+                    "description": "0 for today (current 24h), 1 for tomorrow (next 24h). Defaults to 1."
+                }
+            },
+            "required": ["latitude", "longitude"],
+            "additionalProperties": False
+        }
+    }
+}
+
+recommendations_tool = {
+    "type": "function",
+    "function": {
+        "name": "get_weather_recommendations",
+        "description": (
+            "Generates evidence-based weather recommendations and decision support for a location: "
+            "whether to carry an umbrella, best and worst time windows for outdoor activities, "
+            "and travel suitability/hazards (fog, storms, high wind)."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "latitude": {
+                    "type": "number",
+                    "description": "The latitude of the location."
+                },
+                "longitude": {
+                    "type": "number",
+                    "description": "The longitude of the location."
+                },
+                "day_offset": {
+                    "type": "integer",
+                    "description": "0 for today, 1 for tomorrow. Defaults to 1."
+                }
+            },
+            "required": ["latitude", "longitude"],
+            "additionalProperties": False
+        }
+    }
+}
 
 tools = [
     location_tool,
     weather_tool,
-    forecast_tool
+    forecast_tool,
+    analysis_tool,
+    recommendations_tool,
 ]

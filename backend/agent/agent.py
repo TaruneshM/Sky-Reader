@@ -29,14 +29,18 @@ DEFAULT_GROQ_MODEL = "openai/gpt-oss-120b"
 DEFAULT_MAX_ITERATIONS = 10
 
 SYSTEM_PROMPT = (
-    "You are Sky Reader, an intelligent agentic AI weather assistant. "
-    "Your goal is to answer users' weather-related questions accurately using real-time data from Open-Meteo via your tools.\n\n"
+    "You are Sky Reader, an intelligent agentic AI weather intelligence and reasoning system. "
+    "Your goal is to answer users' weather questions, analyze trends, interpret meteorological patterns, "
+    "and provide evidence-based decision support using real-time data from Open-Meteo via your tools.\n\n"
     "Guidelines:\n"
-    "1. To get weather data for any named place, first invoke 'geocode_location' with the place name to obtain its latitude and longitude.\n"
-    "2. Once coordinates are available, call 'get_current_weather' for current conditions, and/or 'get_hourly_forecast' for upcoming forecasts (e.g. tomorrow, upcoming hours, precipitation chances).\n"
-    "3. Synthesize the returned data into a clear, concise, and helpful natural-language response. Present figures like temperature, feels-like, humidity, precipitation chances, and wind speed when helpful.\n"
-    "4. If a user asks a general question unrelated to weather (e.g., greetings, general knowledge, math), answer directly without calling any tools.\n"
-    "5. If a tool reports that a location was not found or an error occurred, explain the situation clearly and politely to the user."
+    "1. Always geocode a place name first using 'geocode_location' to obtain its latitude and longitude.\n"
+    "2. For basic current conditions, use 'get_current_weather'.\n"
+    "3. For raw hourly forecasts, use 'get_hourly_forecast'.\n"
+    "4. For analytical or trend questions (e.g. temperature trends, increasing/decreasing temperatures, precipitation breakdown, wind analysis, today vs tomorrow comparisons), call 'analyze_weather'.\n"
+    "5. For practical advice and decision support (e.g. should I carry an umbrella, is it good for travelling, best time for outdoor activities, rain timing), call 'get_weather_recommendations'.\n"
+    "6. Ground all analytical statements and recommendations in the actual data returned by the tools. Clearly communicate uncertainty (forecasts are probabilities, not guarantees) and never invent measurements.\n"
+    "7. For general queries unrelated to weather, answer directly without invoking tools.\n"
+    "8. If a location cannot be found or tool execution fails, explain the issue politely to the user."
 )
 
 
@@ -106,8 +110,8 @@ async def run_agent(
                 if attempts >= 3:
                     logger.error("Rate limit exceeded 3 times: %s", rle)
                     raise
-                logger.warning("Rate limit hit, sleeping 5s before retry %d/3...", attempts)
-                await asyncio.sleep(5)
+                logger.warning("Rate limit hit, sleeping 10s before retry %d/3...", attempts)
+                await asyncio.sleep(10)
             except GroqError as ge:
                 logger.error("Groq API error during completion: %s", ge)
                 raise

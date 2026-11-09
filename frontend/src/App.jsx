@@ -19,10 +19,11 @@ function App() {
   const [lookupLoading, setLookupLoading] = useState(false);
 
   const suggestedQuestions = [
-    "What's the current weather in Dehradun?",
-    "Will it rain tomorrow in Dehradun?",
-    "What is the weather right now in Paris, and how will it change over the next few hours?",
-    "What causes lightning and thunder?",
+    "Should I carry an umbrella tomorrow in Dehradun?",
+    "Is the temperature increasing or decreasing in Dehradun?",
+    "What is the best time for outdoor activities in Dehradun tomorrow?",
+    "Is tomorrow suitable for travelling in Dehradun?",
+    "How will tomorrow's weather compare with today's in Dehradun?",
   ];
 
   async function handleAskAgent(queryToAsk) {

@@ -44,7 +44,9 @@ async def test_scenario_2_hourly_forecast():
     print(f"Response:\n{result['response']}\n")
 
     assert "geocode_location" in tool_names, "Expected geocode_location tool call"
-    assert "get_hourly_forecast" in tool_names, "Expected get_hourly_forecast tool call"
+    assert "get_hourly_forecast" in tool_names or "analyze_weather" in tool_names, (
+        "Expected get_hourly_forecast or analyze_weather tool call"
+    )
     assert len(result["response"]) > 20, "Expected meaningful response"
     print(">>> TEST 2 PASSED: Successfully fetched and reported hourly forecast for Dehradun.")
     return True
@@ -257,9 +259,11 @@ async def run_all_tests():
         results["Scenario 7 (Missing/invalid API key)"] = False
 
     try:
+        await asyncio.sleep(4)
         results["Scenario 8 (FastAPI Endpoints)"] = test_scenario_8_fastapi_endpoints()
     except Exception as e:
-        print(f"TEST 8 FAILED: {e}")
+        import traceback
+        traceback.print_exc()
         results["Scenario 8 (FastAPI Endpoints)"] = False
 
     print("\n" + "#" * 60)

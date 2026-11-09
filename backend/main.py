@@ -12,6 +12,7 @@ try:
         format_hourly_forecast,
     )
     from weather.models import WeatherResponse
+    from weather.analysis import analyze_weather_data
     from agent.agent import run_agent
 except ImportError:
     from backend.weather.service import (
@@ -22,6 +23,7 @@ except ImportError:
         format_hourly_forecast,
     )
     from backend.weather.models import WeatherResponse
+    from backend.weather.analysis import analyze_weather_data
     from backend.agent.agent import run_agent
 
 
@@ -93,6 +95,23 @@ async def weather(location: str):
         "location": formatted_current["location"],
         "current": formatted_current["current"],
         "forecast": formatted_forecast,
+    }
+
+
+@app.get("/api/weather/analysis")
+@app.get("/weather/analysis", include_in_schema=False)
+async def weather_analysis(location: str, focus: str = "all", day_offset: int = 1):
+    place = await geocode_location(location)
+    if place is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Could not find location: {location}"
+        )
+    forecast_data = await get_hourly_forecast(place["latitude"], place["longitude"])
+    analysis_res = analyze_weather_data(forecast_data, focus=focus, day_offset=day_offset)
+    return {
+        "location": place,
+        "analysis": analysis_res,
     }
 
 
