@@ -1,4 +1,16 @@
 import { useState } from "react";
+import {
+  ShieldCheck,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Terminal,
+  Database,
+  Info,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+} from "lucide-react";
 
 export default function AuditDrawer({ validationReport, explanation, toolCalls = [] }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,15 +37,24 @@ export default function AuditDrawer({ validationReport, explanation, toolCalls =
         aria-expanded={isOpen}
       >
         <span className="audit-badge-icon">
-          {isTrustworthy ? "🛡️" : "⚠️"}
+          {isTrustworthy ? (
+            <ShieldCheck size={16} className="audit-shield-icon" />
+          ) : (
+            <AlertTriangle size={16} className="audit-warning-icon" />
+          )}
         </span>
+
         <span className="audit-badge-text">
-          {totalClaims > 0 ? statusLabel : "Tool Provenance Log"}
+          {totalClaims > 0 ? statusLabel : "Execution & Provenance Log"}
         </span>
+
         <span className="audit-badge-meta">
           {totalClaims > 0 && `(${supportedClaims}/${totalClaims} verified)`}
         </span>
-        <span className="audit-toggle-chevron">{isOpen ? "▲" : "▼"}</span>
+
+        <span className="audit-toggle-chevron">
+          {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+        </span>
       </button>
 
       {isOpen && (
@@ -67,7 +88,11 @@ export default function AuditDrawer({ validationReport, explanation, toolCalls =
           {/* 2. Audited Factual Claims List */}
           {validationReport?.validation_results && validationReport.validation_results.length > 0 && (
             <div className="audit-section">
-              <h4 className="audit-section-title">Audited Factual Claims</h4>
+              <div className="audit-section-header">
+                <ShieldCheck size={14} className="section-title-icon" />
+                <h4 className="audit-section-title">Deterministic Factual Claims Audit</h4>
+              </div>
+
               <div className="audit-claims-list">
                 {validationReport.validation_results.map((res, idx) => {
                   const status = res.status;
@@ -85,10 +110,15 @@ export default function AuditDrawer({ validationReport, explanation, toolCalls =
                     <div key={idx} className={`audit-claim-item ${statusClass}`}>
                       <div className="claim-header">
                         <span className={`claim-status-badge ${statusClass}`}>
-                          {status}
+                          {status === "SUPPORTED" && <CheckCircle2 size={12} className="inline-badge-icon" />}
+                          {status === "CONTRADICTED" && <XCircle size={12} className="inline-badge-icon" />}
+                          {(status === "PARTIALLY_SUPPORTED" || status === "INSUFFICIENT_EVIDENCE") && (
+                            <HelpCircle size={12} className="inline-badge-icon" />
+                          )}
+                          <span>{status}</span>
                         </span>
                         <span className="claim-variable">
-                          {claim.variable}
+                          {claim.variable.replace(/_/g, " ")}
                         </span>
                         <span className="claim-value">
                           {String(claim.claimed_value)} {claim.unit || ""}
@@ -105,11 +135,17 @@ export default function AuditDrawer({ validationReport, explanation, toolCalls =
           {/* 3. Executed Weather Tools */}
           {toolCalls && toolCalls.length > 0 && (
             <div className="audit-section">
-              <h4 className="audit-section-title">Tools Executed in This Turn</h4>
+              <div className="audit-section-header">
+                <Terminal size={14} className="section-title-icon" />
+                <h4 className="audit-section-title">Autonomous Tools Executed</h4>
+              </div>
               <div className="audit-tools-list">
                 {toolCalls.map((tc, idx) => (
                   <div key={idx} className="tool-execution-badge">
-                    <span className="tool-name">🔧 {tc.tool}</span>
+                    <span className="tool-name">
+                      <Terminal size={12} className="tool-icon-inner" />
+                      {tc.tool}
+                    </span>
                     {tc.arguments && Object.keys(tc.arguments).length > 0 && (
                       <span className="tool-args">
                         {JSON.stringify(tc.arguments)}
@@ -124,10 +160,16 @@ export default function AuditDrawer({ validationReport, explanation, toolCalls =
           {/* 4. Data Sources & Provenance */}
           {explanation?.data_sources && explanation.data_sources.length > 0 && (
             <div className="audit-section">
-              <h4 className="audit-section-title">Data Provenance Sources</h4>
+              <div className="audit-section-header">
+                <Database size={14} className="section-title-icon" />
+                <h4 className="audit-section-title">Observation Provenance</h4>
+              </div>
               <ul className="audit-sources-list">
                 {explanation.data_sources.map((src, idx) => (
-                  <li key={idx}>📡 {src}</li>
+                  <li key={idx}>
+                    <Database size={12} className="source-bullet-icon" />
+                    <span>{src}</span>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -136,7 +178,10 @@ export default function AuditDrawer({ validationReport, explanation, toolCalls =
           {/* 5. Meteorological Limitations */}
           {explanation?.limitations_and_uncertainty && (
             <div className="audit-section limitations">
-              <span className="limitations-label">⚠️ Meteorological Uncertainty:</span>
+              <div className="limitations-header">
+                <Info size={13} className="limitations-icon" />
+                <span className="limitations-label">Meteorological Uncertainty:</span>
+              </div>
               <p className="limitations-text">
                 {explanation.limitations_and_uncertainty}
               </p>
