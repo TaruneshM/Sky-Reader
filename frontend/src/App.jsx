@@ -27,14 +27,6 @@ export default function App() {
     scrollToBottom();
   }, [messages, loading]);
 
-  const followUpSuggestions = [
-    "Should I carry an umbrella?",
-    "Are there any severe weather risks?",
-    "Is it suitable for travelling?",
-    "What are the temperature trends?",
-    "What is the best time for outdoor activities?",
-  ];
-
   // Send message to agent with multi-turn conversation history
   async function handleSendMessage(customText) {
     const queryText = (customText !== undefined ? customText : input).trim();
@@ -151,8 +143,6 @@ export default function App() {
               onSend={() => handleSendMessage()}
               loading={loading}
               error={error}
-              suggestions={messages.length > 0 ? followUpSuggestions : []}
-              onSelectSuggestion={(q) => handleSendMessage(q)}
             />
           </main>
         )}

@@ -69,6 +69,7 @@ class AgentChatResponse(BaseModel):
     validation_report: Optional[dict] = Field(None, description="Deterministic audit and hallucination report.")
     explanation: Optional[dict] = Field(None, description="Explanation proof and meteorological reasoning chain.")
     risk_assessment: Optional[dict] = Field(None, description="Deterministic weather safety and hazard assessment.")
+    token_usage: Optional[dict] = Field(None, description="Deterministic token consumption and latency metrics.")
 
 
 class ClaimValidationRequest(BaseModel):
@@ -184,16 +185,29 @@ async def agent_chat(request: AgentChatRequest):
         )
 
     try:
-        # Sanitize and cap conversation history (last 10 turns max to avoid token/TPM limits)
+        # Sanitize and cap conversation history (last 6 turns max = 3 exchanges to avoid prompt bloat)
         history = request.conversation_history or []
         trimmed_history = []
-        for msg in history[-10:]:
+        for msg in history[-6:]:
             if isinstance(msg, dict) and "role" in msg and "content" in msg:
                 role = str(msg["role"]).lower()
                 if role in ("user", "assistant"):
                     trimmed_history.append({"role": role, "content": str(msg["content"])})
 
         result = await run_agent(message, conversation_history=trimmed_history)
+        token_usage = result.get("token_usage")
+        if token_usage:
+            import logging
+            logging.getLogger("skyreader.token_metrics").info(
+                "Chat Turn Token Metrics: prompt=%d, comp=%d, total=%d, llm_calls=%d, tools=%d, latency=%.1fms",
+                token_usage.get("prompt_tokens", 0),
+                token_usage.get("completion_tokens", 0),
+                token_usage.get("total_tokens", 0),
+                token_usage.get("llm_calls", 0),
+                token_usage.get("tool_calls", 0),
+                token_usage.get("latency_ms", 0.0),
+            )
+
         return AgentChatResponse(
             response=result["response"],
             tool_calls=result.get("tool_calls", []),
@@ -202,6 +216,7 @@ async def agent_chat(request: AgentChatRequest):
             validation_report=result.get("validation_report"),
             explanation=result.get("explanation"),
             risk_assessment=result.get("risk_assessment"),
+            token_usage=token_usage,
         )
     except ValueError as ve:
         raise HTTPException(
@@ -209,9 +224,21 @@ async def agent_chat(request: AgentChatRequest):
             detail=str(ve)
         )
     except Exception as e:
+        err_str = str(e).lower()
+        if "429" in err_str or "rate limit" in err_str or "quota" in err_str:
+            return AgentChatResponse(
+                response="Sky Reader has reached its AI usage limit for now 🌤️ Please try again later.",
+                tool_calls=[],
+                iterations=1,
+                claims=[],
+                validation_report=None,
+                explanation=None,
+                risk_assessment=None,
+                token_usage={"error": "rate_limit_exceeded"},
+            )
         raise HTTPException(
             status_code=500,
-            detail=f"Agent failed to process request: {str(e)}"
+            detail="Sky Reader encountered an unexpected issue while processing your weather request."
         )
 
 

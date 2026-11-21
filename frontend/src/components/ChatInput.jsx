@@ -6,8 +6,6 @@ export default function ChatInput({
   onSend,
   loading,
   error,
-  suggestions = [],
-  onSelectSuggestion,
 }) {
   const textareaRef = useRef(null);
 
@@ -33,26 +31,6 @@ export default function ChatInput({
         <div className="chat-error-banner" role="alert">
           <span className="error-icon">⚠️</span>
           <span className="error-text">{error}</span>
-        </div>
-      )}
-
-      {/* Suggested Prompts Bar */}
-      {suggestions.length > 0 && (
-        <div className="chat-suggestions-bar">
-          <span className="suggestions-label">Suggestions:</span>
-          <div className="suggestions-scroll">
-            {suggestions.map((q, idx) => (
-              <button
-                key={idx}
-                type="button"
-                className="suggestion-chip"
-                onClick={() => onSelectSuggestion(q)}
-                disabled={loading}
-              >
-                {q}
-              </button>
-            ))}
-          </div>
         </div>
       )}
 

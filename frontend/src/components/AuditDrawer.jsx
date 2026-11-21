@@ -12,9 +12,17 @@ export default function AuditDrawer({ validationReport, explanation, toolCalls =
   const totalClaims = validationReport?.total_claims || 0;
   const supportedClaims = validationReport?.supported_claims || 0;
   const contradictedClaims = validationReport?.contradicted_claims || 0;
-  const statusLabel = explanation?.claim_validation_status || (
-    isTrustworthy ? "Verified Grounded" : "Audited with Flags"
-  );
+
+  let statusLabel = "Tool Provenance Log";
+  if (totalClaims > 0) {
+    if (supportedClaims === totalClaims && contradictedClaims === 0) {
+      statusLabel = "Verified Grounded (100%)";
+    } else if (contradictedClaims > 0) {
+      statusLabel = "Audited with Flags";
+    } else {
+      statusLabel = `Verified (${supportedClaims}/${totalClaims} claims)`;
+    }
+  }
 
   return (
     <div className="audit-drawer-container">

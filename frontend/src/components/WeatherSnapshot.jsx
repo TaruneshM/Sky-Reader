@@ -43,13 +43,14 @@ export default function WeatherSnapshot({ claims = [], text = "" }) {
     if (m) rainVal = `${m[1]}%`;
   }
 
+  // Determine whether any metrics exist
   const hasMetrics = tempVal || humVal || windVal || rainVal || umbrellaClaim;
   if (!hasMetrics) return null;
 
   return (
-    <div className="weather-snapshot-grid">
+    <div className="weather-snapshot-grid compact">
       {tempVal && (
-        <div className="snapshot-card temp">
+        <div className="snapshot-card temp compact">
           <span className="snapshot-icon">🌡️</span>
           <div className="snapshot-info">
             <span className="snapshot-label">Temperature</span>
@@ -62,7 +63,7 @@ export default function WeatherSnapshot({ claims = [], text = "" }) {
       )}
 
       {humVal && (
-        <div className="snapshot-card humidity">
+        <div className="snapshot-card humidity compact">
           <span className="snapshot-icon">💧</span>
           <div className="snapshot-info">
             <span className="snapshot-label">Humidity</span>
@@ -72,17 +73,17 @@ export default function WeatherSnapshot({ claims = [], text = "" }) {
       )}
 
       {windVal && (
-        <div className="snapshot-card wind">
+        <div className="snapshot-card wind compact">
           <span className="snapshot-icon">💨</span>
           <div className="snapshot-info">
-            <span className="snapshot-label">Wind Speed</span>
+            <span className="snapshot-label">Wind</span>
             <strong className="snapshot-value">{windVal}</strong>
           </div>
         </div>
       )}
 
       {rainVal && (
-        <div className="snapshot-card rain">
+        <div className="snapshot-card rain compact">
           <span className="snapshot-icon">🌧️</span>
           <div className="snapshot-info">
             <span className="snapshot-label">Rain Chance</span>
@@ -96,7 +97,7 @@ export default function WeatherSnapshot({ claims = [], text = "" }) {
 
       {umbrellaClaim && (
         <div
-          className={`snapshot-card umbrella ${
+          className={`snapshot-card umbrella compact ${
             umbrellaClaim.claimed_value ? "recommended" : "not-needed"
           }`}
         >
