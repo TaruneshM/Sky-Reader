@@ -47,7 +47,7 @@ def _safe_extract_series(data: dict, key: str, start: int = 0, count: int = 24) 
         return ([], False, count)
 
     sliced = raw_list[start:start + count]
-    missing_count = sum(1 for x in sliced if x is None)
+    missing_count = count - len(sliced) + sum(1 for x in sliced if x is None)
     is_available = len(sliced) > 0 and missing_count < len(sliced)
 
     return (sliced, is_available, missing_count)
@@ -68,13 +68,14 @@ class WeatherRiskEngine:
         hourly_data: dict,
         day_offset: int = 1,
         location_name: Optional[str] = None,
+        forecast_period: Optional[str] = None,
     ) -> WeatherRiskAssessment:
         """
         Runs comprehensive deterministic risk assessment on 24-hour window.
         day_offset=0 evaluates today (hours 0-23); day_offset=1 evaluates tomorrow (hours 24-47).
         """
-        start_idx = day_offset * 24
-        count = 24
+        start_idx = 0 if forecast_period else day_offset * 24
+        count = len(hourly_data.get("hourly", {}).get("time", [])) if forecast_period else 24
 
         # Extract series
         times, has_times, _ = _safe_extract_series(hourly_data, "time", start_idx, count)
@@ -93,6 +94,9 @@ class WeatherRiskEngine:
         end_time_str = times[-1] if (has_times and len(times) > 0 and times[-1]) else "end of period"
         period_label = f"tomorrow ({start_time_str} to {end_time_str})" if day_offset == 1 else f"today ({start_time_str} to {end_time_str})"
 
+        if forecast_period:
+            period_label = f"{forecast_period} ({start_time_str} to {end_time_str})"
+
         # Check data completeness & limitations
         if not has_temps:
             data_limitations.append("Temperature data unavailable in forecast; thermal risk evaluation skipped.")
@@ -109,7 +113,7 @@ class WeatherRiskEngine:
         elif missing_winds > 0:
             data_limitations.append(f"Wind speed data is incomplete ({missing_winds}/{count} hours missing).")
 
-        if not has_codes:
+        if not has_codes or missing_codes:
             data_limitations.append("WMO weather condition codes unavailable; severe thunderstorm detection limited.")
 
         # -------------------------------------------------------------
@@ -256,9 +260,11 @@ class WeatherRiskEngine:
         # -------------------------------------------------------------
         # 4. Strong Wind Hazard Assessment
         # -------------------------------------------------------------
-        valid_winds = [float(x) for x in winds if isinstance(x, (int, float))]
-        if valid_winds:
-            max_wind = max(valid_winds)
+        gusts, _, _ = _safe_extract_series(hourly_data, "wind_gusts_10m", start_idx, count)
+        peaks = [(float(value), index, kind) for kind, series in (("wind speed", winds), ("wind gust", gusts))
+                 for index, value in enumerate(series) if isinstance(value, (int, float))]
+        if peaks:
+            max_wind, peak_index, peak_kind = max(peaks)
             wind_risk = None
             if max_wind >= self.thresholds.wind_severe_kmh:
                 wind_risk = RiskLevel.SEVERE
@@ -274,7 +280,7 @@ class WeatherRiskEngine:
             elif max_wind >= self.thresholds.wind_high_kmh:
                 wind_risk = RiskLevel.HIGH
                 wind_reason = (
-                    f"Strong wind gusts expected: peak speeds reaching {round(max_wind, 1)} km/h. "
+                    f"Strong wind expected: peak {peak_kind} reaching {round(max_wind, 1)} km/h. "
                     f"May cause difficulty walking, sway high vehicles, and dislodge tree limbs."
                 )
                 wind_recs = [
@@ -289,8 +295,7 @@ class WeatherRiskEngine:
             if wind_risk:
                 peak_wind_time = ""
                 if has_times:
-                    idx = winds.index(max_wind)
-                    peak_wind_time = times[idx] if idx < len(times) else ""
+                    peak_wind_time = times[peak_index] if peak_index < len(times) else ""
 
                 detected_risks.append(
                     RiskItem(
@@ -301,6 +306,7 @@ class WeatherRiskEngine:
                         measurements={
                             "max_wind_speed_kmh": round(max_wind, 1),
                             "peak_wind_time": peak_wind_time,
+                            "peak_measurement": peak_kind,
                         },
                         forecast_window=period_label,
                         recommendations=wind_recs,

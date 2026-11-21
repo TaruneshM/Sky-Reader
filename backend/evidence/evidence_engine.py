@@ -198,6 +198,14 @@ class EvidenceEngine:
                 source_name="Open-Meteo Current Weather API",
             ))
 
+        if current.get("wind_gusts_10m") is not None:
+            collection.add(EvidenceItem(
+                id="ev_obs_gust_current", variable=WeatherVariable.WIND_GUST,
+                value=float(current["wind_gusts_10m"]), unit="km/h", location=location,
+                latitude=lat, longitude=lon, time_period=time_str,
+                source_type=EvidenceSourceType.OBSERVED, source_name="Open-Meteo Current Weather API",
+            ))
+
         # Cloud cover
         if "cloud_cover" in current and current["cloud_cover"] is not None:
             collection.add(EvidenceItem(
@@ -310,6 +318,18 @@ class EvidenceEngine:
                     source_type=EvidenceSourceType.FORECAST,
                     source_name="Open-Meteo Hourly Forecast",
                 ))
+
+            for key, variable, unit in (
+                ("apparent_temperature", WeatherVariable.APPARENT_TEMPERATURE, "°C"),
+                ("wind_gusts_10m", WeatherVariable.WIND_GUST, "km/h"),
+            ):
+                values = hourly.get(key) or []
+                if i < len(values) and values[i] is not None:
+                    collection.add(EvidenceItem(
+                        id=f"ev_fc_{key}_{hour_str}", variable=variable, value=float(values[i]),
+                        unit=unit, location=location, latitude=lat, longitude=lon, time_period=hour_str,
+                        source_type=EvidenceSourceType.FORECAST, source_name="Open-Meteo Hourly Forecast",
+                    ))
 
             if i < len(humidities) and humidities[i] is not None:
                 collection.add(EvidenceItem(
@@ -546,7 +566,7 @@ class EvidenceEngine:
             collection.add(EvidenceItem(
                 id=f"ev_derived_risk_level_{period_label}",
                 variable=WeatherVariable.TRAVEL_SUITABILITY,
-                value=str(risk_data["overall_risk_level"]),
+                value=getattr(risk_data["overall_risk_level"], "value", risk_data["overall_risk_level"]),
                 unit="risk_level",
                 location=location,
                 latitude=lat,

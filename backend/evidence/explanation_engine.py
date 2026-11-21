@@ -54,18 +54,7 @@ class ExplanationEngine:
             if r.status in (ValidationStatus.SUPPORTED, ValidationStatus.PARTIALLY_SUPPORTED):
                 cited_evidence_ids.update(r.supporting_evidence_ids)
 
-        # If no specific citations, include top observed and derived items
-        supporting_items: List[EvidenceItem] = []
-        if cited_evidence_ids:
-            for it in evidence.items:
-                if it.id in cited_evidence_ids:
-                    supporting_items.append(it)
-        else:
-            # Fallback to key current and derived items
-            supporting_items = [
-                it for it in evidence.items
-                if it.source_type in (EvidenceSourceType.OBSERVED, EvidenceSourceType.DERIVED)
-            ][:8]
+        supporting_items = [item for item in evidence.items if item.id in cited_evidence_ids]
 
         # 2. Extract measurements used (raw numbers and units)
         measurements: List[Dict[str, Any]] = []
@@ -85,6 +74,7 @@ class ExplanationEngine:
                 "value": it.value,
                 "unit": it.unit,
                 "time_period": it.time_period,
+                "location": it.location,
                 "source_type": it.source_type.value,
             })
 
@@ -101,13 +91,16 @@ class ExplanationEngine:
 
         if total_claims == 0:
             val_status = "Informational (No testable factual claims)"
-            risk = "Low"
+            risk = "Unknown"
         elif contradicted_claims > 0:
             val_status = f"Contradictions Detected ({contradicted_claims}/{total_claims} claims failed)"
             risk = "High"
         elif supported_claims == total_claims:
             val_status = f"100% Grounded ({supported_claims}/{total_claims} claims verified)"
             risk = "Low"
+        elif not supported_claims and all(r.status == ValidationStatus.INSUFFICIENT_EVIDENCE for r in results):
+            val_status = "Insufficient evidence"
+            risk = "Unknown"
         else:
             val_status = f"Partially Grounded ({supported_claims}/{total_claims} claims strictly verified)"
             risk = "Moderate"
@@ -132,6 +125,7 @@ class ExplanationEngine:
                 "source": it.source_name,
                 "source_type": it.source_type.value,
                 "time_period": it.time_period,
+                "location": it.location,
             }
             for it in supporting_items
         ]

@@ -59,7 +59,7 @@ class HallucinationController:
                 hallucination_rate=0.0,
                 contradiction_rate=0.0,
                 unsupported_rate=0.0,
-                is_trustworthy=True,
+                is_trustworthy=False,
                 validation_results=[],
                 problematic_claims=[],
             )
@@ -75,7 +75,7 @@ class HallucinationController:
         hallucination_rate = round((contradicted + unsupported) / total, 4)
 
         # Zero tolerance for direct contradictions; low tolerance for unverifiable claims
-        is_trustworthy = (contradicted == 0) and (hallucination_rate <= self.hallucination_threshold)
+        is_trustworthy = (supported == total)
 
         problematic = [
             r for r in validation_results
@@ -134,45 +134,60 @@ class HallucinationController:
             f"4. Directly correct any previously contradictory numbers or trends."
         )
 
+    def audit(self, text: str, evidence: EvidenceCollection):
+        claims = self.extractor.extract_claims(text, default_location=evidence.location_name)
+        return claims, self.evaluate_claims(self.validator.validate_all(claims, evidence))
+
     def generate_safe_fallback(
         self,
         original_query: str,
         evidence: EvidenceCollection,
         report: Optional[HallucinationReport] = None,
     ) -> str:
-        """
-        Generates a deterministic, trustworthy fallback response directly
-        derived from verified evidence when LLM regeneration fails or is exhausted.
-        """
-        loc = evidence.location_name or "the requested location"
+        """Summarize measurements only when their city and requested window are established."""
+        try:
+            from backend.agent.router import parse_weather_request, synthesize_deterministic_weather_buddy_response
+        except ImportError:
+            from agent.router import parse_weather_request, synthesize_deterministic_weather_buddy_response
 
-        temp_items = evidence.find_by_variable(WeatherVariable.TEMPERATURE)
-        hum_items = evidence.find_by_variable(WeatherVariable.HUMIDITY)
-        wind_items = evidence.find_by_variable(WeatherVariable.WIND_SPEED)
-        rain_prob_items = evidence.find_by_variable(WeatherVariable.PRECIPITATION_PROBABILITY)
-        umbrella_items = evidence.find_by_variable(WeatherVariable.UMBRELLA_NEED)
-
-        lines = [f"Based on verified meteorological observations for {loc}:"]
-        if temp_items:
-            lines.append(f"- Current Temperature: {temp_items[0].value} {temp_items[0].unit or '°C'}")
-        if hum_items:
-            lines.append(f"- Relative Humidity: {hum_items[0].value}%")
-        if wind_items:
-            lines.append(f"- Wind Speed: {wind_items[0].value} km/h")
-        if rain_prob_items:
-            max_rain_prob = max([float(it.value) for it in rain_prob_items if isinstance(it.value, (int, float))], default=0.0)
-            lines.append(f"- Peak Precipitation Probability: {max_rain_prob}%")
-        if umbrella_items:
-            if umbrella_items[0].value is True:
-                lines.append("- Recommendation: Carry an umbrella due to expected rain and precipitation.")
-            else:
-                lines.append("- Recommendation: You do not need an umbrella as rain or precipitation probability is low.")
-
-        lines.append(
-            "\n*(Note: This response was generated directly from verified meteorological evidence "
-            "after automated audit identified discrepancies in generative text.)*"
+        if not evidence.location_name:
+            return "I couldn’t verify the requested weather for each location and forecast period."
+        request = parse_weather_request(original_query)
+        period = request.period
+        fields = {
+            WeatherVariable.TEMPERATURE: ("temperature_2m", "temperatures"),
+            WeatherVariable.APPARENT_TEMPERATURE: ("apparent_temperature", "apparent_temperatures"),
+            WeatherVariable.HUMIDITY: ("relative_humidity_2m", "humidities"),
+            WeatherVariable.WIND_GUST: ("wind_gusts_10m", "gusts"),
+            WeatherVariable.WIND_SPEED: ("wind_speed_10m", "wind_speeds"),
+            WeatherVariable.PRECIPITATION_PROBABILITY: ("precipitation_probability", "rain_probabilities"),
+            WeatherVariable.PRECIPITATION_AMOUNT: ("precipitation", "rain_amounts"),
+        }
+        current = {}
+        forecast = {}
+        risk = None
+        for item in evidence.items:
+            if item.location and item.location.casefold() != evidence.location_name.casefold():
+                continue
+            bound = item.metadata.get("requested_period")
+            if item.variable == WeatherVariable.TRAVEL_SUITABILITY and bound == period and item.unit == "risk_level":
+                risk = {"overall_risk_level": item.value, "detected_risks": [
+                    {"condition": condition} for condition in item.metadata.get("detected_risks", [])
+                ]}
+            if item.variable not in fields:
+                continue
+            observed_key, forecast_key = fields[item.variable]
+            if item.source_type.value == "observed" and period == "current":
+                current[observed_key] = item.value
+            elif bound == period and item.source_type.value == "forecast":
+                forecast.setdefault(forecast_key, []).append(item.value)
+        answer = synthesize_deterministic_weather_buddy_response(
+            ("temperature" if request.intent == "current_weather" and "temperature" in original_query.casefold()
+             else request.intent or "current_weather"), evidence.location_name,
+            {"current": current}, forecast if forecast else None, risk,
+            period=period, activity=request.activity,
         )
-        return "\n".join(lines)
+        return answer + " The automated audit identified discrepancies in the earlier draft."
 
     async def verify_and_correct(
         self,
@@ -190,9 +205,7 @@ class HallucinationController:
         attempts = 0
 
         while True:
-            claims = self.extractor.extract_claims(current_text, default_location=evidence.location_name)
-            validation_results = self.validator.validate_all(claims, evidence)
-            report = self.evaluate_claims(validation_results)
+            _, report = self.audit(current_text, evidence)
 
             if report.is_trustworthy or attempts >= max_retries or regenerate_fn is None:
                 # If trustworthy, return text
@@ -203,9 +216,7 @@ class HallucinationController:
                 if attempts >= max_retries:
                     fallback = self.generate_safe_fallback(query, evidence, report)
                     # Re-audit fallback to ensure 100% clean report
-                    fb_claims = self.extractor.extract_claims(fallback, default_location=evidence.location_name)
-                    fb_results = self.validator.validate_all(fb_claims, evidence)
-                    fb_report = self.evaluate_claims(fb_results)
+                    _, fb_report = self.audit(fallback, evidence)
                     return fallback, fb_report, attempts
 
                 return current_text, report, attempts
@@ -223,7 +234,5 @@ class HallucinationController:
             except Exception as e:
                 # If regeneration call fails, break and fall back immediately
                 fallback = self.generate_safe_fallback(query, evidence, report)
-                fb_claims = self.extractor.extract_claims(fallback, default_location=evidence.location_name)
-                fb_results = self.validator.validate_all(fb_claims, evidence)
-                fb_report = self.evaluate_claims(fb_results)
+                _, fb_report = self.audit(fallback, evidence)
                 return fallback, fb_report, attempts

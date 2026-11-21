@@ -16,6 +16,7 @@ class WeatherVariable(str, Enum):
     PRECIPITATION_PROBABILITY = "precipitation_probability"
     PRECIPITATION_AMOUNT = "precipitation_amount"
     WIND_SPEED = "wind_speed"
+    WIND_GUST = "wind_gust"
     WIND_DIRECTION = "wind_direction"
     PRESSURE = "pressure"
     CLOUD_COVER = "cloud_cover"

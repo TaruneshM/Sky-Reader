@@ -2,7 +2,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-from fastapi.testclient import TestClient
+import httpx
 
 # Add project root to sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -183,7 +183,11 @@ def test_claim_validation():
     return True
 
 
-async def test_hallucination_controller():
+def test_hallucination_controller():
+    asyncio.run(check_hallucination_controller())
+
+
+async def check_hallucination_controller():
     print("\n" + "=" * 60)
     print("PHASE 4 TEST 4: Hallucination Controller & Regeneration Loop")
     print("=" * 60)
@@ -264,10 +268,13 @@ def test_explanation_engine():
         ]
     )
 
+    text = "Current temperature is 22.5 °C. You do not need an umbrella right now."
+    _, report = HallucinationController().audit(text, evidence)
     proof = engine.generate_proof(
         query="Do I need an umbrella in Dehradun?",
-        response_text="Current temperature is 22.5 °C. You do not need an umbrella today.",
+        response_text=text,
         evidence=evidence,
+        report=report,
     )
 
     assert proof.query == "Do I need an umbrella in Dehradun?"
@@ -292,9 +299,11 @@ def test_fastapi_evidence_endpoints():
     print("\n" + "=" * 60)
     print("PHASE 4 TEST 6: FastAPI Evidence & Validation Endpoints")
     print("=" * 60)
-    from unittest.mock import patch
+    from unittest.mock import AsyncMock, patch
 
-    client = TestClient(app)
+    async def request(method, path, **kwargs):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            return await client.request(method, path, **kwargs)
 
     mock_place = {"name": "Dehradun", "latitude": 30.32, "longitude": 78.03, "country": "India", "region": "Uttarakhand"}
     mock_current = {
@@ -323,12 +332,15 @@ def test_fastapi_evidence_endpoints():
     }
 
     # Patch weather service for offline/sandboxed verification
-    with patch("backend.main.geocode_location", return_value=mock_place), \
-         patch("backend.main.get_current_weather", return_value=mock_current), \
-         patch("backend.main.get_hourly_forecast", return_value=mock_hourly):
+    endpoint = next(route.endpoint for route in app.routes if route.path == "/api/evidence/summary")
+    with patch.dict(endpoint.__globals__, {
+        "geocode_location": AsyncMock(return_value=mock_place),
+        "get_current_weather": AsyncMock(return_value=mock_current),
+        "get_hourly_forecast": AsyncMock(return_value=mock_hourly),
+    }):
 
         # 1. Test /api/evidence/summary
-        res_summary = client.get("/api/evidence/summary?location=Dehradun")
+        res_summary = asyncio.run(request("GET", "/api/evidence/summary?location=Dehradun"))
         assert res_summary.status_code == 200, f"Expected 200, got {res_summary.status_code}"
         data_summary = res_summary.json()
         assert "evidence_summary" in data_summary
@@ -341,7 +353,7 @@ def test_fastapi_evidence_endpoints():
             "location": "Dehradun",
             "text": "The temperature is 22.0 °C and humidity is 60%.",
         }
-        res_val = client.post("/api/evidence/validate", json=validate_payload)
+        res_val = asyncio.run(request("POST", "/api/evidence/validate", json=validate_payload))
         assert res_val.status_code == 200, f"Expected 200, got {res_val.status_code}"
         data_val = res_val.json()
         assert "claims" in data_val
@@ -355,65 +367,32 @@ def test_fastapi_evidence_endpoints():
     return True
 
 
-async def test_agent_phase4_end_to_end():
+def test_agent_phase4_end_to_end():
+    asyncio.run(check_agent_phase4_end_to_end())
+
+
+async def check_agent_phase4_end_to_end():
     print("\n" + "=" * 60)
     print("PHASE 4 TEST 7: End-to-End Agent with Evidence, Validation & Explanation")
     print("=" * 60)
     query = "What is the current temperature in Dehradun?"
 
-    try:
-        result = await run_agent(query)
-    except Exception as net_err:
-        print(f"  (Live network unavailable in environment: {net_err}. Testing end-to-end pipeline with mock tools)")
-        from unittest.mock import patch, AsyncMock
+    from unittest.mock import AsyncMock, patch
+    from types import SimpleNamespace
 
-        mock_place = {"name": "Dehradun", "latitude": 30.32, "longitude": 78.03, "country": "India", "region": "Uttarakhand"}
-        mock_current = {
-            "current": {
-                "time": "2026-11-09T16:00",
-                "temperature_2m": 22.5,
-                "apparent_temperature": 24.0,
-                "relative_humidity_2m": 65.0,
-                "wind_speed_10m": 12.0,
-                "weather_code": 0,
-            }
-        }
-
-        # Mock Groq tool call loop
-        mock_tool_call_1 = AsyncMock()
-        mock_tool_call_1.id = "call_1"
-        mock_tool_call_1.function.name = "geocode_location"
-        mock_tool_call_1.function.arguments = '{"location": "Dehradun"}'
-
-        mock_tool_call_2 = AsyncMock()
-        mock_tool_call_2.id = "call_2"
-        mock_tool_call_2.function.name = "get_current_weather"
-        mock_tool_call_2.function.arguments = '{"latitude": 30.32, "longitude": 78.03}'
-
-        msg_tool_1 = AsyncMock()
-        msg_tool_1.content = None
-        msg_tool_1.tool_calls = [mock_tool_call_1, mock_tool_call_2]
-
-        msg_final = AsyncMock()
-        msg_final.content = "The current temperature in Dehradun is 22.5 °C with 65% humidity."
-        msg_final.tool_calls = None
-
-        mock_choice_1 = AsyncMock()
-        mock_choice_1.message = msg_tool_1
-        mock_resp_1 = AsyncMock()
-        mock_resp_1.choices = [mock_choice_1]
-
-        mock_choice_2 = AsyncMock()
-        mock_choice_2.message = msg_final
-        mock_resp_2 = AsyncMock()
-        mock_resp_2.choices = [mock_choice_2]
-
-        with patch("backend.agent.agent.execute_tool", side_effect=[mock_place, mock_current]), \
-             patch("backend.agent.agent.get_groq_client") as mock_client_factory:
-            mock_client = AsyncMock()
-            mock_client.chat.completions.create = AsyncMock(side_effect=[mock_resp_1, mock_resp_2])
-            mock_client_factory.return_value = mock_client
-            result = await run_agent(query)
+    current = {"current": {"time": "2026-11-09T16:00", "temperature_2m": 22.5}}
+    place = {"name": "Dehradun", "latitude": 30.32, "longitude": 78.03}
+    completion = SimpleNamespace(usage=None, choices=[
+        SimpleNamespace(message=SimpleNamespace(content="The current temperature in Dehradun is 22.5 °C."))
+    ])
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(
+        create=AsyncMock(return_value=completion)
+    )))
+    with patch.dict(run_agent.__globals__, {
+        "geocode_location": AsyncMock(return_value=place),
+        "get_current_weather": AsyncMock(return_value=current),
+    }):
+        result = await run_agent(query, client=client)
 
     print(f"Query: {query}")
     print(f"Response:\n{result['response']}\n")
@@ -472,7 +451,7 @@ async def run_all_phase4_tests():
         results["Claim Validation"] = False
 
     try:
-        results["Hallucination Controller"] = await test_hallucination_controller()
+        results["Hallucination Controller"] = await check_hallucination_controller()
     except Exception as e:
         print(f"TEST 4 FAILED: {e}")
         results["Hallucination Controller"] = False
@@ -490,7 +469,7 @@ async def run_all_phase4_tests():
         results["FastAPI Endpoints"] = False
 
     try:
-        results["Agent End-to-End"] = await test_agent_phase4_end_to_end()
+        results["Agent End-to-End"] = await check_agent_phase4_end_to_end()
     except Exception as e:
         print(f"TEST 7 FAILED: {e}")
         results["Agent End-to-End"] = False

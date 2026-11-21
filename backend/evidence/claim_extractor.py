@@ -117,7 +117,8 @@ class ClaimExtractor:
             for m in rev_prob_matches:
                 val = float(m.group(1))
                 # avoid duplicate if already matched by prob_matches on same line with same value
-                if not any(c.variable == WeatherVariable.PRECIPITATION_PROBABILITY and c.claimed_value == val for c in claims[-2:]):
+                if not any(c.variable == WeatherVariable.PRECIPITATION_PROBABILITY and c.claimed_value == val
+                           and c.statement == line_str for c in claims[-2:]):
                     claims.append(FactualClaim(
                         claim_id=f"claim_{claim_counter}",
                         statement=line_str,
@@ -175,7 +176,7 @@ class ClaimExtractor:
             # 5. Wind Speed Claims
             # Matches: wind speed of 12 km/h, winds at 25 km/h, 0.2 km/h from north
             wind_matches = re.finditer(
-                r"(?:wind\s*(?:speed)?|winds?|breeze)?\s*"
+                r"(?:wind\s*(?:speed|gusts?)?|winds?|breeze)?\s*"
                 r"(?:is|at|of|around|near|reaches|reaching)?\s*"
                 r"(\d+(?:\.\d+)?)\s*(?:km\s*/\s*h|km\s*h[-⁻]1|kmh|mph|m\s*/\s*s)",
                 line_str,
@@ -188,7 +189,7 @@ class ClaimExtractor:
                     claims.append(FactualClaim(
                         claim_id=f"claim_{claim_counter}",
                         statement=line_str,
-                        variable=WeatherVariable.WIND_SPEED,
+                        variable=WeatherVariable.WIND_GUST if "gust" in m.group(0).lower() else WeatherVariable.WIND_SPEED,
                         claimed_value=val,
                         unit="km/h",
                         time_period=time_period,
@@ -313,6 +314,17 @@ class ClaimExtractor:
                 ))
                 claim_counter += 1
 
+            risk = re.search(r"\bweather risk\b[^.!?]*?\b(?:is|level)\s+(low|moderate|high|severe)\b",
+                             line_str, re.I)
+            if risk:
+                claims.append(FactualClaim(
+                    claim_id=f"claim_{claim_counter}", statement=line_str,
+                    variable=WeatherVariable.TRAVEL_SUITABILITY, claimed_value=risk[1].upper(),
+                    unit="risk_level", time_period=time_period, location=location,
+                    claim_type=ClaimType.CONDITION,
+                ))
+                claim_counter += 1
+
         return claims
 
     def _detect_time_period(self, text: str) -> str:
@@ -325,8 +337,10 @@ class ClaimExtractor:
             return iso_match.group(0)
 
         # Hour references e.g. 16:00, 5 PM
-        hour_match = re.search(r"\b(?:at\s+)?(\d{1,2}(?::\d{2})?\s*(?:am|pm)?|\d{2}:\d{2})\b", text, re.IGNORECASE)
+        hour_match = re.search(r"\b(\d{1,2}:\d{2}|\d{1,2}(?::\d{2})?\s*(?:am|pm))\b", text, re.IGNORECASE)
 
+        if "for current" in text_lower:
+            return "current"
         if "tomorrow" in text_lower:
             return "tomorrow"
         if "today" in text_lower:

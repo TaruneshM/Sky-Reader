@@ -1,3 +1,4 @@
+import re
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -37,6 +38,7 @@ class ClaimValidator:
         WeatherVariable.HUMIDITY: 3.0,              # ±3% relative humidity
         WeatherVariable.PRECIPITATION_PROBABILITY: 5.0, # ±5% probability
         WeatherVariable.PRECIPITATION_AMOUNT: 0.5,  # ±0.5 mm precipitation accumulation
+        WeatherVariable.WIND_GUST: 2.5,
         WeatherVariable.WIND_SPEED: 2.5,            # ±2.5 km/h wind speed
         WeatherVariable.PRESSURE: 2.0,              # ±2.0 hPa surface pressure
         WeatherVariable.CLOUD_COVER: 10.0,          # ±10% cloud cover
@@ -50,25 +52,45 @@ class ClaimValidator:
         # Find candidate evidence items matching the variable
         candidate_items = evidence.find_by_variable(claim.variable)
 
-        if not candidate_items:
-            # Check if this is an apparent temperature claim that can fall back to regular temperature or vice-versa
-            if claim.variable == WeatherVariable.APPARENT_TEMPERATURE:
-                candidate_items = evidence.find_by_variable(WeatherVariable.TEMPERATURE)
-
-        if not candidate_items:
+        locations = {item.location for item in evidence.items if item.location}
+        mentioned = {
+            location for location in locations
+            if re.search(r"(?<!\w)" + re.escape(location) + r"(?!\w)", claim.statement, re.I)
+        }
+        explicit = re.search(r"\b(?:in|near)\s+([^,;.!?]+)", claim.statement, re.I)
+        if len(mentioned) == 1:
+            location = next(iter(mentioned))
+            candidate_items = [item for item in candidate_items if item.location == location]
+        elif mentioned or (locations and not evidence.location_name) or (
+            claim.location and locations and claim.location not in locations
+        ) or (explicit and locations and not re.match(
+            r"(?:the |a )?(?:morning|afternoon|evening|night|the forecast|this period)\b",
+            explicit[1], re.I,
+        )):
+            candidate_items = []
+        if claim.unit == "risk_level":
+            candidate_items = [item for item in candidate_items if item.unit == "risk_level"]
+        aligned_items = self._align_by_time(claim, candidate_items)
+        if not aligned_items:
             return ClaimValidationResult(
                 claim=claim,
                 status=ValidationStatus.INSUFFICIENT_EVIDENCE,
                 confidence_score=0.0,
-                explanation=f"No meteorological evidence found for variable '{claim.variable.value}'.",
+                explanation=f"No matching {claim.variable.value} evidence for the claim's location and period.",
             )
 
-        # Filter candidate items by time alignment
-        aligned_items = self._align_by_time(claim, candidate_items)
-
-        if not aligned_items:
-            # If no strict time alignment, use all candidate items for broad bounds checking
-            aligned_items = candidate_items
+        if claim.variable == WeatherVariable.PRECIPITATION_PROBABILITY and re.search(
+            r"\b(?:peak (?:rain|precipitation|chance)|(?:rain|precipitation) probability peaks?|"
+            r"(?:as high as|up to)\s+\d+(?:\.\d+)?\s*%)", claim.statement, re.I
+        ):
+            forecast_items = [item for item in aligned_items if item.source_type.value == "forecast"]
+            expected = {item.metadata.get("window_hours") for item in forecast_items}
+            if len(expected) != 1 or expected != {len(forecast_items)}:
+                return ClaimValidationResult(
+                    claim=claim, status=ValidationStatus.INSUFFICIENT_EVIDENCE,
+                    explanation="A peak requires complete evidence for the requested window.",
+                )
+            aligned_items = [max(forecast_items, key=lambda item: item.value)]
 
         # Dispatch to specific validator based on claim type
         if claim.claim_type == ClaimType.NUMERICAL_VALUE:
@@ -86,7 +108,7 @@ class ClaimValidator:
 
     def _align_by_time(self, claim: FactualClaim, items: List[EvidenceItem]) -> List[EvidenceItem]:
         """Filters candidate evidence items that match the claim's time period."""
-        if not claim.time_period:
+        if not claim.time_period or claim.time_period == "forecast_period":
             return items
 
         claim_time = claim.time_period.lower()
@@ -95,16 +117,26 @@ class ClaimValidator:
         for it in items:
             it_time = it.time_period.lower()
 
+            bound = it.metadata.get("requested_period", "").lower()
+            if bound and (claim_time == bound or bound.startswith(claim_time + "_")
+                          or bound.startswith(claim_time + "@")
+                          or (claim_time in {"night", "evening"} and bound == "tonight")
+                          or bound.endswith("_" + claim_time)):
+                aligned.append(it)
+                continue
+
             # Exact match or substring match (e.g. 'tomorrow' or '2026-11-09T16:00')
             if claim_time in it_time or it_time in claim_time:
                 aligned.append(it)
                 continue
 
             # Day matching heuristics
-            if "tomorrow" in claim_time and ("day2" in it_time or "day_analyzed" in it_time or "tomorrow" in it_time):
+            if "tomorrow" in claim_time and ("day2" in it_time or "tomorrow" in it_time):
                 aligned.append(it)
-            elif "current" in claim_time or "today" in claim_time or "now" in claim_time:
-                if "current" in it_time or "obs" in it.id or "day1" in it_time:
+            elif claim_time == "current" and it.source_type.value == "observed":
+                aligned.append(it)
+            elif claim_time == "today":
+                if "day1" in it_time:
                     aligned.append(it)
 
         return aligned
@@ -280,6 +312,13 @@ class ClaimValidator:
                     evidence_values=[it.value],
                     explanation=f"Claim '{claim.claimed_value}' is consistent with evidence item '{it.id}' ({it.value}).",
                 )
+
+        if claim.unit == "risk_level":
+            return ClaimValidationResult(
+                claim=claim, status=ValidationStatus.CONTRADICTED,
+                explanation="The stated risk level differs from the deterministic assessment.",
+                evidence_values=[item.value for item in items],
+            )
 
         return ClaimValidationResult(
             claim=claim,

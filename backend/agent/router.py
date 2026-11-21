@@ -1,5 +1,7 @@
 import re
-from typing import Any, Dict, List, Optional, Tuple
+import unicodedata
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 
 INTENT_PATTERNS = [
@@ -26,16 +28,13 @@ INTENT_PATTERNS = [
         r"\bcan i go for a walk\b",
     ]),
     ("wind_humidity", [
-        r"\b(humidity and wind|wind and humidity|humidity|wind speed|windy)\b",
+        r"\b(humidity|wind speed|windy|wind gusts?)\b",
     ]),
     ("tomorrow_forecast", [
         r"\bwhat about tomorrow\b",
         r"\bhow about tomorrow\b",
         r"\btomorrow('s)? weather\b",
         r"\bforecast for tomorrow\b",
-    ]),
-    ("weather_risks", [
-        r"\b(storm|severe|warning|danger|hazard|safe to travel|safe to drive)\b",
     ]),
     ("current_weather", [
         r"\bhow('s| is) the weather\b",
@@ -52,71 +51,160 @@ KNOWN_INDIAN_AND_GLOBAL_CITIES = [
     "tanakpur", "dehradun", "delhi", "new delhi", "mumbai", "bangalore", "bengaluru",
     "kolkata", "chennai", "hyderabad", "pune", "jaipur", "lucknow", "chandigarh",
     "shimla", "manali", "nainital", "rishikesh", "haridwar", "haldwani", "london",
-    "paris", "tokyo", "new york", "san francisco", "berlin", "dubai", "singapore"
+    "paris", "tokyo", "são paulo", "new york", "san francisco", "berlin", "dubai", "singapore"
 ]
 
 
+@dataclass(frozen=True)
+class WeatherRequest:
+    intent: Optional[str]
+    period: str
+    location: Optional[str]
+    safety: bool
+    activity: Optional[str]
+
+
 def detect_weather_intent(query: str) -> Optional[str]:
-    """
-    Detects if a query matches a standard simple weather intent.
-    Returns the intent name or None if the query requires complex/agentic reasoning.
-    """
-    clean_q = query.strip().lower()
-
-    # If comparison, multi-city, or explicit detailed analytical breakdown, return None
-    complex_triggers = ["compare", " vs ", " versus ", "difference between", "explain in detail", "comprehensive"]
-    if any(trig in clean_q for trig in complex_triggers):
+    clean = query.casefold()
+    if re.search(r"\b(safe|safety|severe|warnings?|danger(?:ous)?|hazards?|hazardous|storms?|thunderstorms?)\b", clean):
+        return "weather_risks"
+    if re.search(r"\b(compare|versus|vs|which city|difference between|comprehensive|in detail)\b", clean):
         return None
-
-    # Check for matching intent patterns
-    for intent_name, patterns in INTENT_PATTERNS:
-        for pat in patterns:
-            if re.search(pat, clean_q):
-                return intent_name
-
+    for intent, patterns in INTENT_PATTERNS:
+        if any(re.search(pattern, clean) for pattern in patterns):
+            return intent
+    if re.search(r"\b(weather|forecast|temperature)\b", clean):
+        return "current_weather"
     return None
 
 
-def extract_location_from_query_or_history(
-    query: str,
-    conversation_history: Optional[List[Dict[str, str]]] = None
-) -> Optional[str]:
-    """
-    Resolves the target location from the query, or falls back to the most recent
-    location identified in the conversation history.
-    """
-    clean_q = query.strip().lower()
-
-    # 1. Look for 'in <Location>', 'at <Location>', 'for <Location>'
-    loc_match = re.search(r"\b(?:in|at|for|around|near)\s+([a-zA-Z\s]{2,25})(?:\?|\.|$|,)", clean_q)
-    if loc_match:
-        candidate = loc_match.group(1).strip()
-        # Clean trailing conversational particles (please, now, today, etc.)
-        cleaned = re.sub(r"\b(please|now|today|tonight|tomorrow|outside|at the moment|right now)\b", "", candidate, flags=re.IGNORECASE).strip()
-        if cleaned and cleaned.lower() not in ("tomorrow", "today", "the morning", "the evening", "the afternoon", "detail"):
-            return cleaned.title()
-
-    # 2. Check for known cities directly mentioned
-    for city in KNOWN_INDIAN_AND_GLOBAL_CITIES:
-        if re.search(r"\b" + re.escape(city) + r"\b", clean_q):
-            return city.title()
-
-    # 3. Check conversation history backwards
-    if conversation_history:
-        for msg in reversed(conversation_history):
-            content = str(msg.get("content", ""))
-            # Check for city mentions in assistant or user messages
-            for city in KNOWN_INDIAN_AND_GLOBAL_CITIES:
-                if re.search(r"\b" + re.escape(city) + r"\b", content.lower()):
-                    return city.title()
-            # Check for pattern 'in <City>' in history
-            hist_match = re.search(r"\b(?:in|at|for)\s+([a-zA-Z\s]{2,25})(?:\?|\.|$|,)", content.lower())
-            if hist_match:
-                cand = hist_match.group(1).strip()
-                if cand not in ("tomorrow", "today", "the morning", "the evening", "the afternoon", "detail"):
-                    return cand.title()
-
+def explicit_location(query: str) -> Optional[str]:
+    query = unicodedata.normalize("NFC", query)
+    # A qualifier belongs to the candidate, including region and country after commas.
+    matches = re.finditer(r"(?=\b(?:in|at|near|around|for)\s+([^?!;]+))", query, re.I)
+    for match in matches:
+        candidate = re.split(
+            r"\s+\b(?:please|right now|now|currently|today|tonight|tomorrow|yesterday|"
+            r"this|next|at|from|between|during|with|if|on|after|before|will|would|be)\b",
+            match[1], maxsplit=1, flags=re.I,
+        )[0].strip(" .,")
+        if re.match(r"(?:today|tomorrow|tonight|now|right now|the next)\b", candidate, re.I):
+            continue
+        if re.fullmatch(r"[^\W\d_][^?!;:]*", candidate) and not re.fullmatch(
+            r"(?:the\s+)?(?:a\s+)?(?:tomorrow|today|tonight|now|right now|morning|afternoon|evening|"
+            r"night|detail|a walk|walk|hike|outside|this weekend|my area|next week)", candidate, re.I
+        ):
+            return candidate
+    direct = re.fullmatch(r"(?:weather|forecast|temperature|what about|how about)\s+([^?!;]+)",
+                          query.strip(" .?!"), re.I)
+    if direct and not re.match(r"(?:please|now|today|tonight|tomorrow|this|next|right)\b", direct[1], re.I):
+        return re.split(r"\s+\b(?:today|tonight|tomorrow|please|right now|now|at)\b",
+                        direct[1], maxsplit=1, flags=re.I)[0].strip()
+    for city in sorted(KNOWN_INDIAN_AND_GLOBAL_CITIES + ["new york city"], key=len, reverse=True):
+        match = re.search(r"\b" + re.escape(city) + r"\b(?:,\s*[^?!;]+)?", query, re.I)
+        if match:
+            return match[0].rstrip(".")
     return None
+
+
+def extract_location_from_query_or_history(query, conversation_history=None) -> Optional[str]:
+    if location := explicit_location(query):
+        return location
+    for message in reversed(conversation_history or []):
+        if message.get("role") != "user":
+            continue
+        content = message.get("content", "")
+        if re.search(r"\b(compare|versus|vs|which city|difference between)\b", content, re.I):
+            return None
+        if (detect_weather_intent(content) or re.search(
+            r"\b(weather|forecast|temperature|rain|wind|humidity|(?:what|how) about)\b", content, re.I
+        )) and (location := explicit_location(content)):
+            return location
+    return None
+
+
+def parse_weather_request(query: str, history=None) -> WeatherRequest:
+    clean = query.casefold()
+    intent = detect_weather_intent(query)
+    activity_match = re.search(r"\b(driv\w*|travel\w*|hik\w*|walk\w*|jog\w*|cycling|outside|outdoor\w*)\b", clean)
+    activity = activity_match[0] if activity_match else None
+    if not intent and re.match(r"\s*(?:what|how) about\b", clean) and explicit_location(query):
+        prior = next((detect_weather_intent(message.get("content", ""))
+                      for message in reversed(history or []) if message.get("role") == "user"), None)
+        intent = prior or "current_weather"
+    date_match = re.search(r"\b\d{4}-\d{2}-\d{2}\b", clean)
+    relative = re.search(r"\bnext (\d+) hours?\b", clean)
+    unsupported = re.search(r"\b(yesterday|day after tomorrow|weekend|next week|next month|"
+                            r"monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b", clean)
+    if date_match:
+        period = date_match[0]
+    elif relative:
+        period = f"next_{relative[1]}h"
+    elif unsupported:
+        period = unsupported[0]
+    else:
+        period = next((word for word in ("tomorrow", "tonight", "today") if re.search(rf"\b{word}\b", clean)), "current")
+    if period in {"current", "today", "tomorrow", "tonight"} or date_match:
+        base = "today" if period == "current" else period
+        span = re.search(r"\b(morning|afternoon|evening)\b", clean)
+        clock = re.search(r"\b(?:at|from|between)\s+(\d{1,2})(?::(\d{2}))?(?:\s*(am|pm))?"
+                          r"(?:\s+(?:to|and|until)\s+(\d{1,2})(?::(\d{2}))?(?:\s*(am|pm))?)?\b", clean)
+        if clock:
+            def clock_time(number, minutes, meridiem):
+                hour = int(number)
+                if meridiem and 1 <= hour <= 12:
+                    hour = hour % 12 + (12 if meridiem == "pm" else 0)
+                return f"{hour:02d}:{int(minutes or 0):02d}"
+
+            start = clock_time(clock[1], clock[2], clock[3] or clock[6])
+            end = clock_time(clock[4], clock[5], clock[6]) if clock[4] else None
+            period = f"{base}@{start}" + (f"-{end}" if end else "")
+        elif span:
+            period = f"{base}_{span[0]}"
+    return WeatherRequest(intent, period, extract_location_from_query_or_history(query, history),
+                          intent == "weather_risks", activity)
+
+
+def describe_period(period):
+    if match := re.fullmatch(r"next_(\d+)h", period):
+        hours = int(match[1])
+        return f"the next {hours} hour{'s' if hours != 1 else ''}"
+    return period.replace("_", " ").replace("@", " at ")
+
+
+def weather_facts(intent, current_data=None, hourly_slice=None, risk_data=None):
+    current = (current_data or {}).get("current", {})
+    series = hourly_slice or {}
+    facts = {}
+    fields = {
+        "temperature_2m": ("temperatures", "temperature"),
+        "apparent_temperature": ("apparent_temperatures", "feels like"),
+        "relative_humidity_2m": ("humidities", "humidity"),
+        "wind_speed_10m": ("wind_speeds", "wind speed"),
+        "wind_gusts_10m": ("gusts", "wind gusts"),
+        "precipitation_probability": ("rain_probabilities", "rain probability"),
+        "precipitation": ("rain_amounts", "rainfall"),
+    }
+    selected = {
+        "temperature": ("temperature_2m", "apparent_temperature"),
+        "coat_clothing": ("temperature_2m", "apparent_temperature"),
+        "umbrella": ("precipitation_probability", "precipitation"),
+        "rain_check": ("precipitation_probability", "precipitation"),
+        "morning_walk": ("temperature_2m", "wind_speed_10m", "wind_gusts_10m", "precipitation_probability"),
+        "wind_humidity": ("wind_speed_10m", "wind_gusts_10m", "relative_humidity_2m"),
+        "tomorrow_forecast": ("temperature_2m", "precipitation_probability", "wind_speed_10m"),
+    }.get(intent, tuple(fields))
+    for field in selected:
+        key, label = fields[field]
+        if hourly_slice is not None:
+            values = series.get(key, [])
+            if values and all(isinstance(value, (int, float)) for value in values):
+                facts[label] = (min(values), max(values))
+        elif isinstance(current.get(field), (int, float)):
+            facts[label] = (current[field], current[field])
+    if risk_data:
+        facts["risk assessment"] = risk_data
+    return facts
 
 
 def synthesize_deterministic_weather_buddy_response(
@@ -126,63 +214,54 @@ def synthesize_deterministic_weather_buddy_response(
     hourly_slice: Optional[Dict[str, Any]] = None,
     risk_data: Optional[Dict[str, Any]] = None,
     recommendations_data: Optional[Dict[str, Any]] = None,
+    period: Optional[str] = None,
+    activity: Optional[str] = None,
 ) -> str:
-    """
-    Produces a warm, conversational, 100% evidence-grounded Weather Buddy response
-    without requiring an additional LLM round trip.
-    """
-    curr = (current_data or {}).get("current", {})
-    temp = curr.get("temperature_2m", 20.0)
-    feels = curr.get("apparent_temperature", temp)
-    humidity = curr.get("relative_humidity_2m", 50.0)
-    wind = curr.get("wind_speed_10m", 5.0)
+    scope = f"in {location_name}" + (f" for {period}" if period else "")
+    if intent == "weather_risks":
+        level = (risk_data or {}).get("overall_risk_level")
+        if not level:
+            return f"I don’t have enough forecast evidence to assess weather hazards {scope}."
+        risks = risk_data.get("detected_risks", [])
+        hazards = "; ".join(risk["condition"] for risk in risks if risk.get("condition"))
+        advice = " ".join(risk_data.get("safety_recommendations", []))
+        limitation = " Forecast data is incomplete." if risk_data.get("data_limitations") else ""
+        action = f" for {activity}" if activity else ""
+        return (f"The modeled weather risk {scope} is {level}."
+                + (f" Detected hazards: {hazards}." if hazards else "")
+                + (f" {advice}" if advice else "")
+                + f"{limitation} This assessment cannot establish safety{action}. Check local alerts and conditions.")
 
-    # Precipitation probability from hourly slice if present
-    rain_probs = (hourly_slice or {}).get("rain_probabilities", [0.0])
-    max_rain_prob = max(rain_probs) if rain_probs else 0.0
-
-    if intent == "coat_clothing":
-        if temp < 15.0:
-            return f"It's chilly in {location_name} at around {temp} °C (feels like {feels} °C) 🧣. A warm coat or jacket is definitely recommended before heading out!"
-        elif temp <= 24.0:
-            return f"No heavy coat needed in {location_name}—it's comfortably mild at about {temp} °C (feels like {feels} °C) 🌤️. A light jacket or sweater will keep you comfortable if you'll be out late."
+    facts = weather_facts(intent, current_data, hourly_slice)
+    if not facts:
+        return f"I don’t have enough weather data to answer that {scope}."
+    units = {"temperature": " °C", "feels like": " °C", "humidity": "%",
+             "wind speed": " km/h", "wind gusts": " km/h", "rain probability": "%", "rainfall": " mm"}
+    statements = []
+    for label, (low, high) in facts.items():
+        unit = units[label]
+        if label in {"rain probability", "rainfall", "wind gusts"} and hourly_slice is not None:
+            statements.append(f"peak {label} {high:g}{unit}")
+        elif low != high:
+            statements.append(f"{label} {low:g}{unit} to {high:g}{unit}")
         else:
-            return f"No coat needed at all—it's warm in {location_name} at {temp} °C ☀️. Light, breathable clothing is all you need!"
-
-    elif intent == "umbrella":
-        if max_rain_prob >= 30.0:
-            return f"Yes, you should carry an umbrella in {location_name} 🌧️. The forecast indicates up to a {round(max_rain_prob)}% chance of rain."
-        else:
-            return f"No umbrella needed in {location_name}! Rain chance is practically zero (peak {round(max_rain_prob)}%) with dry conditions ☀️. Enjoy your day!"
-
-    elif intent == "rain_check":
-        if max_rain_prob >= 30.0:
-            return f"Rain is likely in {location_name} with up to a {round(max_rain_prob)}% probability of showers 🌧️. Keep an umbrella handy!"
-        else:
-            return f"There's virtually no chance of rain in {location_name} ({round(max_rain_prob)}% probability) ☀️. Clear and dry skies ahead!"
-
-    elif intent == "morning_walk":
-        if max_rain_prob < 20.0 and 15.0 <= temp <= 28.0:
-            return f"Yes, it's a great time for a morning walk in {location_name}! 🌤️ Temperatures are near {temp} °C with 0% rain risk and calm breezes. Enjoy your stroll!"
-        else:
-            return f"You can go for a walk in {location_name}, but keep in mind temperatures are around {temp} °C with {round(max_rain_prob)}% rain probability 🌤️. Dress comfortably!"
-
-    elif intent == "wind_humidity":
-        return f"In {location_name} right now, humidity is at {humidity}% with a gentle breeze of {wind} km/h 🌬️. Conditions feel pleasant!"
-
-    elif intent == "tomorrow_forecast":
-        temps = (hourly_slice or {}).get("temperatures", [15.0, 24.0])
-        min_t = min(temps) if temps else 14.0
-        max_t = max(temps) if temps else 24.0
-        return f"Tomorrow in {location_name} will be pleasant with a high near {max_t} °C and a low of {min_t} °C 🌤️. Rain chance remains very low ({round(max_rain_prob)}%)."
-
-    elif intent == "weather_risks":
-        overall = (risk_data or {}).get("overall_risk_level", "LOW")
-        hazards = (risk_data or {}).get("hazards", [])
-        if overall in ("HIGH", "SEVERE"):
-            return f"⚠️ Safety Advisory: {overall} weather risks detected for {location_name}. Conditions may include adverse weather. Exercise caution and avoid unnecessary travel."
-        else:
-            return f"Good news! Weather risks are currently LOW in {location_name} 🌤️. No severe weather hazards or travel disruptions are expected."
-
-    # Default: current weather
-    return f"It's mild and pleasant in {location_name} right now, around {temp} °C (feels like {feels} °C) with {humidity}% humidity and a {wind} km/h breeze 🌤️. No rain is currently expected."
+            statements.append(f"{label} {high:g}{unit}")
+    summary = f"Weather {scope}: " + ", ".join(statements) + "."
+    rain = facts.get("rain probability")
+    if intent in {"rain_check", "umbrella"} and rain is None:
+        summary += " Rain probability is unavailable for that window."
+    rainfall = facts.get("rainfall")
+    if intent == "umbrella" and ((rain and rain[1] >= 30) or (rainfall and rainfall[1] > 0)):
+        return f"Consider carrying an umbrella {scope}. {summary}"
+    if intent == "umbrella" and rain and rain[1] == 0 and (not rainfall or rainfall[1] == 0):
+        return f"No umbrella needed in {location_name} based on the available rain forecast. {summary}"
+    if intent == "rain_check" and rain and rain[1] == 0 and (not rainfall or rainfall[1] == 0):
+        return f"The available forecast shows virtually no chance of rain {scope}. {summary}"
+    temperature = facts.get("feels like") or facts.get("temperature")
+    if intent == "coat_clothing" and temperature:
+        if temperature[0] < 15:
+            return f"Consider a jacket {scope}. {summary}"
+        return f"A heavy jacket is unlikely to be needed based on the temperatures. {summary}"
+    if intent == "morning_walk":
+        return f"For your walk, consider the wind and rain forecast before heading out. {summary}"
+    return summary
