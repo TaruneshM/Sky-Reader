@@ -1197,3 +1197,295 @@ body {
     display: none;
   }
 }
+
+/* =====================================================================
+   Phase 6: Weather Risk Assessment & Safety Cards
+   ===================================================================== */
+.risk-assessment-card {
+  margin-top: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.risk-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.risk-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.risk-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.risk-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.risk-level-pill {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.risk-level-pill.risk-low {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.risk-level-pill.risk-moderate {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.risk-level-pill.risk-high {
+  background: #ffedd5;
+  color: #9a3412;
+  border: 1px solid #f97316;
+}
+
+.risk-level-pill.risk-severe {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+  animation: pulse-danger 2s infinite ease-in-out;
+}
+
+@keyframes pulse-danger {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+  }
+}
+
+.risk-forecast-period {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.risk-disclaimer-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.disclaimer-badge {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: #e2e8f0;
+  color: #334155;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.disclaimer-text {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.risk-summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.45;
+}
+
+.detected-risks-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.hazard-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hazard-item-row {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.hazard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hazard-condition {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.hazard-severity-tag {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.hazard-severity-tag.risk-low {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.hazard-severity-tag.risk-moderate {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.hazard-severity-tag.risk-high {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.hazard-severity-tag.risk-severe {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.hazard-reason {
+  font-size: 12px;
+  color: #334155;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.hazard-measurements {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.measurement-tag {
+  font-size: 11px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #475569;
+}
+
+.risk-recommendations-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.precautions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.precaution-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.precaution-bullet {
+  color: #10b981;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.risk-footer-section {
+  padding-top: 6px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.toggle-uncertainty-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 0;
+  transition: color 0.15s ease;
+}
+
+.toggle-uncertainty-btn:hover {
+  color: var(--brand-primary);
+}
+
+.uncertainty-details-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.uncertainty-block ul,
+.limitations-block ul {
+  margin: 4px 0 0 16px;
+  padding: 0;
+}
+
+.uncertainty-block li,
+.limitations-block li {
+  margin-bottom: 3px;
+  line-height: 1.4;
+}
+

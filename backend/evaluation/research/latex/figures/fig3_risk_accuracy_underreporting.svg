@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 440" width="100%" height="100%">
+  <rect width="880" height="440" fill="#0f172a" rx="8"/>
+  <text x="440" y="34" fill="#f8fafc" font-size="18" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Figure 3: Weather Risk Classification Accuracy &amp; Dangerous Underreporting</text>
+  <text x="440" y="54" fill="#94a3b8" font-size="12" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">11 Hazard-Applicable Benchmark Cases Evaluated Under Audited Ground Truth</text>
+
+  <!-- Legend -->
+  <rect x="220" y="72" width="14" height="14" fill="#ef4444" rx="3"/>
+  <text x="240" y="84" fill="#cbd5e1" font-size="12" font-family="system-ui, -apple-system, sans-serif">Baseline LLM (Zero Tools)</text>
+  <rect x="410" y="72" width="14" height="14" fill="#f59e0b" rx="3"/>
+  <text x="430" y="84" fill="#cbd5e1" font-size="12" font-family="system-ui, -apple-system, sans-serif">Tool Agent (No Verification)</text>
+  <rect x="610" y="72" width="14" height="14" fill="#10b981" rx="3"/>
+  <text x="630" y="84" fill="#cbd5e1" font-size="12" font-family="system-ui, -apple-system, sans-serif">Complete Sky Reader</text>
+
+  <!-- Panel 1: Risk Classification Accuracy (Left) -->
+  <rect x="60" y="105" width="450" height="305" fill="#1e293b" rx="6" stroke="#334155" stroke-width="1"/>
+  <text x="285" y="132" fill="#f8fafc" font-size="14" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Risk Classification Accuracy (%)</text>
+  <text x="285" y="148" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Correct hazard level identification out of 11 cases</text>
+
+  <!-- Grid lines left panel -->
+  <line x1="100" y1="360" x2="470" y2="360" stroke="#475569" stroke-width="1"/>
+  <line x1="100" y1="312" x2="470" y2="312" stroke="#334155" stroke-dasharray="3" stroke-width="1"/>
+  <line x1="100" y1="264" x2="470" y2="264" stroke="#334155" stroke-dasharray="3" stroke-width="1"/>
+  <line x1="100" y1="216" x2="470" y2="216" stroke="#334155" stroke-dasharray="3" stroke-width="1"/>
+  <line x1="100" y1="168" x2="470" y2="168" stroke="#334155" stroke-dasharray="3" stroke-width="1"/>
+
+  <text x="92" y="364" fill="#94a3b8" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">0%</text>
+  <text x="92" y="316" fill="#94a3b8" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">25%</text>
+  <text x="92" y="268" fill="#94a3b8" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">50%</text>
+  <text x="92" y="220" fill="#94a3b8" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">75%</text>
+  <text x="92" y="172" fill="#94a3b8" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">100%</text>
+
+  <!-- Left bars: Baseline 0%, Tool 27.3%, Sky Reader 81.8% -->
+  <!-- h = (val / 100) * 192 -->
+  <rect x="145" y="358" width="60" height="2" fill="#ef4444" rx="2"/>
+  <text x="175" y="350" fill="#ef4444" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">0.0%</text>
+  <text x="175" y="380" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Baseline</text>
+  <text x="175" y="394" fill="#64748b" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">(0/11)</text>
+
+  <!-- Tool: 27.3% -> h = 52.4, y = 307.6 -->
+  <rect x="255" y="308" width="60" height="52" fill="#f59e0b" rx="4"/>
+  <text x="285" y="300" fill="#f59e0b" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">27.3%</text>
+  <text x="285" y="380" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Tool Agent</text>
+  <text x="285" y="394" fill="#64748b" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">(3/11)</text>
+
+  <!-- Sky Reader: 81.8% -> h = 157.1, y = 202.9 -->
+  <rect x="365" y="203" width="60" height="157" fill="#10b981" rx="4"/>
+  <text x="395" y="195" fill="#10b981" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">81.8%</text>
+  <text x="395" y="380" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Sky Reader</text>
+  <text x="395" y="394" fill="#64748b" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">(9/11)</text>
+
+  <!-- McNemar significance bracket -->
+  <path d="M 285 180 L 285 168 L 395 168 L 395 180" fill="none" stroke="#38bdf8" stroke-width="1.5"/>
+  <text x="340" y="162" fill="#38bdf8" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">McNemar's Test: p = 0.03125 *</text>
+
+  <!-- Panel 2: Underreporting & False Negatives (Right) -->
+  <rect x="530" y="105" width="290" height="305" fill="#1e293b" rx="6" stroke="#334155" stroke-width="1"/>
+  <text x="675" y="132" fill="#f8fafc" font-size="14" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Safety Failures (Underreports)</text>
+  <text x="675" y="148" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Dangerous underestimation of severe hazards</text>
+
+  <!-- Status Cards inside Right Panel -->
+  <rect x="550" y="165" width="250" height="65" fill="#0f172a" rx="4" stroke="#ef4444" stroke-width="1"/>
+  <text x="565" y="188" fill="#ef4444" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold">Baseline LLM</text>
+  <text x="565" y="206" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif">100% Hazard Omission Rate</text>
+  <text x="565" y="220" fill="#94a3b8" font-size="10" font-family="system-ui, -apple-system, sans-serif">0/11 risk ratings produced (silent)</text>
+
+  <rect x="550" y="240" width="250" height="75" fill="#0f172a" rx="4" stroke="#f59e0b" stroke-width="1"/>
+  <text x="565" y="262" fill="#f59e0b" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold">Tool Agent: 1 Critical Failure</text>
+  <text x="565" y="280" fill="#fca5a5" font-size="11" font-family="system-ui, -apple-system, sans-serif">TC-RSK-001 Severe Storm Underreport</text>
+  <text x="565" y="296" fill="#94a3b8" font-size="10" font-family="system-ui, -apple-system, sans-serif">Classified 75 km/h + 20mm rain as 'Low'</text>
+  <text x="565" y="308" fill="#f87171" font-size="9" font-family="system-ui, -apple-system, sans-serif">Ground truth: High / Warning</text>
+
+  <rect x="550" y="325" width="250" height="65" fill="#0f172a" rx="4" stroke="#10b981" stroke-width="1"/>
+  <text x="565" y="348" fill="#10b981" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold">Complete Sky Reader: 0 Failures</text>
+  <text x="565" y="366" fill="#86efac" font-size="11" font-family="system-ui, -apple-system, sans-serif">0 False Negative Underreports</text>
+  <text x="565" y="380" fill="#94a3b8" font-size="10" font-family="system-ui, -apple-system, sans-serif">Deterministic thresholds guarantee safety</text>
+</svg>

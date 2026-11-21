@@ -139,10 +139,45 @@ recommendations_tool = {
     }
 }
 
+risk_tool = {
+    "type": "function",
+    "function": {
+        "name": "assess_weather_risks",
+        "description": (
+            "Performs deterministic weather safety and risk assessment for a location. "
+            "Evaluates hazardous weather conditions including heavy rainfall accumulation, "
+            "high rain probability, thunderstorms/hail, gale/strong winds, extreme heat, and extreme cold. "
+            "Returns structured risk levels (LOW, MODERATE, HIGH, SEVERE), detected hazards, "
+            "actionable safety recommendations, and uncertainty notes. "
+            "Use whenever the user asks about weather safety, dangers, risks, storms, warnings, or severe weather."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "latitude": {
+                    "type": "number",
+                    "description": "The latitude of the location."
+                },
+                "longitude": {
+                    "type": "number",
+                    "description": "The longitude of the location."
+                },
+                "day_offset": {
+                    "type": "integer",
+                    "description": "0 for today, 1 for tomorrow. Defaults to 1."
+                }
+            },
+            "required": ["latitude", "longitude"],
+            "additionalProperties": False
+        }
+    }
+}
+
 tools = [
     location_tool,
     weather_tool,
     forecast_tool,
     analysis_tool,
     recommendations_tool,
+    risk_tool,
 ]

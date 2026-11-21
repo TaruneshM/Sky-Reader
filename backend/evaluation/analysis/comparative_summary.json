@@ -1,0 +1,169 @@
+{
+  "run_id": "run_20261119_140839_abeda5",
+  "evaluated_at": "2026-11-21T07:17:58.049838+00:00",
+  "total_cases_selected": 50,
+  "total_results_evaluated": 150,
+  "system_summaries": {
+    "baseline_llm": {
+      "total_cases": 50,
+      "evaluable_cases": 50,
+      "unevaluable_cases": 0,
+      "success_rate": 1.0,
+      "failure_rate": 0.0,
+      "timeout_rate": 0.0,
+      "numerical_cases_evaluated": 43,
+      "mean_numerical_accuracy": 0.1434,
+      "total_expected_numbers": 72,
+      "correct_numbers_count": 12,
+      "incorrect_numbers_count": 25,
+      "missing_numbers_count": 35,
+      "mean_mae": 14.7959,
+      "factual_cases_evaluated": 50,
+      "mean_factual_accuracy": 0.181,
+      "total_expected_facts": 149,
+      "correct_facts_count": 34,
+      "incorrect_facts_count": 47,
+      "unaddressed_facts_count": 42,
+      "unsupported_facts_count": 26,
+      "hallucination_cases_evaluated": 33,
+      "mean_hallucination_rate": 0.4949,
+      "mean_contradiction_rate": 0.3788,
+      "mean_unsupported_rate": 0.1162,
+      "clean_case_ratio": 0.64,
+      "evidence_availability_rate": 0.0,
+      "evidence_usage_rate": 0.0,
+      "valid_proof_rate": null,
+      "mean_grounding_ratio": null,
+      "applicable_risk_cases": 11,
+      "risk_classification_accuracy": 0.0,
+      "severity_underreported_count": 0,
+      "severity_overreported_count": 0,
+      "risk_confusion_matrix": {
+        "SEVERE": {
+          "NONE": 3
+        },
+        "LOW": {
+          "NONE": 4
+        },
+        "HIGH": {
+          "NONE": 4
+        }
+      },
+      "mean_latency_ms": 2915.35,
+      "median_latency_ms": 1825.92,
+      "p95_latency_ms": 9109.64,
+      "total_retries": 0,
+      "mean_completeness_score": 0.7837,
+      "fully_complete_ratio": 0.58
+    },
+    "tool_using_agent": {
+      "total_cases": 50,
+      "evaluable_cases": 50,
+      "unevaluable_cases": 0,
+      "success_rate": 1.0,
+      "failure_rate": 0.0,
+      "timeout_rate": 0.0,
+      "numerical_cases_evaluated": 43,
+      "mean_numerical_accuracy": 0.4806,
+      "total_expected_numbers": 72,
+      "correct_numbers_count": 37,
+      "incorrect_numbers_count": 18,
+      "missing_numbers_count": 17,
+      "mean_mae": 10.2688,
+      "factual_cases_evaluated": 50,
+      "mean_factual_accuracy": 0.3943,
+      "total_expected_facts": 149,
+      "correct_facts_count": 60,
+      "incorrect_facts_count": 29,
+      "unaddressed_facts_count": 37,
+      "unsupported_facts_count": 23,
+      "hallucination_cases_evaluated": 44,
+      "mean_hallucination_rate": 0.3591,
+      "mean_contradiction_rate": 0.1773,
+      "mean_unsupported_rate": 0.1818,
+      "clean_case_ratio": 0.64,
+      "evidence_availability_rate": 0.96,
+      "evidence_usage_rate": 0.86,
+      "valid_proof_rate": null,
+      "mean_grounding_ratio": 0.8958,
+      "applicable_risk_cases": 11,
+      "risk_classification_accuracy": 0.2727,
+      "severity_underreported_count": 1,
+      "severity_overreported_count": 0,
+      "risk_confusion_matrix": {
+        "SEVERE": {
+          "NONE": 1,
+          "HIGH": 1,
+          "SEVERE": 1
+        },
+        "LOW": {
+          "NONE": 3,
+          "LOW": 1
+        },
+        "HIGH": {
+          "NONE": 3,
+          "HIGH": 1
+        }
+      },
+      "mean_latency_ms": 19376.53,
+      "median_latency_ms": 23503.77,
+      "p95_latency_ms": 37168.79,
+      "total_retries": 1,
+      "mean_completeness_score": 0.8393,
+      "fully_complete_ratio": 0.64
+    },
+    "sky_reader_full": {
+      "total_cases": 50,
+      "evaluable_cases": 50,
+      "unevaluable_cases": 0,
+      "success_rate": 1.0,
+      "failure_rate": 0.0,
+      "timeout_rate": 0.0,
+      "numerical_cases_evaluated": 43,
+      "mean_numerical_accuracy": 0.3411,
+      "total_expected_numbers": 72,
+      "correct_numbers_count": 28,
+      "incorrect_numbers_count": 18,
+      "missing_numbers_count": 26,
+      "mean_mae": 4.9801,
+      "factual_cases_evaluated": 50,
+      "mean_factual_accuracy": 0.365,
+      "total_expected_facts": 149,
+      "correct_facts_count": 55,
+      "incorrect_facts_count": 15,
+      "unaddressed_facts_count": 52,
+      "unsupported_facts_count": 27,
+      "hallucination_cases_evaluated": 37,
+      "mean_hallucination_rate": 0.0833,
+      "mean_contradiction_rate": 0.0495,
+      "mean_unsupported_rate": 0.0338,
+      "clean_case_ratio": 0.9,
+      "evidence_availability_rate": 0.98,
+      "evidence_usage_rate": 0.84,
+      "valid_proof_rate": 0.9744,
+      "mean_grounding_ratio": 0.8452,
+      "applicable_risk_cases": 11,
+      "risk_classification_accuracy": 0.8182,
+      "severity_underreported_count": 0,
+      "severity_overreported_count": 0,
+      "risk_confusion_matrix": {
+        "SEVERE": {
+          "SEVERE": 3
+        },
+        "LOW": {
+          "NONE": 2,
+          "LOW": 2
+        },
+        "HIGH": {
+          "HIGH": 4
+        }
+      },
+      "mean_latency_ms": 28200.26,
+      "median_latency_ms": 28079.76,
+      "p95_latency_ms": 59881.94,
+      "total_retries": 0,
+      "mean_completeness_score": 0.856,
+      "fully_complete_ratio": 0.76
+    }
+  }
+}

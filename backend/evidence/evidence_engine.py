@@ -536,3 +536,27 @@ class EvidenceEngine:
                     analysis_method="hazard_criteria_scoring",
                     metadata={"summary": trav.get("summary", ""), "advisories": trav.get("advisories", [])},
                 ))
+
+        # Phase 6 Weather Risk Assessment Evidence
+        risk_data = analysis.get("risk_assessment", {})
+        if not risk_data and "overall_risk_level" in analysis:
+            risk_data = analysis
+
+        if isinstance(risk_data, dict) and "overall_risk_level" in risk_data:
+            collection.add(EvidenceItem(
+                id=f"ev_derived_risk_level_{period_label}",
+                variable=WeatherVariable.TRAVEL_SUITABILITY,
+                value=str(risk_data["overall_risk_level"]),
+                unit="risk_level",
+                location=location,
+                latitude=lat,
+                longitude=lon,
+                time_period=period_label,
+                source_type=EvidenceSourceType.DERIVED,
+                source_name="Phase 6 Weather Risk Assessment",
+                analysis_method="deterministic_hazard_thresholds",
+                metadata={
+                    "summary": risk_data.get("overall_summary", ""),
+                    "detected_risks": [r.get("condition") for r in risk_data.get("detected_risks", []) if isinstance(r, dict)],
+                },
+            ))

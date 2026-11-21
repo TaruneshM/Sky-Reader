@@ -68,6 +68,7 @@ class AgentChatResponse(BaseModel):
     claims: List[dict] = Field(default_factory=list, description="Extracted factual claims from the response.")
     validation_report: Optional[dict] = Field(None, description="Deterministic audit and hallucination report.")
     explanation: Optional[dict] = Field(None, description="Explanation proof and meteorological reasoning chain.")
+    risk_assessment: Optional[dict] = Field(None, description="Deterministic weather safety and hazard assessment.")
 
 
 class ClaimValidationRequest(BaseModel):
@@ -144,6 +145,34 @@ async def weather_analysis(location: str, focus: str = "all", day_offset: int = 
     }
 
 
+@app.get("/api/weather/risks")
+@app.get("/weather/risks", include_in_schema=False)
+async def weather_risks(location: str, day_offset: int = 1):
+    """
+    Dedicated endpoint for Phase 6 deterministic weather safety, hazard detection,
+    and risk assessment.
+    """
+    place = await geocode_location(location)
+    if place is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Could not find location: {location}"
+        )
+    forecast_data = await get_hourly_forecast(place["latitude"], place["longitude"])
+    try:
+        from backend.weather.risk_engine import WeatherRiskEngine
+    except ImportError:
+        from weather.risk_engine import WeatherRiskEngine
+
+    assessment = WeatherRiskEngine().assess_risks(
+        forecast_data, day_offset=day_offset, location_name=place.get("name")
+    )
+    return {
+        "location": place,
+        "risk_assessment": assessment.dict(),
+    }
+
+
 @app.post("/api/agent/chat", response_model=AgentChatResponse)
 @app.post("/agent/chat", response_model=AgentChatResponse, include_in_schema=False)
 async def agent_chat(request: AgentChatRequest):
@@ -172,6 +201,7 @@ async def agent_chat(request: AgentChatRequest):
             claims=result.get("claims", []),
             validation_report=result.get("validation_report"),
             explanation=result.get("explanation"),
+            risk_assessment=result.get("risk_assessment"),
         )
     except ValueError as ve:
         raise HTTPException(

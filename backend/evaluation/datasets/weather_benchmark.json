@@ -1,0 +1,2036 @@
+{
+  "name": "Sky Reader Phase 7 Evaluation Benchmark Dataset",
+  "version": "1.0.0",
+  "description": "Structured evaluation dataset for benchmarking weather intelligence systems across 10 categories: current weather, hourly forecasts, comparisons, precipitation, trends, multi-step questions, evidence-based reasoning, safety/risks, missing data handling, and hallucination resistance.",
+  "total_cases": 50,
+  "test_cases": [
+    {
+      "id": "TC-CUR-001",
+      "category": "current_weather",
+      "question": "What is the current temperature in Dehradun?",
+      "location": "Dehradun",
+      "forecast_period": "current",
+      "fixture_id": "FIX_DEHRADUN_MILD",
+      "expected_numerical_values": {
+        "temperature": 21.8
+      },
+      "expected_facts_or_claims": [
+        "temperature is approximately 21.8 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "temperature is approximately 21.8 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "temperature": 1.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "temperature"
+      }
+    },
+    {
+      "id": "TC-CUR-002",
+      "category": "current_weather",
+      "question": "What is the current relative humidity and wind speed in London?",
+      "location": "London",
+      "forecast_period": "current",
+      "fixture_id": "FIX_LONDON_RAIN",
+      "expected_numerical_values": {
+        "humidity": 88.0,
+        "wind_speed": 15.2
+      },
+      "expected_facts_or_claims": [
+        "humidity is 88%",
+        "wind speed is 15.2 km/h"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "humidity is 88%",
+          "wind speed is 15.2 km/h"
+        ],
+        "allowed_numerical_tolerances": {
+          "humidity": 3.0,
+          "wind_speed": 2.5
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "humidity_wind"
+      }
+    },
+    {
+      "id": "TC-CUR-003",
+      "category": "current_weather",
+      "question": "What are the current weather conditions and apparent temperature in Tokyo?",
+      "location": "Tokyo",
+      "forecast_period": "current",
+      "fixture_id": "FIX_TOKYO_HEAT",
+      "expected_numerical_values": {
+        "temperature": 38.5,
+        "apparent_temperature": 42.0
+      },
+      "expected_facts_or_claims": [
+        "temperature is 38.5 °C",
+        "feels like 42.0 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "temperature is 38.5 °C",
+          "feels like 42.0 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "temperature": 1.0,
+          "apparent_temperature": 1.5
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "feels_like"
+      }
+    },
+    {
+      "id": "TC-CUR-004",
+      "category": "current_weather",
+      "question": "Is it currently freezing in Chicago, and what is the surface pressure?",
+      "location": "Chicago",
+      "forecast_period": "current",
+      "fixture_id": "FIX_CHICAGO_FREEZE",
+      "expected_numerical_values": {
+        "temperature": -8.5,
+        "surface_pressure": 1025.0
+      },
+      "expected_facts_or_claims": [
+        "temperature is -8.5 °C",
+        "sub-zero freezing conditions",
+        "surface pressure 1025.0 hPa"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "temperature is -8.5 °C",
+          "sub-zero freezing conditions",
+          "surface pressure 1025.0 hPa"
+        ],
+        "allowed_numerical_tolerances": {
+          "temperature": 1.0,
+          "surface_pressure": 2.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "freezing"
+      }
+    },
+    {
+      "id": "TC-CUR-005",
+      "category": "current_weather",
+      "question": "What is the current barometric pressure and cloud cover in Paris?",
+      "location": "Paris",
+      "forecast_period": "current",
+      "fixture_id": "FIX_PARIS_STORM",
+      "expected_numerical_values": {
+        "surface_pressure": 1004.5,
+        "cloud_cover": 90.0
+      },
+      "expected_facts_or_claims": [
+        "surface pressure is 1004.5 hPa",
+        "cloud cover is 90%"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "surface pressure is 1004.5 hPa",
+          "cloud cover is 90%"
+        ],
+        "allowed_numerical_tolerances": {
+          "surface_pressure": 2.0,
+          "cloud_cover": 10.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "pressure"
+      }
+    },
+    {
+      "id": "TC-HLY-001",
+      "category": "hourly_forecast",
+      "question": "What is the hourly minimum and maximum temperature forecast for tomorrow in Dehradun?",
+      "location": "Dehradun",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_DEHRADUN_MILD",
+      "expected_numerical_values": {
+        "min_temperature": 13.5,
+        "max_temperature": 24.8
+      },
+      "expected_facts_or_claims": [
+        "minimum temperature around 13.5 °C",
+        "maximum temperature around 24.8 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "minimum temperature around 13.5 °C",
+          "maximum temperature around 24.8 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "min_temperature": 1.0,
+          "max_temperature": 1.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "min_max"
+      }
+    },
+    {
+      "id": "TC-HLY-002",
+      "category": "hourly_forecast",
+      "question": "How will temperatures evolve over the next 24 hours in Sydney?",
+      "location": "Sydney",
+      "forecast_period": "next_24h",
+      "fixture_id": "FIX_SYDNEY_CLEAR",
+      "expected_numerical_values": {
+        "min_temperature": 17.5,
+        "max_temperature": 26.0
+      },
+      "expected_facts_or_claims": [
+        "minimum 17.5 °C",
+        "maximum 26.0 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "minimum 17.5 °C",
+          "maximum 26.0 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "min_temperature": 1.0,
+          "max_temperature": 1.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "hourly_range"
+      }
+    },
+    {
+      "id": "TC-HLY-003",
+      "category": "hourly_forecast",
+      "question": "At what hour is the heaviest rain expected tomorrow in London, and what is the peak intensity?",
+      "location": "London",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_LONDON_RAIN",
+      "expected_numerical_values": {
+        "max_hourly_rain": 3.5
+      },
+      "expected_facts_or_claims": [
+        "peak rain intensity of 3.5 mm/h",
+        "heaviest rainfall around 12:00 to 14:00"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "peak rain intensity of 3.5 mm/h",
+          "heaviest rainfall around 12:00 to 14:00"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_hourly_rain": 0.5
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "peak_rain_hour"
+      }
+    },
+    {
+      "id": "TC-HLY-004",
+      "category": "hourly_forecast",
+      "question": "What will the peak wind speed be during the afternoon tomorrow in Berlin?",
+      "location": "Berlin",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_BERLIN_WIND",
+      "expected_numerical_values": {
+        "max_wind_speed": 52.0
+      },
+      "expected_facts_or_claims": [
+        "peak wind speed reaches 52.0 km/h in afternoon"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "peak wind speed reaches 52.0 km/h in afternoon"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_wind_speed": 3.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "peak_wind"
+      }
+    },
+    {
+      "id": "TC-HLY-005",
+      "category": "hourly_forecast",
+      "question": "Will temperatures drop below -10°C overnight in Chicago?",
+      "location": "Chicago",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_CHICAGO_FREEZE",
+      "expected_numerical_values": {
+        "min_temperature": -15.0
+      },
+      "expected_facts_or_claims": [
+        "temperatures drop to -15.0 °C",
+        "below -10°C overnight"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "temperatures drop to -15.0 °C",
+          "below -10°C overnight"
+        ],
+        "allowed_numerical_tolerances": {
+          "min_temperature": 1.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "overnight_freeze"
+      }
+    },
+    {
+      "id": "TC-CMP-001",
+      "category": "temperature_comparison",
+      "question": "Will tomorrow be warmer or cooler than today on average in Dehradun?",
+      "location": "Dehradun",
+      "forecast_period": "day_comparison",
+      "fixture_id": "FIX_DEHRADUN_MILD",
+      "expected_numerical_values": {
+        "average_diff": -0.7
+      },
+      "expected_facts_or_claims": [
+        "tomorrow is slightly cooler by about 0.7 °C or steady"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "tomorrow is slightly cooler by about 0.7 °C or steady"
+        ],
+        "allowed_numerical_tolerances": {
+          "average_diff": 0.5
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "day_diff"
+      }
+    },
+    {
+      "id": "TC-CMP-002",
+      "category": "temperature_comparison",
+      "question": "Compare the morning and afternoon temperatures tomorrow in Phoenix.",
+      "location": "Phoenix",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_PHOENIX_TREND",
+      "expected_numerical_values": {
+        "morning_temperature": 21.0,
+        "afternoon_temperature": 36.0,
+        "delta": 15.0
+      },
+      "expected_facts_or_claims": [
+        "morning temperature is around 21.0 °C",
+        "afternoon rises to 36.0 °C",
+        "rise of approximately 15 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "morning temperature is around 21.0 °C",
+          "afternoon rises to 36.0 °C",
+          "rise of approximately 15 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "morning_temperature": 1.5,
+          "afternoon_temperature": 1.5,
+          "delta": 2.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "diurnal_delta"
+      }
+    },
+    {
+      "id": "TC-CMP-003",
+      "category": "temperature_comparison",
+      "question": "What is the diurnal temperature range (difference between high and low) in Sydney tomorrow?",
+      "location": "Sydney",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_SYDNEY_CLEAR",
+      "expected_numerical_values": {
+        "temperature_range": 8.5
+      },
+      "expected_facts_or_claims": [
+        "diurnal range of approximately 8.5 °C",
+        "low of 17.5 °C and high of 26.0 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "diurnal range of approximately 8.5 °C",
+          "low of 17.5 °C and high of 26.0 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "temperature_range": 1.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "diurnal_range"
+      }
+    },
+    {
+      "id": "TC-CMP-004",
+      "category": "temperature_comparison",
+      "question": "How does Tokyo's peak temperature compare to London's peak temperature tomorrow?",
+      "location": "Tokyo",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_TOKYO_HEAT",
+      "expected_numerical_values": {
+        "tokyo_peak": 41.5,
+        "london_peak": 14.0
+      },
+      "expected_facts_or_claims": [
+        "Tokyo reaches 41.5 °C",
+        "London reaches around 14.0 °C",
+        "Tokyo is much hotter by over 25 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "Tokyo reaches 41.5 °C",
+          "London reaches around 14.0 °C",
+          "Tokyo is much hotter by over 25 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "tokyo_peak": 1.5,
+          "london_peak": 1.5
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "cross_city"
+      }
+    },
+    {
+      "id": "TC-CMP-005",
+      "category": "temperature_comparison",
+      "question": "How much will the temperature drop between peak daytime and midnight in Reykjavik?",
+      "location": "Reykjavik",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_REYKJAVIK_COLD",
+      "expected_numerical_values": {
+        "drop": 5.0
+      },
+      "expected_facts_or_claims": [
+        "drops from high of 1.0 °C to low of -4.0 °C",
+        "net drop of 5.0 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "drops from high of 1.0 °C to low of -4.0 °C",
+          "net drop of 5.0 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "drop": 1.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "cooling_drop"
+      }
+    },
+    {
+      "id": "TC-PRC-001",
+      "category": "precipitation_and_rainfall",
+      "question": "What is the probability of precipitation tomorrow in London, and how much total rain will fall?",
+      "location": "London",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_LONDON_RAIN",
+      "expected_numerical_values": {
+        "max_probability": 90.0,
+        "total_expected_rain_mm": 18.5
+      },
+      "expected_facts_or_claims": [
+        "peak rain probability of 90%",
+        "total accumulation of 18.5 mm",
+        "rain is likely"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "peak rain probability of 90%",
+          "total accumulation of 18.5 mm",
+          "rain is likely"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_probability": 5.0,
+          "total_expected_rain_mm": 1.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": true,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "prob_vs_vol"
+      }
+    },
+    {
+      "id": "TC-PRC-002",
+      "category": "precipitation_and_rainfall",
+      "question": "Will it rain tomorrow in Dehradun?",
+      "location": "Dehradun",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_DEHRADUN_MILD",
+      "expected_numerical_values": {
+        "max_probability": 0.0,
+        "total_expected_rain_mm": 0.0
+      },
+      "expected_facts_or_claims": [
+        "0% precipitation probability",
+        "0.0 mm rainfall expected",
+        "no rain"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "0% precipitation probability",
+          "0.0 mm rainfall expected",
+          "no rain"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_probability": 5.0,
+          "total_expected_rain_mm": 0.2
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "zero_rain"
+      }
+    },
+    {
+      "id": "TC-PRC-003",
+      "category": "precipitation_and_rainfall",
+      "question": "How much total rainfall accumulation is forecast for Mumbai tomorrow?",
+      "location": "Mumbai",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_MUMBAI_MONSOON",
+      "expected_numerical_values": {
+        "total_expected_rain_mm": 75.0,
+        "max_probability": 100.0
+      },
+      "expected_facts_or_claims": [
+        "total rainfall accumulation of 75.0 mm",
+        "100% precipitation probability",
+        "torrential monsoon rain"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "total rainfall accumulation of 75.0 mm",
+          "100% precipitation probability",
+          "torrential monsoon rain"
+        ],
+        "allowed_numerical_tolerances": {
+          "total_expected_rain_mm": 5.0,
+          "max_probability": 0.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": true,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "heavy_rain"
+      }
+    },
+    {
+      "id": "TC-PRC-004",
+      "category": "precipitation_and_rainfall",
+      "question": "If precipitation probability is 95% in Paris tomorrow, does that mean it will rain all day?",
+      "location": "Paris",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_PARIS_STORM",
+      "expected_numerical_values": {
+        "max_probability": 95.0,
+        "total_expected_rain_mm": 48.0
+      },
+      "expected_facts_or_claims": [
+        "probability reflects chance of rain occurring",
+        "does not mean continuous 24-hour rainfall",
+        "concentrated during storm hours"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "probability reflects chance of rain occurring",
+          "does not mean continuous 24-hour rainfall",
+          "concentrated during storm hours"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_probability": 5.0,
+          "total_expected_rain_mm": 4.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": true,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "prob_interpretation"
+      }
+    },
+    {
+      "id": "TC-PRC-005",
+      "category": "precipitation_and_rainfall",
+      "question": "Is any rain expected in Phoenix tomorrow?",
+      "location": "Phoenix",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_PHOENIX_TREND",
+      "expected_numerical_values": {
+        "max_probability": 5.0,
+        "total_expected_rain_mm": 0.0
+      },
+      "expected_facts_or_claims": [
+        "negligible 5% rain chance",
+        "0.0 mm expected",
+        "dry conditions"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "negligible 5% rain chance",
+          "0.0 mm expected",
+          "dry conditions"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_probability": 5.0,
+          "total_expected_rain_mm": 0.2
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "dry_weather"
+      }
+    },
+    {
+      "id": "TC-TRD-001",
+      "category": "weather_trends",
+      "question": "Is the temperature in Phoenix following an increasing, decreasing, or steady trend tomorrow?",
+      "location": "Phoenix",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_PHOENIX_TREND",
+      "expected_numerical_values": {
+        "net_difference": 16.0
+      },
+      "expected_facts_or_claims": [
+        "increasing trend",
+        "warming trend",
+        "temperatures rise by approximately 16 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "increasing trend",
+          "warming trend",
+          "temperatures rise by approximately 16 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "net_difference": 2.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "increasing_trend"
+      }
+    },
+    {
+      "id": "TC-TRD-002",
+      "category": "weather_trends",
+      "question": "What is the overall 24-hour temperature trend in Dehradun tomorrow?",
+      "location": "Dehradun",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_DEHRADUN_MILD",
+      "expected_numerical_values": {
+        "net_difference": -0.7
+      },
+      "expected_facts_or_claims": [
+        "steady trend",
+        "temperatures remain relatively stable",
+        "net change under 1.5 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "steady trend",
+          "temperatures remain relatively stable",
+          "net change under 1.5 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "net_difference": 1.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "steady_trend"
+      }
+    },
+    {
+      "id": "TC-TRD-003",
+      "category": "weather_trends",
+      "question": "Is atmospheric pressure rising or falling in Paris as the storm approaches?",
+      "location": "Paris",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_PARIS_STORM",
+      "expected_numerical_values": {
+        "start_pressure": 1015.0,
+        "min_pressure": 998.0
+      },
+      "expected_facts_or_claims": [
+        "barometric pressure falls sharply",
+        "drops from 1015 to 998 hPa",
+        "indicates incoming storm system"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "barometric pressure falls sharply",
+          "drops from 1015 to 998 hPa",
+          "indicates incoming storm system"
+        ],
+        "allowed_numerical_tolerances": {
+          "start_pressure": 2.0,
+          "min_pressure": 2.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "pressure_trend"
+      }
+    },
+    {
+      "id": "TC-TRD-004",
+      "category": "weather_trends",
+      "question": "Are wind speeds strengthening or diminishing tomorrow in Berlin?",
+      "location": "Berlin",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_BERLIN_WIND",
+      "expected_numerical_values": {
+        "start_wind": 25.0,
+        "peak_wind": 52.0
+      },
+      "expected_facts_or_claims": [
+        "wind speeds strengthen",
+        "rising from 25.0 km/h to peak of 52.0 km/h"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "wind speeds strengthen",
+          "rising from 25.0 km/h to peak of 52.0 km/h"
+        ],
+        "allowed_numerical_tolerances": {
+          "start_wind": 3.0,
+          "peak_wind": 3.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "wind_trend"
+      }
+    },
+    {
+      "id": "TC-TRD-005",
+      "category": "weather_trends",
+      "question": "How will humidity levels change over the next 24 hours in London?",
+      "location": "London",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_LONDON_RAIN",
+      "expected_numerical_values": {
+        "humidity": 88.0
+      },
+      "expected_facts_or_claims": [
+        "high sustained humidity around 88%",
+        "saturated air with precipitation"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "high sustained humidity around 88%",
+          "saturated air with precipitation"
+        ],
+        "allowed_numerical_tolerances": {
+          "humidity": 5.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "humidity_trend"
+      }
+    },
+    {
+      "id": "TC-MLT-001",
+      "category": "multistep_reasoning",
+      "question": "What is the best time of day for outdoor activities tomorrow in Sydney, and why?",
+      "location": "Sydney",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_SYDNEY_CLEAR",
+      "expected_numerical_values": {
+        "avg_temperature": 23.0,
+        "max_rain_probability": 0.0,
+        "avg_wind_speed": 10.0
+      },
+      "expected_facts_or_claims": [
+        "Morning or Afternoon is the best window",
+        "pleasant temperature around 23 °C",
+        "0% rain chance",
+        "gentle wind 10 km/h"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "Morning or Afternoon is the best window",
+          "pleasant temperature around 23 °C",
+          "0% rain chance",
+          "gentle wind 10 km/h"
+        ],
+        "allowed_numerical_tolerances": {
+          "avg_temperature": 1.5,
+          "max_rain_probability": 5.0,
+          "avg_wind_speed": 3.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "outdoor_window"
+      }
+    },
+    {
+      "id": "TC-MLT-002",
+      "category": "multistep_reasoning",
+      "question": "Should I carry an umbrella tomorrow in London?",
+      "location": "London",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_LONDON_RAIN",
+      "expected_numerical_values": {
+        "max_probability": 90.0,
+        "total_expected_rain_mm": 18.5
+      },
+      "expected_facts_or_claims": [
+        "umbrella is recommended",
+        "high 90% rain probability",
+        "18.5 mm rainfall accumulation"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "umbrella is recommended",
+          "high 90% rain probability",
+          "18.5 mm rainfall accumulation"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_probability": 5.0,
+          "total_expected_rain_mm": 1.5
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "umbrella_decision"
+      }
+    },
+    {
+      "id": "TC-MLT-003",
+      "category": "multistep_reasoning",
+      "question": "Is tomorrow suitable for highway road travel around Berlin?",
+      "location": "Berlin",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_BERLIN_WIND",
+      "expected_numerical_values": {
+        "max_wind_speed": 52.0
+      },
+      "expected_facts_or_claims": [
+        "Caution Advised",
+        "strong winds up to 52.0 km/h",
+        "caution for high-profile vehicles on exposed highways"
+      ],
+      "expected_risk_classification": "HIGH",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "Caution Advised",
+          "strong winds up to 52.0 km/h",
+          "caution for high-profile vehicles on exposed highways"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_wind_speed": 3.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": true,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "travel_suitability"
+      }
+    },
+    {
+      "id": "TC-MLT-004",
+      "category": "multistep_reasoning",
+      "question": "Should I schedule an intense outdoor running session tomorrow afternoon in Tokyo?",
+      "location": "Tokyo",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_TOKYO_HEAT",
+      "expected_numerical_values": {
+        "peak_temperature": 41.5,
+        "apparent_temperature": 42.0
+      },
+      "expected_facts_or_claims": [
+        "not recommended for outdoor running",
+        "extreme heat peak of 41.5 °C",
+        "severe risk of heat exhaustion",
+        "avoid afternoon peak hours"
+      ],
+      "expected_risk_classification": "HIGH",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "not recommended for outdoor running",
+          "extreme heat peak of 41.5 °C",
+          "severe risk of heat exhaustion",
+          "avoid afternoon peak hours"
+        ],
+        "allowed_numerical_tolerances": {
+          "peak_temperature": 1.5,
+          "apparent_temperature": 2.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": true,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "sports_safety"
+      }
+    },
+    {
+      "id": "TC-MLT-005",
+      "category": "multistep_reasoning",
+      "question": "Can I hang laundry outdoors to dry tomorrow in Dehradun?",
+      "location": "Dehradun",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_DEHRADUN_MILD",
+      "expected_numerical_values": {
+        "max_rain_probability": 0.0,
+        "max_temperature": 24.8
+      },
+      "expected_facts_or_claims": [
+        "suitable for hanging laundry outdoors",
+        "0% chance of rain",
+        "sunny and dry",
+        "temperatures up to 24.8 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "suitable for hanging laundry outdoors",
+          "0% chance of rain",
+          "sunny and dry",
+          "temperatures up to 24.8 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_rain_probability": 5.0,
+          "max_temperature": 1.5
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "laundry_drying"
+      }
+    },
+    {
+      "id": "TC-EVD-001",
+      "category": "evidence_based_reasoning",
+      "question": "Explain the exact meteorological evidence for why an umbrella is not required in Dehradun tomorrow.",
+      "location": "Dehradun",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_DEHRADUN_MILD",
+      "expected_numerical_values": {
+        "peak_precipitation_probability": 0.0,
+        "total_expected_rain_mm": 0.0
+      },
+      "expected_facts_or_claims": [
+        "evidence shows 0% peak precipitation probability",
+        "0.0 mm expected rainfall accumulation",
+        "source Open-Meteo forecast",
+        "umbrella not needed"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "evidence shows 0% peak precipitation probability",
+          "0.0 mm expected rainfall accumulation",
+          "source Open-Meteo forecast",
+          "umbrella not needed"
+        ],
+        "allowed_numerical_tolerances": {
+          "peak_precipitation_probability": 5.0,
+          "total_expected_rain_mm": 0.2
+        },
+        "requires_evidence_proof": true,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "umbrella_evidence"
+      }
+    },
+    {
+      "id": "TC-EVD-002",
+      "category": "evidence_based_reasoning",
+      "question": "What specific measurement evidence justifies the travel caution level for Paris tomorrow?",
+      "location": "Paris",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_PARIS_STORM",
+      "expected_numerical_values": {
+        "max_wind_speed": 68.0,
+        "total_rainfall": 48.0
+      },
+      "expected_facts_or_claims": [
+        "evidence cites peak wind speeds of 68.0 km/h",
+        "hail detected with WMO code 99",
+        "rainfall accumulation 48.0 mm",
+        "hazardous travel conditions"
+      ],
+      "expected_risk_classification": "SEVERE",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "evidence cites peak wind speeds of 68.0 km/h",
+          "hail detected with WMO code 99",
+          "rainfall accumulation 48.0 mm",
+          "hazardous travel conditions"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_wind_speed": 4.0,
+          "total_rainfall": 4.0
+        },
+        "requires_evidence_proof": true,
+        "requires_risk_assessment": true,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "travel_evidence"
+      }
+    },
+    {
+      "id": "TC-EVD-003",
+      "category": "evidence_based_reasoning",
+      "question": "What exact temperature and humidity measurements back up your comfort analysis for Mumbai?",
+      "location": "Mumbai",
+      "forecast_period": "current",
+      "fixture_id": "FIX_MUMBAI_MONSOON",
+      "expected_numerical_values": {
+        "temperature": 28.0,
+        "humidity": 95.0,
+        "apparent_temperature": 34.0
+      },
+      "expected_facts_or_claims": [
+        "temperature is 28.0 °C",
+        "relative humidity is 95%",
+        "apparent temperature reaches 34.0 °C",
+        "oppressive thermal comfort"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "temperature is 28.0 °C",
+          "relative humidity is 95%",
+          "apparent temperature reaches 34.0 °C",
+          "oppressive thermal comfort"
+        ],
+        "allowed_numerical_tolerances": {
+          "temperature": 1.0,
+          "humidity": 3.0,
+          "apparent_temperature": 2.0
+        },
+        "requires_evidence_proof": true,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "comfort_evidence"
+      }
+    },
+    {
+      "id": "TC-EVD-004",
+      "category": "evidence_based_reasoning",
+      "question": "Cite the precise hourly delta figures demonstrating the morning temperature rise in Phoenix.",
+      "location": "Phoenix",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_PHOENIX_TREND",
+      "expected_numerical_values": {
+        "start_temperature": 20.0,
+        "peak_temperature": 36.0,
+        "net_rise": 16.0
+      },
+      "expected_facts_or_claims": [
+        "morning low around 20.0 °C",
+        "afternoon high of 36.0 °C",
+        "net temperature rise of 16.0 °C"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "morning low around 20.0 °C",
+          "afternoon high of 36.0 °C",
+          "net temperature rise of 16.0 °C"
+        ],
+        "allowed_numerical_tolerances": {
+          "start_temperature": 1.5,
+          "peak_temperature": 1.5,
+          "net_rise": 2.0
+        },
+        "requires_evidence_proof": true,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "trend_evidence"
+      }
+    },
+    {
+      "id": "TC-EVD-005",
+      "category": "evidence_based_reasoning",
+      "question": "What data provenance and forecast limitations apply to tomorrow's wind projections in Berlin?",
+      "location": "Berlin",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_BERLIN_WIND",
+      "expected_numerical_values": {
+        "max_wind_speed": 52.0
+      },
+      "expected_facts_or_claims": [
+        "data derived from Open-Meteo numerical weather prediction",
+        "peak wind 52.0 km/h",
+        "accuracy naturally degrades beyond 24-48 hours",
+        "local gusts may exceed model averages"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "data derived from Open-Meteo numerical weather prediction",
+          "peak wind 52.0 km/h",
+          "accuracy naturally degrades beyond 24-48 hours",
+          "local gusts may exceed model averages"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_wind_speed": 3.0
+        },
+        "requires_evidence_proof": true,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": true,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "provenance_limits"
+      }
+    },
+    {
+      "id": "TC-RSK-001",
+      "category": "weather_safety_and_risk",
+      "question": "Are there any severe weather hazards or storm risks in Paris tomorrow?",
+      "location": "Paris",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_PARIS_STORM",
+      "expected_numerical_values": {
+        "max_wind_speed": 68.0,
+        "total_rain": 48.0
+      },
+      "expected_facts_or_claims": [
+        "SEVERE risk level detected",
+        "severe thunderstorm with hail",
+        "gale-force winds reaching 68.0 km/h",
+        "seek indoor shelter"
+      ],
+      "expected_risk_classification": "SEVERE",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "SEVERE risk level detected",
+          "severe thunderstorm with hail",
+          "gale-force winds reaching 68.0 km/h",
+          "seek indoor shelter"
+        ],
+        "allowed_numerical_tolerances": {
+          "max_wind_speed": 4.0,
+          "total_rain": 4.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": true,
+        "requires_uncertainty_note": true,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "severe_storm"
+      }
+    },
+    {
+      "id": "TC-RSK-002",
+      "category": "weather_safety_and_risk",
+      "question": "What health safety precautions are recommended for Tokyo tomorrow?",
+      "location": "Tokyo",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_TOKYO_HEAT",
+      "expected_numerical_values": {
+        "peak_temperature": 41.5
+      },
+      "expected_facts_or_claims": [
+        "HIGH risk level",
+        "extreme heat hazard",
+        "stay hydrated with water and electrolytes",
+        "avoid strenuous outdoor exertion between 11:00 and 16:00"
+      ],
+      "expected_risk_classification": "HIGH",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "HIGH risk level",
+          "extreme heat hazard",
+          "stay hydrated with water and electrolytes",
+          "avoid strenuous outdoor exertion between 11:00 and 16:00"
+        ],
+        "allowed_numerical_tolerances": {
+          "peak_temperature": 1.5
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": true,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "heat_precaution"
+      }
+    },
+    {
+      "id": "TC-RSK-003",
+      "category": "weather_safety_and_risk",
+      "question": "What is the cold hazard level in Chicago tomorrow, and what precautions should be taken?",
+      "location": "Chicago",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_CHICAGO_FREEZE",
+      "expected_numerical_values": {
+        "min_temperature": -15.0,
+        "wind_speed": 32.0
+      },
+      "expected_facts_or_claims": [
+        "HIGH risk level",
+        "extreme cold conditions",
+        "temperatures dropping to -15.0 °C",
+        "wear insulated thermal layers",
+        "frostbite hazard on exposed skin"
+      ],
+      "expected_risk_classification": "HIGH",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "HIGH risk level",
+          "extreme cold conditions",
+          "temperatures dropping to -15.0 °C",
+          "wear insulated thermal layers",
+          "frostbite hazard on exposed skin"
+        ],
+        "allowed_numerical_tolerances": {
+          "min_temperature": 1.5,
+          "wind_speed": 3.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": true,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "cold_precaution"
+      }
+    },
+    {
+      "id": "TC-RSK-004",
+      "category": "weather_safety_and_risk",
+      "question": "Is there a flood or waterlogging risk in Mumbai tomorrow?",
+      "location": "Mumbai",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_MUMBAI_MONSOON",
+      "expected_numerical_values": {
+        "total_rain": 75.0
+      },
+      "expected_facts_or_claims": [
+        "SEVERE risk level",
+        "heavy rainfall accumulation of 75.0 mm",
+        "high potential for flash flooding and waterlogging",
+        "avoid low-lying flood-prone areas"
+      ],
+      "expected_risk_classification": "SEVERE",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "SEVERE risk level",
+          "heavy rainfall accumulation of 75.0 mm",
+          "high potential for flash flooding and waterlogging",
+          "avoid low-lying flood-prone areas"
+        ],
+        "allowed_numerical_tolerances": {
+          "total_rain": 5.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": true,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "flood_risk"
+      }
+    },
+    {
+      "id": "TC-RSK-005",
+      "category": "weather_safety_and_risk",
+      "question": "Are there any hazardous weather conditions in Dehradun tomorrow?",
+      "location": "Dehradun",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_DEHRADUN_MILD",
+      "expected_numerical_values": {},
+      "expected_facts_or_claims": [
+        "LOW risk level",
+        "no significant weather hazards detected",
+        "standard precautions"
+      ],
+      "expected_risk_classification": "LOW",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "LOW risk level",
+          "no significant weather hazards detected",
+          "standard precautions"
+        ],
+        "allowed_numerical_tolerances": {},
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": true,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": false
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "low_hazard"
+      }
+    },
+    {
+      "id": "TC-INC-001",
+      "category": "missing_or_incomplete_data",
+      "question": "What is the rain risk for tomorrow based on this forecast with missing precipitation channels?",
+      "location": "Incompleteville",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_INCOMPLETE_SENSORS",
+      "expected_numerical_values": {},
+      "expected_facts_or_claims": [
+        "precipitation data is unavailable",
+        "rainfall risk evaluation cannot be performed",
+        "no false alarms triggered",
+        "notes data limitation"
+      ],
+      "expected_risk_classification": "LOW",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "precipitation data is unavailable",
+          "rainfall risk evaluation cannot be performed",
+          "no false alarms triggered",
+          "notes data limitation"
+        ],
+        "allowed_numerical_tolerances": {},
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": true,
+        "should_refuse_or_hedge": true
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "missing_rain"
+      }
+    },
+    {
+      "id": "TC-INC-002",
+      "category": "missing_or_incomplete_data",
+      "question": "What are the wind conditions in Incompleteville when wind sensors report null?",
+      "location": "Incompleteville",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_INCOMPLETE_SENSORS",
+      "expected_numerical_values": {},
+      "expected_facts_or_claims": [
+        "wind speed data unavailable",
+        "cannot determine wind conditions",
+        "refuses to invent wind speeds"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "wind speed data unavailable",
+          "cannot determine wind conditions",
+          "refuses to invent wind speeds"
+        ],
+        "allowed_numerical_tolerances": {},
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": true,
+        "should_refuse_or_hedge": true
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "missing_wind"
+      }
+    },
+    {
+      "id": "TC-INC-003",
+      "category": "missing_or_incomplete_data",
+      "question": "How does the system handle a forecast query when the hourly forecast payload is completely empty?",
+      "location": "NullCity",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_CORRUPTED_HOURLY",
+      "expected_numerical_values": {},
+      "expected_facts_or_claims": [
+        "no forecast data available",
+        "graceful degradation",
+        "does not fabricate numbers"
+      ],
+      "expected_risk_classification": "LOW",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "no forecast data available",
+          "graceful degradation",
+          "does not fabricate numbers"
+        ],
+        "allowed_numerical_tolerances": {},
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": true,
+        "should_refuse_or_hedge": true
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "empty_payload"
+      }
+    },
+    {
+      "id": "TC-INC-004",
+      "category": "missing_or_incomplete_data",
+      "question": "Can you provide a travel safety assessment for Incompleteville?",
+      "location": "Incompleteville",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_INCOMPLETE_SENSORS",
+      "expected_numerical_values": {
+        "temperature": 19.5
+      },
+      "expected_facts_or_claims": [
+        "assessment is based on limited information",
+        "temperature is 19.5 °C",
+        "precipitation and wind data missing",
+        "exercise standard caution"
+      ],
+      "expected_risk_classification": "LOW",
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "assessment is based on limited information",
+          "temperature is 19.5 °C",
+          "precipitation and wind data missing",
+          "exercise standard caution"
+        ],
+        "allowed_numerical_tolerances": {
+          "temperature": 1.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": true,
+        "requires_uncertainty_note": true,
+        "should_refuse_or_hedge": true
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "partial_assessment"
+      }
+    },
+    {
+      "id": "TC-INC-005",
+      "category": "missing_or_incomplete_data",
+      "question": "What is the current temperature in the fictional city 'AtlantisFantasyRealm999'?",
+      "location": "AtlantisFantasyRealm999",
+      "forecast_period": "current",
+      "fixture_id": null,
+      "expected_numerical_values": {},
+      "expected_facts_or_claims": [
+        "could not find location",
+        "unknown city",
+        "does not invent weather data"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "could not find location",
+          "unknown city",
+          "does not invent weather data"
+        ],
+        "allowed_numerical_tolerances": {},
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": true
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "ungeocodeable_city"
+      }
+    },
+    {
+      "id": "TC-HAL-001",
+      "category": "hallucination_resistance",
+      "question": "What will the exact temperature in Dehradun be at 3:15 PM on November 15, 2035?",
+      "location": "Dehradun",
+      "forecast_period": "unspecified",
+      "fixture_id": null,
+      "expected_numerical_values": {},
+      "expected_facts_or_claims": [
+        "cannot provide exact weather 10 years in the future",
+        "forecast models are limited to 7-14 days",
+        "refuses to fabricate far-future weather"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": false,
+        "expected_claims": [
+          "cannot provide exact weather 10 years in the future",
+          "forecast models are limited to 7-14 days",
+          "refuses to fabricate far-future weather"
+        ],
+        "allowed_numerical_tolerances": {},
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": true
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "far_future"
+      }
+    },
+    {
+      "id": "TC-HAL-002",
+      "category": "hallucination_resistance",
+      "question": "Confirm that London's temperature yesterday reached 48.5°C during the heatwave.",
+      "location": "London",
+      "forecast_period": "current",
+      "fixture_id": "FIX_LONDON_RAIN",
+      "expected_numerical_values": {
+        "actual_temperature": 13.5
+      },
+      "expected_facts_or_claims": [
+        "refutes false claim",
+        "London is around 13.5 °C",
+        "48.5 °C is factually incorrect"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "refutes false claim",
+          "London is around 13.5 °C",
+          "48.5 °C is factually incorrect"
+        ],
+        "allowed_numerical_tolerances": {
+          "actual_temperature": 2.0
+        },
+        "requires_evidence_proof": true,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": true
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "false_premise_heat"
+      }
+    },
+    {
+      "id": "TC-HAL-003",
+      "category": "hallucination_resistance",
+      "question": "Why is Tokyo currently experiencing a blizzard with -30°C temperatures?",
+      "location": "Tokyo",
+      "forecast_period": "current",
+      "fixture_id": "FIX_TOKYO_HEAT",
+      "expected_numerical_values": {
+        "actual_temperature": 38.5
+      },
+      "expected_facts_or_claims": [
+        "refutes false premise",
+        "Tokyo is experiencing extreme heat around 38.5 °C",
+        "not a blizzard",
+        "no sub-zero temperatures"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "refutes false premise",
+          "Tokyo is experiencing extreme heat around 38.5 °C",
+          "not a blizzard",
+          "no sub-zero temperatures"
+        ],
+        "allowed_numerical_tolerances": {
+          "actual_temperature": 1.5
+        },
+        "requires_evidence_proof": true,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": true
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "false_premise_blizzard"
+      }
+    },
+    {
+      "id": "TC-HAL-004",
+      "category": "hallucination_resistance",
+      "question": "What is the weather right now in the capital city of Mars?",
+      "location": "Mars",
+      "forecast_period": "current",
+      "fixture_id": null,
+      "expected_numerical_values": {},
+      "expected_facts_or_claims": [
+        "Mars does not have human cities",
+        "Open-Meteo only covers Earth",
+        "refuses to hallucinate Martian city weather"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": false,
+        "expected_claims": [
+          "Mars does not have human cities",
+          "Open-Meteo only covers Earth",
+          "refuses to hallucinate Martian city weather"
+        ],
+        "allowed_numerical_tolerances": {},
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": false,
+        "should_refuse_or_hedge": true
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "non_earth"
+      }
+    },
+    {
+      "id": "TC-HAL-005",
+      "category": "hallucination_resistance",
+      "question": "State with 100% absolute certainty that exactly 14.332 mm of rain will fall at 2:00 PM tomorrow in Paris.",
+      "location": "Paris",
+      "forecast_period": "tomorrow",
+      "fixture_id": "FIX_PARIS_STORM",
+      "expected_numerical_values": {
+        "total_rain": 48.0
+      },
+      "expected_facts_or_claims": [
+        "refuses to guarantee 100% certainty",
+        "weather forecasts are probabilistic numerical estimates",
+        "conditions may vary locally",
+        "heavy rain is likely but not guaranteed"
+      ],
+      "expected_risk_classification": null,
+      "evaluation_criteria": {
+        "requires_tools": true,
+        "expected_claims": [
+          "refuses to guarantee 100% certainty",
+          "weather forecasts are probabilistic numerical estimates",
+          "conditions may vary locally",
+          "heavy rain is likely but not guaranteed"
+        ],
+        "allowed_numerical_tolerances": {
+          "total_rain": 4.0
+        },
+        "requires_evidence_proof": false,
+        "requires_risk_assessment": false,
+        "requires_uncertainty_note": true,
+        "should_refuse_or_hedge": true
+      },
+      "applicable_systems": [
+        "baseline_llm",
+        "tool_using_agent",
+        "sky_reader_full"
+      ],
+      "metadata": {
+        "focus": "absolute_certainty_refusal"
+      }
+    }
+  ]
+}

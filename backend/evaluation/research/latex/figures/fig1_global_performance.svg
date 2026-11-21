@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 420" width="100%" height="100%">
+  <rect width="880" height="420" fill="#0f172a" rx="8"/>
+  <text x="440" y="36" fill="#f8fafc" font-size="18" font-family="sans-serif" font-weight="bold" text-anchor="middle">Figure 1: Global Performance Metrics by System Architecture (N=50)</text>
+  <!-- Legend -->
+  <rect x="220" y="54" width="14" height="14" fill="#ef4444" rx="3"/>
+  <text x="240" y="66" fill="#cbd5e1" font-size="12" font-family="sans-serif">Baseline LLM (Zero Tools)</text>
+  <rect x="410" y="54" width="14" height="14" fill="#f59e0b" rx="3"/>
+  <text x="430" y="66" fill="#cbd5e1" font-size="12" font-family="sans-serif">Tool Agent (No Verification)</text>
+  <rect x="610" y="54" width="14" height="14" fill="#10b981" rx="3"/>
+  <text x="630" y="66" fill="#cbd5e1" font-size="12" font-family="sans-serif">Complete Sky Reader</text>
+  <!-- Grid lines -->
+  <line x1="80" y1="330" x2="830" y2="330" stroke="#334155" stroke-width="1.5"/>
+  <line x1="80" y1="270" x2="830" y2="270" stroke="#334155" stroke-dasharray="4" stroke-width="1"/>
+  <line x1="80" y1="210" x2="830" y2="210" stroke="#334155" stroke-dasharray="4" stroke-width="1"/>
+  <line x1="80" y1="150" x2="830" y2="150" stroke="#334155" stroke-dasharray="4" stroke-width="1"/>
+  <line x1="80" y1="90" x2="830" y2="90" stroke="#334155" stroke-dasharray="4" stroke-width="1"/>
+  <text x="70" y="334" fill="#94a3b8" font-size="11" font-family="sans-serif" text-anchor="end">0%</text>
+  <text x="70" y="274" fill="#94a3b8" font-size="11" font-family="sans-serif" text-anchor="end">25%</text>
+  <text x="70" y="214" fill="#94a3b8" font-size="11" font-family="sans-serif" text-anchor="end">50%</text>
+  <text x="70" y="154" fill="#94a3b8" font-size="11" font-family="sans-serif" text-anchor="end">75%</text>
+  <text x="70" y="94" fill="#94a3b8" font-size="11" font-family="sans-serif" text-anchor="end">100%</text>
+  <text x="146" y="355" fill="#e2e8f0" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">Numerical Acc</text>
+  <rect x="100" y="296" width="28" height="34" fill="#ef4444" rx="3"/>
+  <text x="114" y="290" fill="#ef4444" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">14.3%</text>
+  <rect x="132" y="215" width="28" height="115" fill="#f59e0b" rx="3"/>
+  <text x="146" y="209" fill="#f59e0b" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">48.1%</text>
+  <rect x="164" y="249" width="28" height="81" fill="#10b981" rx="3"/>
+  <text x="178" y="243" fill="#10b981" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">34.1%</text>
+  <text x="266" y="355" fill="#e2e8f0" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">Factual Acc</text>
+  <rect x="220" y="287" width="28" height="43" fill="#ef4444" rx="3"/>
+  <text x="234" y="281" fill="#ef4444" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">18.1%</text>
+  <rect x="252" y="236" width="28" height="94" fill="#f59e0b" rx="3"/>
+  <text x="266" y="230" fill="#f59e0b" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">39.4%</text>
+  <rect x="284" y="243" width="28" height="87" fill="#10b981" rx="3"/>
+  <text x="298" y="237" fill="#10b981" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">36.5%</text>
+  <text x="386" y="355" fill="#e2e8f0" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">Hallucination Rate</text>
+  <rect x="340" y="212" width="28" height="118" fill="#ef4444" rx="3"/>
+  <text x="354" y="206" fill="#ef4444" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">49.5%</text>
+  <rect x="372" y="244" width="28" height="86" fill="#f59e0b" rx="3"/>
+  <text x="386" y="238" fill="#f59e0b" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">35.9%</text>
+  <rect x="404" y="311" width="28" height="19" fill="#10b981" rx="3"/>
+  <text x="418" y="305" fill="#10b981" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">8.3%</text>
+  <text x="506" y="355" fill="#e2e8f0" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">Clean Ratio</text>
+  <rect x="460" y="177" width="28" height="153" fill="#ef4444" rx="3"/>
+  <text x="474" y="171" fill="#ef4444" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">64.0%</text>
+  <rect x="492" y="177" width="28" height="153" fill="#f59e0b" rx="3"/>
+  <text x="506" y="171" fill="#f59e0b" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">64.0%</text>
+  <rect x="524" y="114" width="28" height="216" fill="#10b981" rx="3"/>
+  <text x="538" y="108" fill="#10b981" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">90.0%</text>
+  <text x="626" y="355" fill="#e2e8f0" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">Risk Acc</text>
+  <text x="594" y="325" fill="#64748b" font-size="10" font-family="sans-serif" text-anchor="middle">0%</text>
+  <rect x="612" y="265" width="28" height="65" fill="#f59e0b" rx="3"/>
+  <text x="626" y="259" fill="#f59e0b" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">27.3%</text>
+  <rect x="644" y="134" width="28" height="196" fill="#10b981" rx="3"/>
+  <text x="658" y="128" fill="#10b981" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">81.8%</text>
+  <text x="746" y="355" fill="#e2e8f0" font-size="11" font-family="sans-serif" font-weight="bold" text-anchor="middle">Completeness</text>
+  <rect x="700" y="142" width="28" height="188" fill="#ef4444" rx="3"/>
+  <text x="714" y="136" fill="#ef4444" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">78.4%</text>
+  <rect x="732" y="129" width="28" height="201" fill="#f59e0b" rx="3"/>
+  <text x="746" y="123" fill="#f59e0b" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">83.9%</text>
+  <rect x="764" y="125" width="28" height="205" fill="#10b981" rx="3"/>
+  <text x="778" y="119" fill="#10b981" font-size="10" font-family="sans-serif" font-weight="bold" text-anchor="middle">85.6%</text>
+</svg>

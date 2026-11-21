@@ -1,10 +1,5 @@
-import sys
 import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-
-# Ensure backend directory is in python path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+from typing import Any, Dict, List, Optional
 
 try:
     from backend.evidence.evidence_models import (

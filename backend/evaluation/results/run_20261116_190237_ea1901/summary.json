@@ -1,0 +1,39 @@
+{
+  "run_id": "run_20261116_190237_ea1901",
+  "started_at": "2026-11-16T19:02:37.246203+00:00",
+  "completed_at": "2026-11-16T19:02:38.790459+00:00",
+  "total_cases_selected": 1,
+  "total_executions": 1,
+  "completed_count": 1,
+  "failed_count": 0,
+  "timeout_count": 0,
+  "skipped_count": 0,
+  "systems_evaluated": [
+    "tool_using_agent"
+  ],
+  "categories_evaluated": [
+    "current_weather"
+  ],
+  "config": {
+    "dataset_path": null,
+    "fixtures_path": null,
+    "results_dir": "/home/victus/sky reader /Sky-Reader/backend/evaluation/results",
+    "model": "openai/gpt-oss-120b",
+    "api_key": "[REDACTED]",
+    "timeout_seconds": 30.0,
+    "max_retries": 2,
+    "retry_backoff_seconds": 2.0,
+    "max_iterations": 10,
+    "fixture_mode": "synthetic_fixture",
+    "concurrency": 1,
+    "dry_run": false,
+    "selected_systems": [
+      "tool_using_agent"
+    ],
+    "selected_categories": null,
+    "selected_ids": [
+      "TC-CUR-001"
+    ],
+    "max_cases": null
+  }
+}

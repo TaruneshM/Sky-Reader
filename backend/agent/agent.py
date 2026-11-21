@@ -37,16 +37,19 @@ DEFAULT_MAX_ITERATIONS = 10
 SYSTEM_PROMPT = (
     "You are Sky Reader, an intelligent agentic AI weather intelligence and reasoning system. "
     "Your goal is to answer users' weather questions, analyze trends, interpret meteorological patterns, "
-    "and provide evidence-based decision support using real-time data from Open-Meteo via your tools.\n\n"
+    "assess hazards and safety risks, and provide evidence-based decision support using real-time data from Open-Meteo via your tools.\n\n"
     "Guidelines:\n"
     "1. Always geocode a place name first using 'geocode_location' to obtain its latitude and longitude.\n"
     "2. For basic current conditions, use 'get_current_weather'.\n"
     "3. For raw hourly forecasts, use 'get_hourly_forecast'.\n"
     "4. For analytical or trend questions (e.g. temperature trends, increasing/decreasing temperatures, precipitation breakdown, wind analysis, today vs tomorrow comparisons), call 'analyze_weather'.\n"
     "5. For practical advice and decision support (e.g. should I carry an umbrella, is it good for travelling, best time for outdoor activities, rain timing), call 'get_weather_recommendations'.\n"
-    "6. Ground all analytical statements and recommendations in the actual data returned by the tools. Clearly communicate uncertainty (forecasts are probabilities, not guarantees) and never invent measurements.\n"
-    "7. For general queries unrelated to weather, answer directly without invoking tools.\n"
-    "8. If a location cannot be found or tool execution fails, explain the issue politely to the user."
+    "6. For weather hazards, safety, warnings, storms, severe conditions, extreme heat, extreme cold, or dangerous winds, call 'assess_weather_risks'.\n"
+    "7. Safety and Risk Communication: When explaining risk assessments, clearly state the risk level (LOW, MODERATE, HIGH, SEVERE), detected hazards, and actionable safety precautions. Distinguish AI-generated risk assessments from official government alerts: never claim an AI assessment is an official government warning.\n"
+    "8. Uncertainty Awareness: Distinguish precipitation probability (chance of rain occurring) from expected rainfall accumulation (volume in mm). Never present forecasts as guaranteed certainties; use probabilistic phrasing (e.g. 'There is a 75% probability of rain during the afternoon; rain is likely but not guaranteed'). Never invent confidence percentages or unsupported forecast certainty.\n"
+    "9. Ground all analytical statements and recommendations in the actual data returned by the tools. Never invent measurements.\n"
+    "10. For general queries unrelated to weather, answer directly without invoking tools.\n"
+    "11. If a location cannot be found or tool execution fails, explain the issue politely to the user."
 )
 
 
@@ -69,6 +72,8 @@ async def run_agent(
     api_key: Optional[str] = None,
     model: Optional[str] = None,
     max_iterations: int = DEFAULT_MAX_ITERATIONS,
+    executor_fn: Optional[Any] = None,
+    client: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """
     Runs the agentic tool-calling loop using Groq and Open-Meteo weather tools.
@@ -79,12 +84,15 @@ async def run_agent(
         api_key: Optional Groq API key override.
         model: Optional model name override (defaults to GROQ_MODEL or DEFAULT_GROQ_MODEL).
         max_iterations: Maximum tool-call cycles before terminating.
+        executor_fn: Optional custom tool executor function for dependency injection.
+        client: Optional custom/mocked Groq client instance.
 
     Returns:
         Dict with keys 'response', 'tool_calls', and 'iterations'.
     """
     active_model = model or os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL)
-    client = get_groq_client(api_key=api_key)
+    active_client = client or get_groq_client(api_key=api_key)
+    active_executor = executor_fn or execute_tool
 
     messages: List[Dict[str, Any]] = [
         {"role": "system", "content": SYSTEM_PROMPT}
@@ -102,6 +110,7 @@ async def run_agent(
     current_data: Optional[Dict[str, Any]] = None
     hourly_data: Optional[Dict[str, Any]] = None
     analysis_results: Optional[Dict[str, Any]] = None
+    risk_results: Optional[Dict[str, Any]] = None
 
     evidence_engine = EvidenceEngine()
     hallucination_controller = HallucinationController()
@@ -112,7 +121,7 @@ async def run_agent(
         response = None
         while attempts < 3:
             try:
-                response = await client.chat.completions.create(
+                response = await active_client.chat.completions.create(
                     model=active_model,
                     messages=messages,
                     tools=tools,
@@ -162,7 +171,7 @@ async def run_agent(
                     retry_messages = list(messages) + [
                         {"role": "user", "content": prompt}
                     ]
-                    reg_resp = await client.chat.completions.create(
+                    reg_resp = await active_client.chat.completions.create(
                         model=active_model,
                         messages=retry_messages,
                     )
@@ -195,6 +204,7 @@ async def run_agent(
                     "claims": [c.dict() for c in claims],
                     "validation_report": report.dict(),
                     "explanation": proof.dict(),
+                    "risk_assessment": risk_results,
                 }
 
             return {
@@ -204,6 +214,7 @@ async def run_agent(
                 "claims": [],
                 "validation_report": None,
                 "explanation": None,
+                "risk_assessment": risk_results,
             }
 
         # Model requested one or more tool calls
@@ -237,7 +248,7 @@ async def run_agent(
 
             # 2. Execute tool using existing executor
             try:
-                execution_result = await execute_tool(fn_name, parsed_args)
+                execution_result = await active_executor(fn_name, parsed_args)
                 if execution_result is None:
                     tool_result = {
                         "status": "not_found",
@@ -275,6 +286,11 @@ async def run_agent(
                 if analysis_results is None:
                     analysis_results = {}
                 analysis_results.update(tool_result)
+            elif fn_name == "assess_weather_risks" and isinstance(tool_result, dict):
+                risk_results = tool_result
+                if analysis_results is None:
+                    analysis_results = {}
+                analysis_results["risk_assessment"] = tool_result
 
             # Send tool response back to Groq
             messages.append({
@@ -294,6 +310,7 @@ async def run_agent(
         "claims": [],
         "validation_report": None,
         "explanation": None,
+        "risk_assessment": None,
     }
 
 
@@ -305,10 +322,14 @@ class WeatherAgent:
         api_key: Optional[str] = None,
         model: Optional[str] = None,
         max_iterations: int = DEFAULT_MAX_ITERATIONS,
+        executor_fn: Optional[Any] = None,
+        client: Optional[Any] = None,
     ):
         self.api_key = api_key
         self.model = model
         self.max_iterations = max_iterations
+        self.executor_fn = executor_fn
+        self.client = client
 
     async def ask(
         self,
@@ -321,4 +342,6 @@ class WeatherAgent:
             api_key=self.api_key,
             model=self.model,
             max_iterations=self.max_iterations,
+            executor_fn=self.executor_fn,
+            client=self.client,
         )

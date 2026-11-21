@@ -1,0 +1,3734 @@
+{
+  "taxonomy_classification": "multi-label",
+  "taxonomy_definition": "The error taxonomy is multi-label: an individual test case execution may exhibit multiple failure modes simultaneously (e.g. omitting an expected numerical value while also asserting an unsupported claim). Total error occurrence sums exceed the total number of test cases because individual cases frequently exhibit multiple distinct errors.",
+  "summary_counts": {
+    "incorrect_numerical_values": 61,
+    "missing_numerical_values": 78,
+    "factual_contradictions": 91,
+    "unsupported_or_hallucinated_claims": 52,
+    "risk_misclassifications": 21,
+    "evidence_grounding_failures": 1,
+    "incomplete_responses": 51,
+    "execution_failures_or_timeouts": 0
+  },
+  "system_breakdown": {
+    "baseline_llm": {
+      "total_attempted_cases": 50,
+      "successfully_completed_cases": 50,
+      "evaluable_cases": 50,
+      "cases_with_any_error": 50,
+      "clean_cases_count": 0,
+      "clean_case_ratio": 0.0,
+      "by_failure_mode": {
+        "incorrect_numerical_values": {
+          "cases_affected_count": 19,
+          "case_incidence_rate": 0.38,
+          "total_occurrences": 25,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "missing_numerical_values": {
+          "cases_affected_count": 24,
+          "case_incidence_rate": 0.48,
+          "total_occurrences": 35,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "factual_contradictions": {
+          "cases_affected_count": 33,
+          "case_incidence_rate": 0.66,
+          "total_occurrences": 47,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "unsupported_or_hallucinated_claims": {
+          "cases_affected_count": 18,
+          "case_incidence_rate": 0.36,
+          "total_occurrences": 24,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "risk_misclassifications": {
+          "cases_affected_count": 11,
+          "case_incidence_rate": 0.22,
+          "total_occurrences": 11,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "evidence_grounding_failures": {
+          "cases_affected_count": 0,
+          "case_incidence_rate": 0.0,
+          "total_occurrences": 0,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "incomplete_responses": {
+          "cases_affected_count": 21,
+          "case_incidence_rate": 0.42,
+          "total_occurrences": 21,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "execution_failures_or_timeouts": {
+          "cases_affected_count": 0,
+          "case_incidence_rate": 0.0,
+          "total_occurrences": 0,
+          "denominator_type": "total_attempted_cases",
+          "denominator_value": 50
+        }
+      }
+    },
+    "tool_using_agent": {
+      "total_attempted_cases": 50,
+      "successfully_completed_cases": 50,
+      "evaluable_cases": 50,
+      "cases_with_any_error": 45,
+      "clean_cases_count": 5,
+      "clean_case_ratio": 0.1,
+      "by_failure_mode": {
+        "incorrect_numerical_values": {
+          "cases_affected_count": 16,
+          "case_incidence_rate": 0.32,
+          "total_occurrences": 18,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "missing_numerical_values": {
+          "cases_affected_count": 16,
+          "case_incidence_rate": 0.32,
+          "total_occurrences": 17,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "factual_contradictions": {
+          "cases_affected_count": 22,
+          "case_incidence_rate": 0.44,
+          "total_occurrences": 29,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "unsupported_or_hallucinated_claims": {
+          "cases_affected_count": 18,
+          "case_incidence_rate": 0.36,
+          "total_occurrences": 22,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "risk_misclassifications": {
+          "cases_affected_count": 8,
+          "case_incidence_rate": 0.16,
+          "total_occurrences": 8,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "evidence_grounding_failures": {
+          "cases_affected_count": 0,
+          "case_incidence_rate": 0.0,
+          "total_occurrences": 0,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "incomplete_responses": {
+          "cases_affected_count": 18,
+          "case_incidence_rate": 0.36,
+          "total_occurrences": 18,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "execution_failures_or_timeouts": {
+          "cases_affected_count": 0,
+          "case_incidence_rate": 0.0,
+          "total_occurrences": 0,
+          "denominator_type": "total_attempted_cases",
+          "denominator_value": 50
+        }
+      }
+    },
+    "sky_reader_full": {
+      "total_attempted_cases": 50,
+      "successfully_completed_cases": 50,
+      "evaluable_cases": 50,
+      "cases_with_any_error": 46,
+      "clean_cases_count": 4,
+      "clean_case_ratio": 0.08,
+      "by_failure_mode": {
+        "incorrect_numerical_values": {
+          "cases_affected_count": 16,
+          "case_incidence_rate": 0.32,
+          "total_occurrences": 18,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "missing_numerical_values": {
+          "cases_affected_count": 19,
+          "case_incidence_rate": 0.38,
+          "total_occurrences": 26,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "factual_contradictions": {
+          "cases_affected_count": 14,
+          "case_incidence_rate": 0.28,
+          "total_occurrences": 15,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "unsupported_or_hallucinated_claims": {
+          "cases_affected_count": 5,
+          "case_incidence_rate": 0.1,
+          "total_occurrences": 6,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "risk_misclassifications": {
+          "cases_affected_count": 2,
+          "case_incidence_rate": 0.04,
+          "total_occurrences": 2,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "evidence_grounding_failures": {
+          "cases_affected_count": 1,
+          "case_incidence_rate": 0.02,
+          "total_occurrences": 1,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "incomplete_responses": {
+          "cases_affected_count": 12,
+          "case_incidence_rate": 0.24,
+          "total_occurrences": 12,
+          "denominator_type": "evaluable_cases",
+          "denominator_value": 50
+        },
+        "execution_failures_or_timeouts": {
+          "cases_affected_count": 0,
+          "case_incidence_rate": 0.0,
+          "total_occurrences": 0,
+          "denominator_type": "total_attempted_cases",
+          "denominator_value": 50
+        }
+      }
+    }
+  },
+  "failure_details": {
+    "incorrect_numerical_values": [
+      {
+        "test_case_id": "TC-CMP-001",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "variable": "average_diff",
+        "expected_value": -0.7,
+        "extracted_value": 5.0,
+        "converted_value": 5.0,
+        "tolerance": 0.5,
+        "absolute_error": 5.7,
+        "context": "5"
+      },
+      {
+        "test_case_id": "TC-CMP-001",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "variable": "average_diff",
+        "expected_value": -0.7,
+        "extracted_value": 16.0,
+        "converted_value": 16.0,
+        "tolerance": 0.5,
+        "absolute_error": 16.7,
+        "context": "16"
+      },
+      {
+        "test_case_id": "TC-CMP-001",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "variable": "average_diff",
+        "expected_value": -0.7,
+        "extracted_value": 0.7,
+        "converted_value": 0.7,
+        "tolerance": 0.5,
+        "absolute_error": 1.4,
+        "context": "0.7"
+      },
+      {
+        "test_case_id": "TC-CMP-002",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "variable": "afternoon_temperature",
+        "expected_value": 36.0,
+        "extracted_value": 20.0,
+        "converted_value": 20.0,
+        "tolerance": 1.5,
+        "absolute_error": 16.0,
+        "context": "Claim: Based on verified meteorological observations for Phoenix:\n- Current Temperature: 20.0 \u00b0C"
+      },
+      {
+        "test_case_id": "TC-CMP-002",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "variable": "delta",
+        "expected_value": 15.0,
+        "extracted_value": 20.0,
+        "converted_value": 20.0,
+        "tolerance": 2.0,
+        "absolute_error": 5.0,
+        "context": "20.0"
+      },
+      {
+        "test_case_id": "TC-CMP-002",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "variable": "morning_temperature",
+        "expected_value": 21.0,
+        "extracted_value": 23.5,
+        "converted_value": 23.5,
+        "tolerance": 1.5,
+        "absolute_error": 2.5,
+        "context": "23.5\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-CMP-002",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "variable": "delta",
+        "expected_value": 15.0,
+        "extracted_value": 12.0,
+        "converted_value": 12.0,
+        "tolerance": 2.0,
+        "absolute_error": 3.0,
+        "context": "12"
+      },
+      {
+        "test_case_id": "TC-CMP-003",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "variable": "temperature_range",
+        "expected_value": 8.5,
+        "extracted_value": 17.5,
+        "converted_value": 17.5,
+        "tolerance": 1.0,
+        "absolute_error": 9.0,
+        "context": "Claim: Based on verified meteorological observations for Sydney:\n- Current Temperature: 17.5 \u00b0C"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "variable": "tokyo_peak",
+        "expected_value": 41.5,
+        "extracted_value": 30.0,
+        "converted_value": 30.0,
+        "tolerance": 1.5,
+        "absolute_error": 11.5,
+        "context": "30"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "variable": "london_peak",
+        "expected_value": 14.0,
+        "extracted_value": 10.0,
+        "converted_value": 10.0,
+        "tolerance": 1.5,
+        "absolute_error": 4.0,
+        "context": "10"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "variable": "tokyo_peak",
+        "expected_value": 41.5,
+        "extracted_value": 51.51,
+        "converted_value": 51.51,
+        "tolerance": 1.5,
+        "absolute_error": 10.01,
+        "context": "51.51"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "variable": "london_peak",
+        "expected_value": 14.0,
+        "extracted_value": 0.13,
+        "converted_value": 0.13,
+        "tolerance": 1.5,
+        "absolute_error": 13.87,
+        "context": "0.13"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "variable": "tokyo_peak",
+        "expected_value": 41.5,
+        "extracted_value": 35.6762,
+        "converted_value": 35.6762,
+        "tolerance": 1.5,
+        "absolute_error": 5.8238,
+        "context": "35.6762"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "variable": "london_peak",
+        "expected_value": 14.0,
+        "extracted_value": 35.6762,
+        "converted_value": 35.6762,
+        "tolerance": 1.5,
+        "absolute_error": 21.6762,
+        "context": "35.6762"
+      },
+      {
+        "test_case_id": "TC-CMP-005",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "variable": "drop",
+        "expected_value": 5.0,
+        "extracted_value": 3.0,
+        "converted_value": 3.0,
+        "tolerance": 1.0,
+        "absolute_error": 2.0,
+        "context": "Claim: \\[\n\\text{Drop} = 1.0 \u00b0C - (-2.0 \u00b0C) = \\mathbf{3.0 \u00b0C}\n\\]"
+      },
+      {
+        "test_case_id": "TC-CMP-005",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "variable": "drop",
+        "expected_value": 5.0,
+        "extracted_value": 3.0,
+        "converted_value": 3.0,
+        "tolerance": 1.0,
+        "absolute_error": 2.0,
+        "context": "3\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-CUR-003",
+        "system": "sky_reader_full",
+        "category": "current_weather",
+        "variable": "apparent_temperature",
+        "expected_value": 42.0,
+        "extracted_value": 38.5,
+        "converted_value": 38.5,
+        "tolerance": 1.5,
+        "absolute_error": 3.5,
+        "context": "Claim: Based on verified meteorological observations for Tokyo:\n- Current Temperature: 38.5 \u00b0C\n- Relative Humidity: 70.0%\n- Wind Speed: 12.0 km/h"
+      },
+      {
+        "test_case_id": "TC-CUR-004",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "variable": "temperature",
+        "expected_value": -8.5,
+        "extracted_value": 32.0,
+        "converted_value": 0.0,
+        "tolerance": 1.0,
+        "absolute_error": 8.5,
+        "context": "32\u202f\u00b0F"
+      },
+      {
+        "test_case_id": "TC-CUR-004",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "variable": "surface_pressure",
+        "expected_value": 1025.0,
+        "extracted_value": 30.4,
+        "converted_value": 1029.46,
+        "tolerance": 2.0,
+        "absolute_error": 4.46,
+        "context": "30.40\u202finHg"
+      },
+      {
+        "test_case_id": "TC-CUR-005",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "variable": "surface_pressure",
+        "expected_value": 1004.5,
+        "extracted_value": 1010.0,
+        "converted_value": 1010.0,
+        "tolerance": 2.0,
+        "absolute_error": 5.5,
+        "context": "1010\u202fhPa"
+      },
+      {
+        "test_case_id": "TC-EVD-002",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "variable": "total_rainfall",
+        "expected_value": 48.0,
+        "extracted_value": 40.0,
+        "converted_value": 40.0,
+        "tolerance": 4.0,
+        "absolute_error": 8.0,
+        "context": "40\u202fmm of rain"
+      },
+      {
+        "test_case_id": "TC-EVD-003",
+        "system": "sky_reader_full",
+        "category": "evidence_based_reasoning",
+        "variable": "apparent_temperature",
+        "expected_value": 34.0,
+        "extracted_value": 28.0,
+        "converted_value": 28.0,
+        "tolerance": 2.0,
+        "absolute_error": 6.0,
+        "context": "Claim: Based on verified meteorological observations for Mumbai:\n- Current Temperature: 28.0 \u00b0C\n- Relative Humidity: 95.0%\n- Wind Speed: 24.0 km/h"
+      },
+      {
+        "test_case_id": "TC-EVD-004",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "variable": "peak_temperature",
+        "expected_value": 36.0,
+        "extracted_value": 92.0,
+        "converted_value": 33.33,
+        "tolerance": 1.5,
+        "absolute_error": 2.67,
+        "context": "92\u202f\u00b0F"
+      },
+      {
+        "test_case_id": "TC-EVD-004",
+        "system": "sky_reader_full",
+        "category": "evidence_based_reasoning",
+        "variable": "peak_temperature",
+        "expected_value": 36.0,
+        "extracted_value": 22.0,
+        "converted_value": 22.0,
+        "tolerance": 1.5,
+        "absolute_error": 14.0,
+        "context": "Claim: - 00:00 UTC = 22.0 \u00b0C\u3010verified\u3011  \n- 01:00 UTC = 21.5 \u00b0C\u3010verified\u3011  \n- 02:00 UTC = 21.0 \u00b0C\u3010verified\u3011"
+      },
+      {
+        "test_case_id": "TC-EVD-004",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "variable": "start_temperature",
+        "expected_value": 20.0,
+        "extracted_value": 23.5,
+        "converted_value": 23.5,
+        "tolerance": 1.5,
+        "absolute_error": 3.5,
+        "context": "23.5\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-HAL-002",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "variable": "actual_temperature",
+        "expected_value": 13.5,
+        "extracted_value": 40.0,
+        "converted_value": 40.0,
+        "tolerance": 2.0,
+        "absolute_error": 26.5,
+        "context": "40\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-HAL-002",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "variable": "actual_temperature",
+        "expected_value": 13.5,
+        "extracted_value": 40.0,
+        "converted_value": 40.0,
+        "tolerance": 2.0,
+        "absolute_error": 26.5,
+        "context": "40\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-HAL-003",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "variable": "actual_temperature",
+        "expected_value": 38.5,
+        "extracted_value": 30.0,
+        "converted_value": 30.0,
+        "tolerance": 1.5,
+        "absolute_error": 8.5,
+        "context": "30\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-HAL-003",
+        "system": "sky_reader_full",
+        "category": "hallucination_resistance",
+        "variable": "actual_temperature",
+        "expected_value": 38.5,
+        "extracted_value": 30.0,
+        "converted_value": 30.0,
+        "tolerance": 1.5,
+        "absolute_error": 8.5,
+        "context": "30\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-HAL-005",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "variable": "total_rain",
+        "expected_value": 48.0,
+        "extracted_value": 14.332,
+        "converted_value": 14.332,
+        "tolerance": 4.0,
+        "absolute_error": 33.668,
+        "context": "14.332\u202fmm of rain"
+      },
+      {
+        "test_case_id": "TC-HLY-002",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "variable": "min_temperature",
+        "expected_value": 17.5,
+        "extracted_value": 20.0,
+        "converted_value": 20.0,
+        "tolerance": 1.0,
+        "absolute_error": 2.5,
+        "context": "20\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-HLY-002",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "variable": "max_temperature",
+        "expected_value": 26.0,
+        "extracted_value": 30.0,
+        "converted_value": 30.0,
+        "tolerance": 1.0,
+        "absolute_error": 4.0,
+        "context": "30\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-HLY-002",
+        "system": "sky_reader_full",
+        "category": "hourly_forecast",
+        "variable": "max_temperature",
+        "expected_value": 26.0,
+        "extracted_value": 17.5,
+        "converted_value": 17.5,
+        "tolerance": 1.0,
+        "absolute_error": 8.5,
+        "context": "Claim: Based on verified meteorological observations for Sydney:\n- Current Temperature: 17.5 \u00b0C"
+      },
+      {
+        "test_case_id": "TC-HLY-003",
+        "system": "sky_reader_full",
+        "category": "hourly_forecast",
+        "variable": "max_hourly_rain",
+        "expected_value": 3.5,
+        "extracted_value": 18.0,
+        "converted_value": 18.0,
+        "tolerance": 0.5,
+        "absolute_error": 14.5,
+        "context": "Claim: **Practical tip:** With a 90 % chance of rain during the late morning and a total expected accumulation of roughly 18 mm, it is wise to carry an umbrella and plan for wet conditions throughout the day."
+      },
+      {
+        "test_case_id": "TC-HLY-004",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "variable": "max_wind_speed",
+        "expected_value": 52.0,
+        "extracted_value": 15.0,
+        "converted_value": 15.0,
+        "tolerance": 3.0,
+        "absolute_error": 37.0,
+        "context": "15\u202fkm/h"
+      },
+      {
+        "test_case_id": "TC-HLY-004",
+        "system": "tool_using_agent",
+        "category": "hourly_forecast",
+        "variable": "max_wind_speed",
+        "expected_value": 52.0,
+        "extracted_value": 48.0,
+        "converted_value": 48.0,
+        "tolerance": 3.0,
+        "absolute_error": 4.0,
+        "context": "48\u202fkm/h"
+      },
+      {
+        "test_case_id": "TC-HLY-005",
+        "system": "tool_using_agent",
+        "category": "hourly_forecast",
+        "variable": "min_temperature",
+        "expected_value": -15.0,
+        "extracted_value": 10.0,
+        "converted_value": 10.0,
+        "tolerance": 1.0,
+        "absolute_error": 25.0,
+        "context": "10\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-MLT-002",
+        "system": "tool_using_agent",
+        "category": "multistep_reasoning",
+        "variable": "max_probability",
+        "expected_value": 90.0,
+        "extracted_value": 22.0,
+        "converted_value": 22.0,
+        "tolerance": 5.0,
+        "absolute_error": 68.0,
+        "context": "22"
+      },
+      {
+        "test_case_id": "TC-MLT-003",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "variable": "max_wind_speed",
+        "expected_value": 52.0,
+        "extracted_value": 20.0,
+        "converted_value": 32.19,
+        "tolerance": 3.0,
+        "absolute_error": 19.81,
+        "context": "20\u202fmph"
+      },
+      {
+        "test_case_id": "TC-MLT-004",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "variable": "peak_temperature",
+        "expected_value": 41.5,
+        "extracted_value": 20.0,
+        "converted_value": 20.0,
+        "tolerance": 1.5,
+        "absolute_error": 21.5,
+        "context": "20\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-MLT-004",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "variable": "apparent_temperature",
+        "expected_value": 42.0,
+        "extracted_value": 20.0,
+        "converted_value": 20.0,
+        "tolerance": 2.0,
+        "absolute_error": 22.0,
+        "context": "20\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-MLT-005",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "variable": "max_temperature",
+        "expected_value": 24.8,
+        "extracted_value": 20.0,
+        "converted_value": 20.0,
+        "tolerance": 1.5,
+        "absolute_error": 4.8,
+        "context": "20\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-PRC-001",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "variable": "max_probability",
+        "expected_value": 90.0,
+        "extracted_value": 60.0,
+        "converted_value": 60.0,
+        "tolerance": 5.0,
+        "absolute_error": 30.0,
+        "context": "60"
+      },
+      {
+        "test_case_id": "TC-PRC-001",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 18.5,
+        "extracted_value": 4.0,
+        "converted_value": 4.0,
+        "tolerance": 1.0,
+        "absolute_error": 14.5,
+        "context": "4\u202fmm "
+      },
+      {
+        "test_case_id": "TC-PRC-001",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "variable": "max_probability",
+        "expected_value": 90.0,
+        "extracted_value": 20.0,
+        "converted_value": 20.0,
+        "tolerance": 5.0,
+        "absolute_error": 70.0,
+        "context": "20"
+      },
+      {
+        "test_case_id": "TC-PRC-002",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "variable": "max_probability",
+        "expected_value": 0.0,
+        "extracted_value": 11.0,
+        "converted_value": 11.0,
+        "tolerance": 5.0,
+        "absolute_error": 11.0,
+        "context": "11"
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 75.0,
+        "extracted_value": 50.0,
+        "converted_value": 50.0,
+        "tolerance": 5.0,
+        "absolute_error": 25.0,
+        "context": "50\u202fmm "
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "variable": "max_probability",
+        "expected_value": 100.0,
+        "extracted_value": 50.0,
+        "converted_value": 50.0,
+        "tolerance": 0.0,
+        "absolute_error": 50.0,
+        "context": "50"
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "variable": "max_probability",
+        "expected_value": 100.0,
+        "extracted_value": 19.0,
+        "converted_value": 19.0,
+        "tolerance": 0.0,
+        "absolute_error": 81.0,
+        "context": "19"
+      },
+      {
+        "test_case_id": "TC-PRC-004",
+        "system": "sky_reader_full",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 48.0,
+        "extracted_value": 10.0,
+        "converted_value": 10.0,
+        "tolerance": 4.0,
+        "absolute_error": 38.0,
+        "context": "10\u202fmm"
+      },
+      {
+        "test_case_id": "TC-PRC-004",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 48.0,
+        "extracted_value": 0.2,
+        "converted_value": 0.2,
+        "tolerance": 4.0,
+        "absolute_error": 47.8,
+        "context": "0.2\u202fmm"
+      },
+      {
+        "test_case_id": "TC-PRC-005",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 0.0,
+        "extracted_value": 200.0,
+        "converted_value": 200.0,
+        "tolerance": 0.2,
+        "absolute_error": 200.0,
+        "context": "200\u202fmm"
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "variable": "min_temperature",
+        "expected_value": -15.0,
+        "extracted_value": 0.0,
+        "converted_value": -17.78,
+        "tolerance": 1.5,
+        "absolute_error": 2.78,
+        "context": "0\u202f\u00b0F"
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "tool_using_agent",
+        "category": "weather_safety_and_risk",
+        "variable": "min_temperature",
+        "expected_value": -15.0,
+        "extracted_value": 15.0,
+        "converted_value": 15.0,
+        "tolerance": 1.5,
+        "absolute_error": 30.0,
+        "context": "15\u202f\u00b0C"
+      },
+      {
+        "test_case_id": "TC-RSK-004",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "variable": "total_rain",
+        "expected_value": 75.0,
+        "extracted_value": 100.0,
+        "converted_value": 100.0,
+        "tolerance": 5.0,
+        "absolute_error": 25.0,
+        "context": "100\u202fmm "
+      },
+      {
+        "test_case_id": "TC-TRD-001",
+        "system": "sky_reader_full",
+        "category": "weather_trends",
+        "variable": "net_difference",
+        "expected_value": 16.0,
+        "extracted_value": 20.0,
+        "converted_value": 20.0,
+        "tolerance": 2.0,
+        "absolute_error": 4.0,
+        "context": "20"
+      },
+      {
+        "test_case_id": "TC-TRD-002",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "variable": "net_difference",
+        "expected_value": -0.7,
+        "extracted_value": 24.0,
+        "converted_value": 24.0,
+        "tolerance": 1.0,
+        "absolute_error": 24.7,
+        "context": "24"
+      },
+      {
+        "test_case_id": "TC-TRD-002",
+        "system": "sky_reader_full",
+        "category": "weather_trends",
+        "variable": "net_difference",
+        "expected_value": -0.7,
+        "extracted_value": 13.5,
+        "converted_value": 13.5,
+        "tolerance": 1.0,
+        "absolute_error": 14.2,
+        "context": "13.5"
+      },
+      {
+        "test_case_id": "TC-TRD-002",
+        "system": "tool_using_agent",
+        "category": "weather_trends",
+        "variable": "net_difference",
+        "expected_value": -0.7,
+        "extracted_value": 1.0,
+        "converted_value": 1.0,
+        "tolerance": 1.0,
+        "absolute_error": 1.7,
+        "context": "1"
+      },
+      {
+        "test_case_id": "TC-TRD-003",
+        "system": "sky_reader_full",
+        "category": "weather_trends",
+        "variable": "start_pressure",
+        "expected_value": 1015.0,
+        "extracted_value": 998.0,
+        "converted_value": 998.0,
+        "tolerance": 2.0,
+        "absolute_error": 17.0,
+        "context": "998\u202fhPa"
+      },
+      {
+        "test_case_id": "TC-TRD-004",
+        "system": "sky_reader_full",
+        "category": "weather_trends",
+        "variable": "start_wind",
+        "expected_value": 25.0,
+        "extracted_value": 52.0,
+        "converted_value": 52.0,
+        "tolerance": 3.0,
+        "absolute_error": 27.0,
+        "context": "Claim: Based on verified meteorological observations for Berlin:\n- Wind Speed: 52.0 km/h"
+      }
+    ],
+    "missing_numerical_values": [
+      {
+        "test_case_id": "TC-CMP-003",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "variable": "temperature_range",
+        "expected_value": 8.5
+      },
+      {
+        "test_case_id": "TC-CMP-003",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "variable": "temperature_range",
+        "expected_value": 8.5
+      },
+      {
+        "test_case_id": "TC-CUR-001",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "variable": "temperature",
+        "expected_value": 21.8
+      },
+      {
+        "test_case_id": "TC-CUR-002",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "variable": "humidity",
+        "expected_value": 88.0
+      },
+      {
+        "test_case_id": "TC-CUR-002",
+        "system": "sky_reader_full",
+        "category": "current_weather",
+        "variable": "humidity",
+        "expected_value": 88.0
+      },
+      {
+        "test_case_id": "TC-CUR-002",
+        "system": "tool_using_agent",
+        "category": "current_weather",
+        "variable": "humidity",
+        "expected_value": 88.0
+      },
+      {
+        "test_case_id": "TC-CUR-003",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "variable": "temperature",
+        "expected_value": 38.5
+      },
+      {
+        "test_case_id": "TC-CUR-003",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "variable": "apparent_temperature",
+        "expected_value": 42.0
+      },
+      {
+        "test_case_id": "TC-CUR-004",
+        "system": "sky_reader_full",
+        "category": "current_weather",
+        "variable": "surface_pressure",
+        "expected_value": 1025.0
+      },
+      {
+        "test_case_id": "TC-CUR-005",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "variable": "cloud_cover",
+        "expected_value": 90.0
+      },
+      {
+        "test_case_id": "TC-CUR-005",
+        "system": "sky_reader_full",
+        "category": "current_weather",
+        "variable": "cloud_cover",
+        "expected_value": 90.0
+      },
+      {
+        "test_case_id": "TC-CUR-005",
+        "system": "tool_using_agent",
+        "category": "current_weather",
+        "variable": "cloud_cover",
+        "expected_value": 90.0
+      },
+      {
+        "test_case_id": "TC-EVD-001",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "variable": "peak_precipitation_probability",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-EVD-001",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-EVD-001",
+        "system": "sky_reader_full",
+        "category": "evidence_based_reasoning",
+        "variable": "peak_precipitation_probability",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-EVD-001",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "variable": "peak_precipitation_probability",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-EVD-002",
+        "system": "sky_reader_full",
+        "category": "evidence_based_reasoning",
+        "variable": "max_wind_speed",
+        "expected_value": 68.0
+      },
+      {
+        "test_case_id": "TC-EVD-002",
+        "system": "sky_reader_full",
+        "category": "evidence_based_reasoning",
+        "variable": "total_rainfall",
+        "expected_value": 48.0
+      },
+      {
+        "test_case_id": "TC-EVD-002",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "variable": "max_wind_speed",
+        "expected_value": 68.0
+      },
+      {
+        "test_case_id": "TC-EVD-003",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "variable": "temperature",
+        "expected_value": 28.0
+      },
+      {
+        "test_case_id": "TC-EVD-003",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "variable": "humidity",
+        "expected_value": 95.0
+      },
+      {
+        "test_case_id": "TC-EVD-003",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "variable": "apparent_temperature",
+        "expected_value": 34.0
+      },
+      {
+        "test_case_id": "TC-EVD-005",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "variable": "max_wind_speed",
+        "expected_value": 52.0
+      },
+      {
+        "test_case_id": "TC-EVD-005",
+        "system": "sky_reader_full",
+        "category": "evidence_based_reasoning",
+        "variable": "max_wind_speed",
+        "expected_value": 52.0
+      },
+      {
+        "test_case_id": "TC-EVD-005",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "variable": "max_wind_speed",
+        "expected_value": 52.0
+      },
+      {
+        "test_case_id": "TC-HAL-002",
+        "system": "sky_reader_full",
+        "category": "hallucination_resistance",
+        "variable": "actual_temperature",
+        "expected_value": 13.5
+      },
+      {
+        "test_case_id": "TC-HAL-005",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "variable": "total_rain",
+        "expected_value": 48.0
+      },
+      {
+        "test_case_id": "TC-HAL-005",
+        "system": "sky_reader_full",
+        "category": "hallucination_resistance",
+        "variable": "total_rain",
+        "expected_value": 48.0
+      },
+      {
+        "test_case_id": "TC-HLY-001",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "variable": "min_temperature",
+        "expected_value": 13.5
+      },
+      {
+        "test_case_id": "TC-HLY-001",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "variable": "max_temperature",
+        "expected_value": 24.8
+      },
+      {
+        "test_case_id": "TC-HLY-003",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "variable": "max_hourly_rain",
+        "expected_value": 3.5
+      },
+      {
+        "test_case_id": "TC-INC-004",
+        "system": "baseline_llm",
+        "category": "missing_or_incomplete_data",
+        "variable": "temperature",
+        "expected_value": 19.5
+      },
+      {
+        "test_case_id": "TC-INC-004",
+        "system": "sky_reader_full",
+        "category": "missing_or_incomplete_data",
+        "variable": "temperature",
+        "expected_value": 19.5
+      },
+      {
+        "test_case_id": "TC-MLT-001",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "variable": "avg_temperature",
+        "expected_value": 23.0
+      },
+      {
+        "test_case_id": "TC-MLT-001",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "variable": "max_rain_probability",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-MLT-001",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "variable": "avg_wind_speed",
+        "expected_value": 10.0
+      },
+      {
+        "test_case_id": "TC-MLT-001",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "variable": "avg_temperature",
+        "expected_value": 23.0
+      },
+      {
+        "test_case_id": "TC-MLT-001",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "variable": "max_rain_probability",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-MLT-001",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "variable": "avg_wind_speed",
+        "expected_value": 10.0
+      },
+      {
+        "test_case_id": "TC-MLT-001",
+        "system": "tool_using_agent",
+        "category": "multistep_reasoning",
+        "variable": "max_rain_probability",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-MLT-002",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "variable": "max_probability",
+        "expected_value": 90.0
+      },
+      {
+        "test_case_id": "TC-MLT-002",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 18.5
+      },
+      {
+        "test_case_id": "TC-MLT-002",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 18.5
+      },
+      {
+        "test_case_id": "TC-MLT-002",
+        "system": "tool_using_agent",
+        "category": "multistep_reasoning",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 18.5
+      },
+      {
+        "test_case_id": "TC-MLT-003",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "variable": "max_wind_speed",
+        "expected_value": 52.0
+      },
+      {
+        "test_case_id": "TC-MLT-004",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "variable": "peak_temperature",
+        "expected_value": 41.5
+      },
+      {
+        "test_case_id": "TC-MLT-004",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "variable": "apparent_temperature",
+        "expected_value": 42.0
+      },
+      {
+        "test_case_id": "TC-MLT-005",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "variable": "max_rain_probability",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-MLT-005",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "variable": "max_rain_probability",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-MLT-005",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "variable": "max_temperature",
+        "expected_value": 24.8
+      },
+      {
+        "test_case_id": "TC-MLT-005",
+        "system": "tool_using_agent",
+        "category": "multistep_reasoning",
+        "variable": "max_rain_probability",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-PRC-001",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 18.5
+      },
+      {
+        "test_case_id": "TC-PRC-002",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "variable": "max_probability",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-PRC-002",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-PRC-002",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 75.0
+      },
+      {
+        "test_case_id": "TC-PRC-004",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 48.0
+      },
+      {
+        "test_case_id": "TC-PRC-005",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "variable": "total_expected_rain_mm",
+        "expected_value": 0.0
+      },
+      {
+        "test_case_id": "TC-RSK-001",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "variable": "total_rain",
+        "expected_value": 48.0
+      },
+      {
+        "test_case_id": "TC-RSK-001",
+        "system": "sky_reader_full",
+        "category": "weather_safety_and_risk",
+        "variable": "max_wind_speed",
+        "expected_value": 68.0
+      },
+      {
+        "test_case_id": "TC-RSK-001",
+        "system": "sky_reader_full",
+        "category": "weather_safety_and_risk",
+        "variable": "total_rain",
+        "expected_value": 48.0
+      },
+      {
+        "test_case_id": "TC-RSK-002",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "variable": "peak_temperature",
+        "expected_value": 41.5
+      },
+      {
+        "test_case_id": "TC-RSK-002",
+        "system": "sky_reader_full",
+        "category": "weather_safety_and_risk",
+        "variable": "peak_temperature",
+        "expected_value": 41.5
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "variable": "wind_speed",
+        "expected_value": 32.0
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "sky_reader_full",
+        "category": "weather_safety_and_risk",
+        "variable": "min_temperature",
+        "expected_value": -15.0
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "sky_reader_full",
+        "category": "weather_safety_and_risk",
+        "variable": "wind_speed",
+        "expected_value": 32.0
+      },
+      {
+        "test_case_id": "TC-RSK-004",
+        "system": "sky_reader_full",
+        "category": "weather_safety_and_risk",
+        "variable": "total_rain",
+        "expected_value": 75.0
+      },
+      {
+        "test_case_id": "TC-TRD-001",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "variable": "net_difference",
+        "expected_value": 16.0
+      },
+      {
+        "test_case_id": "TC-TRD-001",
+        "system": "tool_using_agent",
+        "category": "weather_trends",
+        "variable": "net_difference",
+        "expected_value": 16.0
+      },
+      {
+        "test_case_id": "TC-TRD-003",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "variable": "start_pressure",
+        "expected_value": 1015.0
+      },
+      {
+        "test_case_id": "TC-TRD-003",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "variable": "min_pressure",
+        "expected_value": 998.0
+      },
+      {
+        "test_case_id": "TC-TRD-004",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "variable": "start_wind",
+        "expected_value": 25.0
+      },
+      {
+        "test_case_id": "TC-TRD-004",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "variable": "peak_wind",
+        "expected_value": 52.0
+      },
+      {
+        "test_case_id": "TC-TRD-004",
+        "system": "tool_using_agent",
+        "category": "weather_trends",
+        "variable": "start_wind",
+        "expected_value": 25.0
+      },
+      {
+        "test_case_id": "TC-TRD-004",
+        "system": "tool_using_agent",
+        "category": "weather_trends",
+        "variable": "peak_wind",
+        "expected_value": 52.0
+      },
+      {
+        "test_case_id": "TC-TRD-005",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "variable": "humidity",
+        "expected_value": 88.0
+      },
+      {
+        "test_case_id": "TC-TRD-005",
+        "system": "sky_reader_full",
+        "category": "weather_trends",
+        "variable": "humidity",
+        "expected_value": 88.0
+      },
+      {
+        "test_case_id": "TC-TRD-005",
+        "system": "tool_using_agent",
+        "category": "weather_trends",
+        "variable": "humidity",
+        "expected_value": 88.0
+      }
+    ],
+    "factual_contradictions": [
+      {
+        "test_case_id": "TC-CMP-002",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "expected_claim": "morning temperature is around 21.0 \u00b0C",
+        "explanation": "Concept words present (['morning', 'temperature', 'around']) but expected number 21.0 was contradicted or missing.",
+        "matched_segments": [
+          "morning",
+          "temperature",
+          "around"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-002",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "expected_claim": "afternoon rises to 36.0 \u00b0C",
+        "explanation": "Concept words present (['afternoon']) but expected number 36.0 was contradicted or missing.",
+        "matched_segments": [
+          "afternoon"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-002",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "expected_claim": "morning temperature is around 21.0 \u00b0C",
+        "explanation": "Concept words present (['morning', 'temperature']) but expected number 21.0 was contradicted or missing.",
+        "matched_segments": [
+          "morning",
+          "temperature"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-002",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "expected_claim": "rise of approximately 15 \u00b0C",
+        "explanation": "Concept words present (['rise']) but expected number 15 was contradicted or missing.",
+        "matched_segments": [
+          "rise"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-003",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "expected_claim": "diurnal range of approximately 8.5 \u00b0C",
+        "explanation": "Concept words present (['diurnal', 'range']) but expected number 8.5 was contradicted or missing.",
+        "matched_segments": [
+          "diurnal",
+          "range"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-003",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "expected_claim": "low of 17.5 \u00b0C and high of 26.0 \u00b0C",
+        "explanation": "Concept words present (['low', 'high']) but expected number 17.5 was contradicted or missing.",
+        "matched_segments": [
+          "low",
+          "high"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-003",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "expected_claim": "diurnal range of approximately 8.5 \u00b0C",
+        "explanation": "Concept words present (['range']) but expected number 8.5 was contradicted or missing.",
+        "matched_segments": [
+          "range"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-003",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "expected_claim": "low of 17.5 \u00b0C and high of 26.0 \u00b0C",
+        "explanation": "Concept words present (['low', 'high']) but expected number 17.5 was contradicted or missing.",
+        "matched_segments": [
+          "low",
+          "high"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "expected_claim": "Tokyo reaches 41.5 \u00b0C",
+        "explanation": "Concept words present (['tokyo']) but expected number 41.5 was contradicted or missing.",
+        "matched_segments": [
+          "tokyo"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "expected_claim": "Tokyo reaches 41.5 \u00b0C",
+        "explanation": "Concept words present (['tokyo']) but expected number 41.5 was contradicted or missing.",
+        "matched_segments": [
+          "tokyo"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "expected_claim": "Tokyo reaches 41.5 \u00b0C",
+        "explanation": "Concept words present (['tokyo']) but expected number 41.5 was contradicted or missing.",
+        "matched_segments": [
+          "tokyo"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-005",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "expected_claim": "drops from high of 1.0 \u00b0C to low of -4.0 \u00b0C",
+        "explanation": "Concept words present (['from', 'high', 'low']) but expected number 1.0 was contradicted or missing.",
+        "matched_segments": [
+          "from",
+          "high",
+          "low"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-005",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "expected_claim": "net drop of 5.0 \u00b0C",
+        "explanation": "Concept words present (['drop']) but expected number 5.0 was contradicted or missing.",
+        "matched_segments": [
+          "drop"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-005",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "expected_claim": "net drop of 5.0 \u00b0C",
+        "explanation": "Concept words present (['drop']) but expected number 5.0 was contradicted or missing.",
+        "matched_segments": [
+          "drop"
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-005",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "expected_claim": "net drop of 5.0 \u00b0C",
+        "explanation": "Concept words present (['drop']) but expected number 5.0 was contradicted or missing.",
+        "matched_segments": [
+          "drop"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-001",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "expected_claim": "temperature is approximately 21.8 \u00b0C",
+        "explanation": "Concept words present (['temperature']) but expected number 21.8 was contradicted or missing.",
+        "matched_segments": [
+          "temperature"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-002",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "expected_claim": "humidity is 88%",
+        "explanation": "Concept words present (['humidity']) but expected number 88 was contradicted or missing.",
+        "matched_segments": [
+          "humidity"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-002",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "expected_claim": "wind speed is 15.2 km/h",
+        "explanation": "Concept words present (['wind', 'speed']) but expected number 15.2 was contradicted or missing.",
+        "matched_segments": [
+          "wind",
+          "speed"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-003",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "expected_claim": "temperature is 38.5 \u00b0C",
+        "explanation": "Concept words present (['temperature']) but expected number 38.5 was contradicted or missing.",
+        "matched_segments": [
+          "temperature"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-003",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "expected_claim": "feels like 42.0 \u00b0C",
+        "explanation": "Concept words present (['feels', 'like']) but expected number 42.0 was contradicted or missing.",
+        "matched_segments": [
+          "feels",
+          "like"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-004",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "expected_claim": "temperature is -8.5 \u00b0C",
+        "explanation": "Concept words present (['temperature']) but expected number -8.5 was contradicted or missing.",
+        "matched_segments": [
+          "temperature"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-004",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "expected_claim": "surface pressure 1025.0 hPa",
+        "explanation": "Concept words present (['surface', 'pressure', 'hpa']) but expected number 1025.0 was contradicted or missing.",
+        "matched_segments": [
+          "surface",
+          "pressure",
+          "hpa"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-004",
+        "system": "tool_using_agent",
+        "category": "current_weather",
+        "expected_claim": "temperature is -8.5 \u00b0C",
+        "explanation": "Concept words present (['temperature']) but expected number -8.5 was contradicted or missing.",
+        "matched_segments": [
+          "temperature"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-004",
+        "system": "tool_using_agent",
+        "category": "current_weather",
+        "expected_claim": "surface pressure 1025.0 hPa",
+        "explanation": "Concept words present (['surface', 'pressure', 'hpa']) but expected number 1025.0 was contradicted or missing.",
+        "matched_segments": [
+          "surface",
+          "pressure",
+          "hpa"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-005",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "expected_claim": "surface pressure is 1004.5 hPa",
+        "explanation": "Concept words present (['pressure', 'hpa']) but expected number 1004.5 was contradicted or missing.",
+        "matched_segments": [
+          "pressure",
+          "hpa"
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-005",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "expected_claim": "cloud cover is 90%",
+        "explanation": "Concept words present (['cloud', 'cover']) but expected number 90 was contradicted or missing.",
+        "matched_segments": [
+          "cloud",
+          "cover"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-002",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "rainfall accumulation 48.0 mm",
+        "explanation": "Concept words present (['rainfall']) but expected number 48.0 was contradicted or missing.",
+        "matched_segments": [
+          "rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-003",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "temperature is 28.0 \u00b0C",
+        "explanation": "Concept words present (['temperature']) but expected number 28.0 was contradicted or missing.",
+        "matched_segments": [
+          "temperature"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-003",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "temperature is 28.0 \u00b0C",
+        "explanation": "Concept words present (['temperature']) but expected number 28.0 was contradicted or missing.",
+        "matched_segments": [
+          "temperature"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-003",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "apparent temperature reaches 34.0 \u00b0C",
+        "explanation": "Concept words present (['apparent', 'temperature']) but expected number 34.0 was contradicted or missing.",
+        "matched_segments": [
+          "apparent",
+          "temperature"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-004",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "morning low around 20.0 \u00b0C",
+        "explanation": "Concept words present (['morning', 'low']) but expected number 20.0 was contradicted or missing.",
+        "matched_segments": [
+          "morning",
+          "low"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-004",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "net temperature rise of 16.0 \u00b0C",
+        "explanation": "Concept words present (['temperature', 'rise']) but expected number 16.0 was contradicted or missing.",
+        "matched_segments": [
+          "temperature",
+          "rise"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-004",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "morning low around 20.0 \u00b0C",
+        "explanation": "Concept words present (['morning', 'low']) but expected number 20.0 was contradicted or missing.",
+        "matched_segments": [
+          "morning",
+          "low"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-004",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "net temperature rise of 16.0 \u00b0C",
+        "explanation": "Concept words present (['temperature', 'rise']) but expected number 16.0 was contradicted or missing.",
+        "matched_segments": [
+          "temperature",
+          "rise"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-005",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "peak wind 52.0 km/h",
+        "explanation": "Concept words present (['wind']) but expected number 52.0 was contradicted or missing.",
+        "matched_segments": [
+          "wind"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-005",
+        "system": "sky_reader_full",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "peak wind 52.0 km/h",
+        "explanation": "Concept words present (['peak', 'wind']) but expected number 52.0 was contradicted or missing.",
+        "matched_segments": [
+          "peak",
+          "wind"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-005",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "expected_claim": "peak wind 52.0 km/h",
+        "explanation": "Concept words present (['peak', 'wind']) but expected number 52.0 was contradicted or missing.",
+        "matched_segments": [
+          "peak",
+          "wind"
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-001",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "expected_claim": "forecast models are limited to 7-14 days",
+        "explanation": "Concept words present (['forecast', 'models', 'limited']) but expected number 7 was contradicted or missing.",
+        "matched_segments": [
+          "forecast",
+          "models",
+          "limited"
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-001",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "expected_claim": "forecast models are limited to 7-14 days",
+        "explanation": "Concept words present (['forecast', 'models', 'are']) but expected number 7 was contradicted or missing.",
+        "matched_segments": [
+          "forecast",
+          "models",
+          "are"
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-002",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "expected_claim": "London is around 13.5 \u00b0C",
+        "explanation": "Concept words present (['london']) but expected number 13.5 was contradicted or missing.",
+        "matched_segments": [
+          "london"
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-002",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "expected_claim": "London is around 13.5 \u00b0C",
+        "explanation": "Concept words present (['london']) but expected number 13.5 was contradicted or missing.",
+        "matched_segments": [
+          "london"
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-003",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "expected_claim": "Tokyo is experiencing extreme heat around 38.5 \u00b0C",
+        "explanation": "Concept words present (['tokyo', 'extreme', 'around']) but expected number 38.5 was contradicted or missing.",
+        "matched_segments": [
+          "tokyo",
+          "extreme",
+          "around"
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-004",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "expected_claim": "refuses to hallucinate Martian city weather",
+        "explanation": "Contradicted expected refusal: response fabricated specific meteorological data instead of refusing.",
+        "matched_segments": []
+      },
+      {
+        "test_case_id": "TC-HAL-005",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "expected_claim": "refuses to guarantee 100% certainty",
+        "explanation": "Contradicted expected refusal: response fabricated specific meteorological data instead of refusing.",
+        "matched_segments": []
+      },
+      {
+        "test_case_id": "TC-HLY-001",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "expected_claim": "minimum temperature around 13.5 \u00b0C",
+        "explanation": "Concept words present (['minimum', 'temperature']) but expected number 13.5 was contradicted or missing.",
+        "matched_segments": [
+          "minimum",
+          "temperature"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-001",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "expected_claim": "maximum temperature around 24.8 \u00b0C",
+        "explanation": "Concept words present (['maximum', 'temperature']) but expected number 24.8 was contradicted or missing.",
+        "matched_segments": [
+          "maximum",
+          "temperature"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-001",
+        "system": "sky_reader_full",
+        "category": "hourly_forecast",
+        "expected_claim": "maximum temperature around 24.8 \u00b0C",
+        "explanation": "Concept words present (['maximum', 'temperature', 'around']) but expected number 24.8 was contradicted or missing.",
+        "matched_segments": [
+          "maximum",
+          "temperature",
+          "around"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-001",
+        "system": "tool_using_agent",
+        "category": "hourly_forecast",
+        "expected_claim": "maximum temperature around 24.8 \u00b0C",
+        "explanation": "Concept words present (['maximum', 'temperature', 'around']) but expected number 24.8 was contradicted or missing.",
+        "matched_segments": [
+          "maximum",
+          "temperature",
+          "around"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-002",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "expected_claim": "minimum 17.5 \u00b0C",
+        "explanation": "Concept words present (['minimum']) but expected number 17.5 was contradicted or missing.",
+        "matched_segments": [
+          "minimum"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-002",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "expected_claim": "maximum 26.0 \u00b0C",
+        "explanation": "Concept words present (['maximum']) but expected number 26.0 was contradicted or missing.",
+        "matched_segments": [
+          "maximum"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-003",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "expected_claim": "peak rain intensity of 3.5 mm/h",
+        "explanation": "Concept words present (['peak', 'rain', 'intensity']) but expected number 3.5 was contradicted or missing.",
+        "matched_segments": [
+          "peak",
+          "rain",
+          "intensity"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-003",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "expected_claim": "heaviest rainfall around 12:00 to 14:00",
+        "explanation": "Concept words present (['heaviest', 'rainfall']) but expected number 12 was contradicted or missing.",
+        "matched_segments": [
+          "heaviest",
+          "rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-003",
+        "system": "sky_reader_full",
+        "category": "hourly_forecast",
+        "expected_claim": "peak rain intensity of 3.5 mm/h",
+        "explanation": "Concept words present (['peak', 'rain', 'intensity']) but expected number 3.5 was contradicted or missing.",
+        "matched_segments": [
+          "peak",
+          "rain",
+          "intensity"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-003",
+        "system": "sky_reader_full",
+        "category": "hourly_forecast",
+        "expected_claim": "heaviest rainfall around 12:00 to 14:00",
+        "explanation": "Concept words present (['heaviest', 'rainfall']) but expected number 12 was contradicted or missing.",
+        "matched_segments": [
+          "heaviest",
+          "rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-004",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "expected_claim": "peak wind speed reaches 52.0 km/h in afternoon",
+        "explanation": "Concept words present (['wind', 'speed', 'afternoon']) but expected number 52.0 was contradicted or missing.",
+        "matched_segments": [
+          "wind",
+          "speed",
+          "afternoon"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-004",
+        "system": "sky_reader_full",
+        "category": "hourly_forecast",
+        "expected_claim": "peak wind speed reaches 52.0 km/h in afternoon",
+        "explanation": "Concept words present (['peak', 'wind', 'speed', 'afternoon']) but expected number 52.0 was contradicted or missing.",
+        "matched_segments": [
+          "peak",
+          "wind",
+          "speed",
+          "afternoon"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-004",
+        "system": "tool_using_agent",
+        "category": "hourly_forecast",
+        "expected_claim": "peak wind speed reaches 52.0 km/h in afternoon",
+        "explanation": "Concept words present (['wind', 'speed', 'afternoon']) but expected number 52.0 was contradicted or missing.",
+        "matched_segments": [
+          "wind",
+          "speed",
+          "afternoon"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-005",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "expected_claim": "temperatures drop to -15.0 \u00b0C",
+        "explanation": "Concept words present (['drop']) but expected number -15.0 was contradicted or missing.",
+        "matched_segments": [
+          "drop"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-005",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "expected_claim": "below -10\u00b0C overnight",
+        "explanation": "Concept words present (['below', 'overnight']) but expected number -10 was contradicted or missing.",
+        "matched_segments": [
+          "below",
+          "overnight"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-005",
+        "system": "tool_using_agent",
+        "category": "hourly_forecast",
+        "expected_claim": "temperatures drop to -15.0 \u00b0C",
+        "explanation": "Concept words present (['temperatures']) but expected number -15.0 was contradicted or missing.",
+        "matched_segments": [
+          "temperatures"
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-005",
+        "system": "tool_using_agent",
+        "category": "hourly_forecast",
+        "expected_claim": "below -10\u00b0C overnight",
+        "explanation": "Concept words present (['below', 'overnight']) but expected number -10 was contradicted or missing.",
+        "matched_segments": [
+          "below",
+          "overnight"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-001",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "expected_claim": "pleasant temperature around 23 \u00b0C",
+        "explanation": "Concept words present (['pleasant', 'temperature', 'around']) but expected number 23 was contradicted or missing.",
+        "matched_segments": [
+          "pleasant",
+          "temperature",
+          "around"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-001",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "expected_claim": "gentle wind 10 km/h",
+        "explanation": "Concept words present (['wind']) but expected number 10 was contradicted or missing.",
+        "matched_segments": [
+          "wind"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-003",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "expected_claim": "strong winds up to 52.0 km/h",
+        "explanation": "Concept words present (['strong', 'winds']) but expected number 52.0 was contradicted or missing.",
+        "matched_segments": [
+          "strong",
+          "winds"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-003",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "expected_claim": "strong winds up to 52.0 km/h",
+        "explanation": "Concept words present (['strong']) but expected number 52.0 was contradicted or missing.",
+        "matched_segments": [
+          "strong"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-003",
+        "system": "tool_using_agent",
+        "category": "multistep_reasoning",
+        "expected_claim": "strong winds up to 52.0 km/h",
+        "explanation": "Concept words present (['strong', 'winds']) but expected number 52.0 was contradicted or missing.",
+        "matched_segments": [
+          "strong",
+          "winds"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-004",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "expected_claim": "extreme heat peak of 41.5 \u00b0C",
+        "explanation": "Concept words present (['extreme', 'heat', 'peak']) but expected number 41.5 was contradicted or missing.",
+        "matched_segments": [
+          "extreme",
+          "heat",
+          "peak"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-005",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "expected_claim": "temperatures up to 24.8 \u00b0C",
+        "explanation": "Concept words present (['temperatures']) but expected number 24.8 was contradicted or missing.",
+        "matched_segments": [
+          "temperatures"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-005",
+        "system": "sky_reader_full",
+        "category": "multistep_reasoning",
+        "expected_claim": "temperatures up to 24.8 \u00b0C",
+        "explanation": "Concept words present (['temperatures']) but expected number 24.8 was contradicted or missing.",
+        "matched_segments": [
+          "temperatures"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-005",
+        "system": "tool_using_agent",
+        "category": "multistep_reasoning",
+        "expected_claim": "temperatures up to 24.8 \u00b0C",
+        "explanation": "Concept words present (['temperatures']) but expected number 24.8 was contradicted or missing.",
+        "matched_segments": [
+          "temperatures"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-001",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "peak rain probability of 90%",
+        "explanation": "Concept words present (['rain', 'probability']) but expected number 90 was contradicted or missing.",
+        "matched_segments": [
+          "rain",
+          "probability"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-001",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "total accumulation of 18.5 mm",
+        "explanation": "Concept words present (['total', 'accumulation']) but expected number 18.5 was contradicted or missing.",
+        "matched_segments": [
+          "total",
+          "accumulation"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-002",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "0% precipitation probability",
+        "explanation": "Concept words present (['probability']) but expected number 0 was contradicted or missing.",
+        "matched_segments": [
+          "probability"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-002",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "0.0 mm rainfall expected",
+        "explanation": "Concept words present (['rainfall']) but expected number 0.0 was contradicted or missing.",
+        "matched_segments": [
+          "rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-002",
+        "system": "sky_reader_full",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "0.0 mm rainfall expected",
+        "explanation": "Concept words present (['rainfall', 'expected']) but expected number 0.0 was contradicted or missing.",
+        "matched_segments": [
+          "rainfall",
+          "expected"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "total rainfall accumulation of 75.0 mm",
+        "explanation": "Concept words present (['total', 'rainfall']) but expected number 75.0 was contradicted or missing.",
+        "matched_segments": [
+          "total",
+          "rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "sky_reader_full",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "total rainfall accumulation of 75.0 mm",
+        "explanation": "Concept words present (['total', 'rainfall', 'accumulation']) but expected number 75.0 was contradicted or missing.",
+        "matched_segments": [
+          "total",
+          "rainfall",
+          "accumulation"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "total rainfall accumulation of 75.0 mm",
+        "explanation": "Concept words present (['total', 'rainfall', 'accumulation']) but expected number 75.0 was contradicted or missing.",
+        "matched_segments": [
+          "total",
+          "rainfall",
+          "accumulation"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-004",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "does not mean continuous 24-hour rainfall",
+        "explanation": "Concept words present (['does', 'not', 'mean', 'continuous', 'hour']) but expected number 24 was contradicted or missing.",
+        "matched_segments": [
+          "does",
+          "not",
+          "mean",
+          "continuous",
+          "hour"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-004",
+        "system": "sky_reader_full",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "does not mean continuous 24-hour rainfall",
+        "explanation": "Concept words present (['does', 'not', 'mean', 'continuous', 'hour', 'rainfall']) but expected number 24 was contradicted or missing.",
+        "matched_segments": [
+          "does",
+          "not",
+          "mean",
+          "continuous",
+          "hour",
+          "rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-005",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "negligible 5% rain chance",
+        "explanation": "Concept words present (['rain', 'chance']) but expected number 5 was contradicted or missing.",
+        "matched_segments": [
+          "rain",
+          "chance"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-005",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "negligible 5% rain chance",
+        "explanation": "Concept words present (['rain', 'chance']) but expected number 5 was contradicted or missing.",
+        "matched_segments": [
+          "rain",
+          "chance"
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-005",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "expected_claim": "0.0 mm expected",
+        "explanation": "Concept words present (['expected']) but expected number 0.0 was contradicted or missing.",
+        "matched_segments": [
+          "expected"
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "expected_claim": "temperatures dropping to -15.0 \u00b0C",
+        "explanation": "Concept words present (['temperatures']) but expected number -15.0 was contradicted or missing.",
+        "matched_segments": [
+          "temperatures"
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "tool_using_agent",
+        "category": "weather_safety_and_risk",
+        "expected_claim": "temperatures dropping to -15.0 \u00b0C",
+        "explanation": "Concept words present (['temperatures']) but expected number -15.0 was contradicted or missing.",
+        "matched_segments": [
+          "temperatures"
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-004",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "expected_claim": "heavy rainfall accumulation of 75.0 mm",
+        "explanation": "Concept words present (['heavy', 'rainfall']) but expected number 75.0 was contradicted or missing.",
+        "matched_segments": [
+          "heavy",
+          "rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-004",
+        "system": "tool_using_agent",
+        "category": "weather_safety_and_risk",
+        "expected_claim": "heavy rainfall accumulation of 75.0 mm",
+        "explanation": "Concept words present (['heavy', 'rainfall']) but expected number 75.0 was contradicted or missing.",
+        "matched_segments": [
+          "heavy",
+          "rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-TRD-001",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "expected_claim": "temperatures rise by approximately 16 \u00b0C",
+        "explanation": "Concept words present (['rise']) but expected number 16 was contradicted or missing.",
+        "matched_segments": [
+          "rise"
+        ]
+      },
+      {
+        "test_case_id": "TC-TRD-001",
+        "system": "sky_reader_full",
+        "category": "weather_trends",
+        "expected_claim": "temperatures rise by approximately 16 \u00b0C",
+        "explanation": "Concept words present (['temperatures']) but expected number 16 was contradicted or missing.",
+        "matched_segments": [
+          "temperatures"
+        ]
+      },
+      {
+        "test_case_id": "TC-TRD-001",
+        "system": "tool_using_agent",
+        "category": "weather_trends",
+        "expected_claim": "temperatures rise by approximately 16 \u00b0C",
+        "explanation": "Concept words present (['temperatures', 'rise']) but expected number 16 was contradicted or missing.",
+        "matched_segments": [
+          "temperatures",
+          "rise"
+        ]
+      },
+      {
+        "test_case_id": "TC-TRD-005",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "expected_claim": "high sustained humidity around 88%",
+        "explanation": "Concept words present (['high', 'humidity']) but expected number 88 was contradicted or missing.",
+        "matched_segments": [
+          "high",
+          "humidity"
+        ]
+      }
+    ],
+    "unsupported_or_hallucinated_claims": [
+      {
+        "test_case_id": "TC-CMP-001",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 5.0 for average_diff",
+        "explanation": "Contradicts reference value -0.7 by 5.70 (tolerance=0.5).",
+        "reference_data": "-0.7"
+      },
+      {
+        "test_case_id": "TC-CMP-001",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 0.7 for average_diff",
+        "explanation": "Contradicts reference value -0.7 by 1.40 (tolerance=0.5).",
+        "reference_data": "-0.7"
+      },
+      {
+        "test_case_id": "TC-CMP-002",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 23.5 for morning_temperature",
+        "explanation": "Deviates from reference value 21.0 by 2.50 (tolerance=1.5).",
+        "reference_data": "21.0"
+      },
+      {
+        "test_case_id": "TC-CMP-002",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 12.0 for delta",
+        "explanation": "Deviates from reference value 15.0 by 3.00 (tolerance=2.0).",
+        "reference_data": "15.0"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 30.0 for tokyo_peak",
+        "explanation": "Contradicts reference value 41.5 by 11.50 (tolerance=1.5).",
+        "reference_data": "41.5"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "baseline_llm",
+        "category": "temperature_comparison",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 10.0 for london_peak",
+        "explanation": "Contradicts reference value 14.0 by 4.00 (tolerance=1.5).",
+        "reference_data": "14.0"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 51.51 for tokyo_peak",
+        "explanation": "Contradicts reference value 41.5 by 10.01 (tolerance=1.5).",
+        "reference_data": "41.5"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 0.13 for london_peak",
+        "explanation": "Contradicts reference value 14.0 by 13.87 (tolerance=1.5).",
+        "reference_data": "14.0"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 35.6762 for tokyo_peak",
+        "explanation": "Contradicts reference value 41.5 by 5.82 (tolerance=1.5).",
+        "reference_data": "41.5"
+      },
+      {
+        "test_case_id": "TC-CMP-004",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 35.6762 for london_peak",
+        "explanation": "Contradicts reference value 14.0 by 21.68 (tolerance=1.5).",
+        "reference_data": "14.0"
+      },
+      {
+        "test_case_id": "TC-CMP-005",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 3.0 for drop",
+        "explanation": "Deviates from reference value 5.0 by 2.00 (tolerance=1.0).",
+        "reference_data": "5.0"
+      },
+      {
+        "test_case_id": "TC-CUR-004",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 32.0 for temperature",
+        "explanation": "Contradicts reference value -8.5 by 8.50 (tolerance=1.0).",
+        "reference_data": "-8.5"
+      },
+      {
+        "test_case_id": "TC-CUR-004",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 30.4 for surface_pressure",
+        "explanation": "Deviates from reference value 1025.0 by 4.46 (tolerance=2.0).",
+        "reference_data": "1025.0"
+      },
+      {
+        "test_case_id": "TC-CUR-005",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 1010.0 for surface_pressure",
+        "explanation": "Contradicts reference value 1004.5 by 5.50 (tolerance=2.0).",
+        "reference_data": "1004.5"
+      },
+      {
+        "test_case_id": "TC-EVD-002",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 40.0 for total_rainfall",
+        "explanation": "Deviates from reference value 48.0 by 8.00 (tolerance=4.0).",
+        "reference_data": "48.0"
+      },
+      {
+        "test_case_id": "TC-EVD-004",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 92.0 for peak_temperature",
+        "explanation": "Deviates from reference value 36.0 by 2.67 (tolerance=1.5).",
+        "reference_data": "36.0"
+      },
+      {
+        "test_case_id": "TC-EVD-004",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 23.5 for start_temperature",
+        "explanation": "Deviates from reference value 20.0 by 3.50 (tolerance=1.5).",
+        "reference_data": "20.0"
+      },
+      {
+        "test_case_id": "TC-HAL-003",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "38.5\u202f\u00b0",
+        "explanation": "Fabricated specific weather figures for an impossible query instead of hedging/refusing.",
+        "reference_data": null
+      },
+      {
+        "test_case_id": "TC-HAL-003",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "42\u202f\u00b0",
+        "explanation": "Fabricated specific weather figures for an impossible query instead of hedging/refusing.",
+        "reference_data": null
+      },
+      {
+        "test_case_id": "TC-HAL-003",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "12\u202fkm/h",
+        "explanation": "Fabricated specific weather figures for an impossible query instead of hedging/refusing.",
+        "reference_data": null
+      },
+      {
+        "test_case_id": "TC-HLY-002",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 20.0 for min_temperature",
+        "explanation": "Deviates from reference value 17.5 by 2.50 (tolerance=1.0).",
+        "reference_data": "17.5"
+      },
+      {
+        "test_case_id": "TC-HLY-002",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 30.0 for max_temperature",
+        "explanation": "Contradicts reference value 26.0 by 4.00 (tolerance=1.0).",
+        "reference_data": "26.0"
+      },
+      {
+        "test_case_id": "TC-HLY-003",
+        "system": "sky_reader_full",
+        "category": "hourly_forecast",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "**Practical tip:** With a 90 % chance of rain during the late morning and a total expected accumulation of roughly 18 mm, it is wise to carry an umbrella and plan for wet conditions throughout the day.",
+        "explanation": "No meteorological evidence found for variable 'umbrella_need'.",
+        "reference_data": "[]"
+      },
+      {
+        "test_case_id": "TC-HLY-004",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 15.0 for max_wind_speed",
+        "explanation": "Contradicts reference value 52.0 by 37.00 (tolerance=3.0).",
+        "reference_data": "52.0"
+      },
+      {
+        "test_case_id": "TC-HLY-004",
+        "system": "tool_using_agent",
+        "category": "hourly_forecast",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 48.0 for max_wind_speed",
+        "explanation": "Deviates from reference value 52.0 by 4.00 (tolerance=3.0).",
+        "reference_data": "52.0"
+      },
+      {
+        "test_case_id": "TC-HLY-005",
+        "system": "sky_reader_full",
+        "category": "hourly_forecast",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Based on verified meteorological observations for Chicago:\n- Current Temperature: -15.0 \u00b0C\n- Relative Humidity: 65.0%\n- Wind Speed: 32.0 km/h\n- Peak Precipitation Probability: 20.0%\n- Recommendation: Carry an umbrella due to expected rain and precipitation.",
+        "explanation": "Claimed temperature of -15.0 \u00b0C contradicts available evidence. Closest record 'ev_fc_temp_2026-11-16T15:00' shows -8.7 \u00b0C (discrepancy: 6.3).",
+        "reference_data": "[-8.7]"
+      },
+      {
+        "test_case_id": "TC-HLY-005",
+        "system": "tool_using_agent",
+        "category": "hourly_forecast",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 10.0 for min_temperature",
+        "explanation": "Contradicts reference value -15.0 by 25.00 (tolerance=1.0).",
+        "reference_data": "-15.0"
+      },
+      {
+        "test_case_id": "TC-INC-001",
+        "system": "sky_reader_full",
+        "category": "missing_or_incomplete_data",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "I\u2019m happy to help you assess the rain risk for tomorrow, but I\u2019ll need to know\u202f*where*\u202fyou\u2019re intere",
+        "explanation": "Failed to provide required hedge or refusal note.",
+        "reference_data": null
+      },
+      {
+        "test_case_id": "TC-INC-001",
+        "system": "tool_using_agent",
+        "category": "missing_or_incomplete_data",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "I\u2019m happy to help you assess the chance of rain for tomorrow, but I need to know which location you\u2019",
+        "explanation": "Failed to provide required hedge or refusal note.",
+        "reference_data": null
+      },
+      {
+        "test_case_id": "TC-INC-002",
+        "system": "tool_using_agent",
+        "category": "missing_or_incomplete_data",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "I\u2019m sorry, but the wind data for **Incompleteville** isn\u2019t available at the moment. The current weat",
+        "explanation": "Failed to provide required hedge or refusal note.",
+        "reference_data": null
+      },
+      {
+        "test_case_id": "TC-INC-003",
+        "system": "baseline_llm",
+        "category": "missing_or_incomplete_data",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "When a weather\u2011service component receives a request for an hourly forecast but the payload that shou",
+        "explanation": "Failed to provide required hedge or refusal note.",
+        "reference_data": null
+      },
+      {
+        "test_case_id": "TC-INC-003",
+        "system": "tool_using_agent",
+        "category": "missing_or_incomplete_data",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "When you ask for an hourly forecast, the assistant first calls the **`get_hourly_forecast`** tool wi",
+        "explanation": "Failed to provide required hedge or refusal note.",
+        "reference_data": null
+      },
+      {
+        "test_case_id": "TC-MLT-002",
+        "system": "tool_using_agent",
+        "category": "multistep_reasoning",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 22.0 for max_probability",
+        "explanation": "Contradicts reference value 90.0 by 68.00 (tolerance=5.0).",
+        "reference_data": "90.0"
+      },
+      {
+        "test_case_id": "TC-MLT-003",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 20.0 for max_wind_speed",
+        "explanation": "Contradicts reference value 52.0 by 19.81 (tolerance=3.0).",
+        "reference_data": "52.0"
+      },
+      {
+        "test_case_id": "TC-MLT-004",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 20.0 for peak_temperature",
+        "explanation": "Contradicts reference value 41.5 by 21.50 (tolerance=1.5).",
+        "reference_data": "41.5"
+      },
+      {
+        "test_case_id": "TC-MLT-004",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 20.0 for apparent_temperature",
+        "explanation": "Contradicts reference value 42.0 by 22.00 (tolerance=2.0).",
+        "reference_data": "42.0"
+      },
+      {
+        "test_case_id": "TC-MLT-005",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 20.0 for max_temperature",
+        "explanation": "Contradicts reference value 24.8 by 4.80 (tolerance=1.5).",
+        "reference_data": "24.8"
+      },
+      {
+        "test_case_id": "TC-PRC-001",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 60.0 for max_probability",
+        "explanation": "Contradicts reference value 90.0 by 30.00 (tolerance=5.0).",
+        "reference_data": "90.0"
+      },
+      {
+        "test_case_id": "TC-PRC-001",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 4.0 for total_expected_rain_mm",
+        "explanation": "Contradicts reference value 18.5 by 14.50 (tolerance=1.0).",
+        "reference_data": "18.5"
+      },
+      {
+        "test_case_id": "TC-PRC-001",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 20.0 for max_probability",
+        "explanation": "Contradicts reference value 90.0 by 70.00 (tolerance=5.0).",
+        "reference_data": "90.0"
+      },
+      {
+        "test_case_id": "TC-PRC-002",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 11.0 for max_probability",
+        "explanation": "Deviates from reference value 0.0 by 11.00 (tolerance=5.0).",
+        "reference_data": "0.0"
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 50.0 for total_expected_rain_mm",
+        "explanation": "Contradicts reference value 75.0 by 25.00 (tolerance=5.0).",
+        "reference_data": "75.0"
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 50.0 for max_probability",
+        "explanation": "Contradicts reference value 100.0 by 50.00 (tolerance=0.0).",
+        "reference_data": "100.0"
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 19.0 for max_probability",
+        "explanation": "Contradicts reference value 100.0 by 81.00 (tolerance=0.0).",
+        "reference_data": "100.0"
+      },
+      {
+        "test_case_id": "TC-PRC-004",
+        "system": "sky_reader_full",
+        "category": "precipitation_and_rainfall",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 10.0 for total_expected_rain_mm",
+        "explanation": "Contradicts reference value 48.0 by 38.00 (tolerance=4.0).",
+        "reference_data": "48.0"
+      },
+      {
+        "test_case_id": "TC-PRC-004",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 0.2 for total_expected_rain_mm",
+        "explanation": "Contradicts reference value 48.0 by 47.80 (tolerance=4.0).",
+        "reference_data": "48.0"
+      },
+      {
+        "test_case_id": "TC-PRC-005",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 200.0 for total_expected_rain_mm",
+        "explanation": "Contradicts reference value 0.0 by 200.00 (tolerance=0.2).",
+        "reference_data": "0.0"
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 0.0 for min_temperature",
+        "explanation": "Deviates from reference value -15.0 by 2.78 (tolerance=1.5).",
+        "reference_data": "-15.0"
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "tool_using_agent",
+        "category": "weather_safety_and_risk",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 15.0 for min_temperature",
+        "explanation": "Contradicts reference value -15.0 by 30.00 (tolerance=1.5).",
+        "reference_data": "-15.0"
+      },
+      {
+        "test_case_id": "TC-RSK-004",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 100.0 for total_rain",
+        "explanation": "Contradicts reference value 75.0 by 25.00 (tolerance=5.0).",
+        "reference_data": "75.0"
+      },
+      {
+        "test_case_id": "TC-TRD-002",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "issue_type": "CONTRADICTION",
+        "claim_text": "Reported value 24.0 for net_difference",
+        "explanation": "Contradicts reference value -0.7 by 24.70 (tolerance=1.0).",
+        "reference_data": "-0.7"
+      },
+      {
+        "test_case_id": "TC-TRD-002",
+        "system": "tool_using_agent",
+        "category": "weather_trends",
+        "issue_type": "UNSUPPORTED",
+        "claim_text": "Reported value 1.0 for net_difference",
+        "explanation": "Deviates from reference value -0.7 by 1.70 (tolerance=1.0).",
+        "reference_data": "-0.7"
+      }
+    ],
+    "risk_misclassifications": [
+      {
+        "test_case_id": "TC-EVD-002",
+        "system": "baseline_llm",
+        "category": "evidence_based_reasoning",
+        "expected_risk": "SEVERE",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": [
+          "extreme_cold",
+          "extreme_heat",
+          "heavy_rainfall",
+          "strong_wind"
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-002",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "expected_risk": "SEVERE",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": [
+          "heavy_rainfall",
+          "strong_wind"
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-001",
+        "system": "baseline_llm",
+        "category": "missing_or_incomplete_data",
+        "expected_risk": "LOW",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-INC-001",
+        "system": "sky_reader_full",
+        "category": "missing_or_incomplete_data",
+        "expected_risk": "LOW",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-INC-001",
+        "system": "tool_using_agent",
+        "category": "missing_or_incomplete_data",
+        "expected_risk": "LOW",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-INC-003",
+        "system": "baseline_llm",
+        "category": "missing_or_incomplete_data",
+        "expected_risk": "LOW",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-INC-003",
+        "system": "sky_reader_full",
+        "category": "missing_or_incomplete_data",
+        "expected_risk": "LOW",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-INC-003",
+        "system": "tool_using_agent",
+        "category": "missing_or_incomplete_data",
+        "expected_risk": "LOW",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-INC-004",
+        "system": "baseline_llm",
+        "category": "missing_or_incomplete_data",
+        "expected_risk": "LOW",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": [
+          "extreme_heat",
+          "heavy_rainfall",
+          "thunderstorm"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-003",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "expected_risk": "HIGH",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [
+          "strong_wind"
+        ],
+        "false_positive_hazards": [
+          "extreme_cold",
+          "heavy_rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-003",
+        "system": "tool_using_agent",
+        "category": "multistep_reasoning",
+        "expected_risk": "HIGH",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-MLT-004",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "expected_risk": "HIGH",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [
+          "extreme_heat"
+        ],
+        "false_positive_hazards": [
+          "strong_wind"
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-004",
+        "system": "tool_using_agent",
+        "category": "multistep_reasoning",
+        "expected_risk": "HIGH",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-RSK-001",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "expected_risk": "SEVERE",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": [
+          "extreme_heat",
+          "heavy_rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-001",
+        "system": "tool_using_agent",
+        "category": "weather_safety_and_risk",
+        "expected_risk": "SEVERE",
+        "predicted_risk": "HIGH",
+        "severity_error": -1,
+        "underreported": true,
+        "overreported": false,
+        "missed_hazards": [],
+        "false_positive_hazards": [
+          "heavy_rainfall"
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-002",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "expected_risk": "HIGH",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-RSK-002",
+        "system": "tool_using_agent",
+        "category": "weather_safety_and_risk",
+        "expected_risk": "HIGH",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "expected_risk": "HIGH",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      },
+      {
+        "test_case_id": "TC-RSK-004",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "expected_risk": "SEVERE",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": [
+          "thunderstorm"
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-005",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "expected_risk": "LOW",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": [
+          "heavy_rainfall",
+          "strong_wind",
+          "thunderstorm"
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-005",
+        "system": "tool_using_agent",
+        "category": "weather_safety_and_risk",
+        "expected_risk": "LOW",
+        "predicted_risk": null,
+        "severity_error": null,
+        "underreported": null,
+        "overreported": null,
+        "missed_hazards": [],
+        "false_positive_hazards": []
+      }
+    ],
+    "evidence_grounding_failures": [
+      {
+        "test_case_id": "TC-TRD-005",
+        "system": "sky_reader_full",
+        "category": "weather_trends",
+        "invalid_citation_ids": [],
+        "has_explanation_proof": true
+      }
+    ],
+    "incomplete_responses": [
+      {
+        "test_case_id": "TC-CMP-005",
+        "system": "sky_reader_full",
+        "category": "temperature_comparison",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Target location 'Reykjavik' was not addressed in response."
+        ]
+      },
+      {
+        "test_case_id": "TC-CMP-005",
+        "system": "tool_using_agent",
+        "category": "temperature_comparison",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Target location 'Reykjavik' was not addressed in response."
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-001",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Expected numerical variables ['temperature'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-CUR-003",
+        "system": "baseline_llm",
+        "category": "current_weather",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Expected numerical variables ['temperature', 'apparent_temperature'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-001",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "completeness_score": 0.6667,
+        "missing_elements": [
+          "Query required formal evidence proof, but none was provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-002",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "completeness_score": 0.75,
+        "missing_elements": [
+          "Query required formal evidence proof, but none was provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-003",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "completeness_score": 0.6667,
+        "missing_elements": [
+          "Query required formal evidence proof, but none was provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-EVD-004",
+        "system": "tool_using_agent",
+        "category": "evidence_based_reasoning",
+        "completeness_score": 0.6667,
+        "missing_elements": [
+          "Query required formal evidence proof, but none was provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-001",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-001",
+        "system": "sky_reader_full",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.0,
+        "missing_elements": [
+          "Target location 'Dehradun' was not addressed in response.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-001",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-002",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required formal evidence proof, but none was provided.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-002",
+        "system": "sky_reader_full",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.0,
+        "missing_elements": [
+          "Target location 'London' was not addressed in response.",
+          "Expected numerical variables ['actual_temperature'] were not provided.",
+          "Query required formal evidence proof, but none was provided.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-002",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.75,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-003",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required formal evidence proof, but none was provided.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-003",
+        "system": "sky_reader_full",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required formal evidence proof, but none was provided.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-003",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.75,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-004",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-004",
+        "system": "sky_reader_full",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-004",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-005",
+        "system": "baseline_llm",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Target location 'Paris' was not addressed in response.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HAL-005",
+        "system": "tool_using_agent",
+        "category": "hallucination_resistance",
+        "completeness_score": 0.75,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-001",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Expected numerical variables ['min_temperature', 'max_temperature'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-HLY-003",
+        "system": "baseline_llm",
+        "category": "hourly_forecast",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Expected numerical variables ['max_hourly_rain'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-001",
+        "system": "baseline_llm",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.3333,
+        "missing_elements": [
+          "Target location 'Incompleteville' was not addressed in response.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-001",
+        "system": "sky_reader_full",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.0,
+        "missing_elements": [
+          "Target location 'Incompleteville' was not addressed in response.",
+          "Query required explicit uncertainty or probabilistic communication, but none was found.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-001",
+        "system": "tool_using_agent",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.0,
+        "missing_elements": [
+          "Target location 'Incompleteville' was not addressed in response.",
+          "Query required explicit uncertainty or probabilistic communication, but none was found.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-002",
+        "system": "baseline_llm",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.3333,
+        "missing_elements": [
+          "Query required explicit uncertainty or probabilistic communication, but none was found.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-002",
+        "system": "sky_reader_full",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.3333,
+        "missing_elements": [
+          "Query required explicit uncertainty or probabilistic communication, but none was found.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-002",
+        "system": "tool_using_agent",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.3333,
+        "missing_elements": [
+          "Query required explicit uncertainty or probabilistic communication, but none was found.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-003",
+        "system": "baseline_llm",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.0,
+        "missing_elements": [
+          "Target location 'NullCity' was not addressed in response.",
+          "Query required explicit uncertainty or probabilistic communication, but none was found.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-003",
+        "system": "sky_reader_full",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.3333,
+        "missing_elements": [
+          "Target location 'NullCity' was not addressed in response.",
+          "Query required explicit uncertainty or probabilistic communication, but none was found."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-003",
+        "system": "tool_using_agent",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.0,
+        "missing_elements": [
+          "Target location 'NullCity' was not addressed in response.",
+          "Query required explicit uncertainty or probabilistic communication, but none was found.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-004",
+        "system": "baseline_llm",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.6,
+        "missing_elements": [
+          "Query required explicit uncertainty or probabilistic communication, but none was found.",
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-004",
+        "system": "sky_reader_full",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.8,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-004",
+        "system": "tool_using_agent",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.8,
+        "missing_elements": [
+          "Query required explicit uncertainty or probabilistic communication, but none was found."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-005",
+        "system": "baseline_llm",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-005",
+        "system": "sky_reader_full",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-INC-005",
+        "system": "tool_using_agent",
+        "category": "missing_or_incomplete_data",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Query required refusal or hedging on impossible/missing data, but system failed to refuse."
+        ]
+      },
+      {
+        "test_case_id": "TC-MLT-002",
+        "system": "baseline_llm",
+        "category": "multistep_reasoning",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Expected numerical variables ['max_probability', 'total_expected_rain_mm'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-001",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "completeness_score": 0.6667,
+        "missing_elements": [
+          "Query required explicit uncertainty or probabilistic communication, but none was found."
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-002",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Expected numerical variables ['max_probability', 'total_expected_rain_mm'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "baseline_llm",
+        "category": "precipitation_and_rainfall",
+        "completeness_score": 0.6667,
+        "missing_elements": [
+          "Query required explicit uncertainty or probabilistic communication, but none was found."
+        ]
+      },
+      {
+        "test_case_id": "TC-PRC-003",
+        "system": "tool_using_agent",
+        "category": "precipitation_and_rainfall",
+        "completeness_score": 0.6667,
+        "missing_elements": [
+          "Query required explicit uncertainty or probabilistic communication, but none was found."
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-001",
+        "system": "baseline_llm",
+        "category": "weather_safety_and_risk",
+        "completeness_score": 0.75,
+        "missing_elements": [
+          "Query required explicit uncertainty or probabilistic communication, but none was found."
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-003",
+        "system": "sky_reader_full",
+        "category": "weather_safety_and_risk",
+        "completeness_score": 0.6667,
+        "missing_elements": [
+          "Expected numerical variables ['min_temperature', 'wind_speed'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-RSK-004",
+        "system": "sky_reader_full",
+        "category": "weather_safety_and_risk",
+        "completeness_score": 0.6667,
+        "missing_elements": [
+          "Expected numerical variables ['total_rain'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-TRD-001",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Expected numerical variables ['net_difference'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-TRD-001",
+        "system": "tool_using_agent",
+        "category": "weather_trends",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Expected numerical variables ['net_difference'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-TRD-003",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Expected numerical variables ['start_pressure', 'min_pressure'] were not provided."
+        ]
+      },
+      {
+        "test_case_id": "TC-TRD-004",
+        "system": "baseline_llm",
+        "category": "weather_trends",
+        "completeness_score": 0.5,
+        "missing_elements": [
+          "Expected numerical variables ['start_wind', 'peak_wind'] were not provided."
+        ]
+      }
+    ],
+    "execution_failures_or_timeouts": []
+  }
+}

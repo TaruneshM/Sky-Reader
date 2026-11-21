@@ -1,0 +1,566 @@
+{
+  "manifest_version": "1.0.0",
+  "paper_title": "Sky Reader: An Evidence-Grounded Agentic AI Framework for Reliable Weather Intelligence and Risk Assessment",
+  "benchmark_dataset": "backend/evaluation/datasets/weather_benchmark.json",
+  "fixtures_dataset": "backend/evaluation/fixtures/weather_fixtures.json",
+  "record_selection_policy": "Latest completed attempt per (test_case_id, system) pair across evaluation result runs (canonical 150 responses). Original timeouts preserved in historical attempt directories (7 timeouts for Sky Reader).",
+  "sample_sizes": {
+    "total_test_cases": 50,
+    "total_categories": 10,
+    "cases_per_category": 5,
+    "numerical_evaluable_cases": 43,
+    "total_expected_numerical_variables": 72,
+    "factual_evaluable_cases": 50,
+    "total_expected_factual_claims": 149,
+    "risk_applicable_cases": 11,
+    "synthetic_ground_truth_fixtures": 12
+  },
+  "metrics": [
+    {
+      "metric_name": "First-Attempt Completion Rate",
+      "metric_key": "first_attempt_completion_rate",
+      "formula": "first_attempt_completed_cases / total_attempted_cases",
+      "numerator_description": "Executions completed on the first attempt without timeout",
+      "denominator_description": "Total benchmark cases attempted (N=50)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 50,
+          "denominator": 50,
+          "value": 1.0,
+          "formatted": "100.0% (50/50)"
+        },
+        "tool_using_agent": {
+          "numerator": 50,
+          "denominator": 50,
+          "value": 1.0,
+          "formatted": "100.0% (50/50)"
+        },
+        "sky_reader_full": {
+          "numerator": 43,
+          "denominator": 50,
+          "value": 0.86,
+          "formatted": "86.0% (43/50)"
+        }
+      },
+      "calculation_method": "Exact count from initial run records (run_20261116_* through run_20261121_065224_de380d)",
+      "source_file": "backend/evaluation/analysis/final_benchmark_audit.md",
+      "notes": "Sky Reader experienced 7 initial timeouts under 30s/60s budgets on complex multi-hop queries."
+    },
+    {
+      "metric_name": "Eventual Completion Rate",
+      "metric_key": "eventual_completion_rate",
+      "formula": "eventual_completed_cases / total_attempted_cases",
+      "numerator_description": "Executions completed including extended-budget retries",
+      "denominator_description": "Total benchmark cases attempted (N=50)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 50,
+          "denominator": 50,
+          "value": 1.0,
+          "formatted": "100.0% (50/50)"
+        },
+        "tool_using_agent": {
+          "numerator": 50,
+          "denominator": 50,
+          "value": 1.0,
+          "formatted": "100.0% (50/50)"
+        },
+        "sky_reader_full": {
+          "numerator": 50,
+          "denominator": 50,
+          "value": 1.0,
+          "formatted": "100.0% (50/50)"
+        }
+      },
+      "calculation_method": "Canonical deduplicated latest attempt count",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "All 7 timed-out Sky Reader cases succeeded on retry under 100s budget."
+    },
+    {
+      "metric_name": "Hallucination Rate (Case-Level Mean)",
+      "metric_key": "mean_hallucination_rate",
+      "formula": "(1 / N_eval) * sum((contradicted_claims_i + unsupported_claims_i) / total_claims_i)",
+      "numerator_description": "Sum of case hallucination rates",
+      "denominator_description": "Number of cases with emitted claims",
+      "values": {
+        "baseline_llm": {
+          "numerator": 16.3317,
+          "denominator": 33,
+          "value": 0.4949,
+          "formatted": "49.5% [95% CI: 33.3%, 65.7%]"
+        },
+        "tool_using_agent": {
+          "numerator": 15.8004,
+          "denominator": 44,
+          "value": 0.3591,
+          "formatted": "35.9% [95% CI: 22.3%, 49.5%]"
+        },
+        "sky_reader_full": {
+          "numerator": 3.0821,
+          "denominator": 37,
+          "value": 0.0833,
+          "formatted": "8.3% [95% CI: 1.4%, 16.9%]"
+        }
+      },
+      "calculation_method": "Case-level mean of unverified/contradicted claim ratios",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Sky Reader achieves a 27.58% absolute reduction vs Tool Agent (p < 0.001, Cohen's d = 0.771)."
+    },
+    {
+      "metric_name": "Hard Contradiction Rate (Case-Level Mean)",
+      "metric_key": "mean_contradiction_rate",
+      "formula": "(1 / N_eval) * sum(contradicted_claims_i / total_claims_i)",
+      "numerator_description": "Claims directly conflicting with fixture ground truth",
+      "denominator_description": "Total evaluated claims per case",
+      "values": {
+        "baseline_llm": {
+          "numerator": 12.5004,
+          "denominator": 33,
+          "value": 0.3788,
+          "formatted": "37.9%"
+        },
+        "tool_using_agent": {
+          "numerator": 7.8012,
+          "denominator": 44,
+          "value": 0.1773,
+          "formatted": "17.7%"
+        },
+        "sky_reader_full": {
+          "numerator": 1.8315,
+          "denominator": 37,
+          "value": 0.0495,
+          "formatted": "5.0%"
+        }
+      },
+      "calculation_method": "Case-level mean of contradictory claim proportions",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Confirms Sky Reader reduces hard factual contradictions by 12.7% vs Tool Agent."
+    },
+    {
+      "metric_name": "Clean Case Ratio",
+      "metric_key": "clean_case_ratio",
+      "formula": "cases_with_zero_hallucinations / total_evaluable_cases",
+      "numerator_description": "Cases containing exactly 0 hallucinated or contradicted claims",
+      "denominator_description": "Total benchmark cases (N=50)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 32,
+          "denominator": 50,
+          "value": 0.64,
+          "formatted": "64.0% (32/50)"
+        },
+        "tool_using_agent": {
+          "numerator": 32,
+          "denominator": 50,
+          "value": 0.64,
+          "formatted": "64.0% (32/50)"
+        },
+        "sky_reader_full": {
+          "numerator": 45,
+          "denominator": 50,
+          "value": 0.9,
+          "formatted": "90.0% (45/50)"
+        }
+      },
+      "calculation_method": "Direct binary proportion across 50 test cases",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Sky Reader achieves 90% completely clean responses, +26.0% over both baselines."
+    },
+    {
+      "metric_name": "Risk Classification Accuracy",
+      "metric_key": "risk_classification_accuracy",
+      "formula": "correct_risk_predictions / applicable_risk_cases",
+      "numerator_description": "Correct hazard severity tier matches (NONE, LOW, HIGH, SEVERE)",
+      "denominator_description": "Ground-truth risk-applicable benchmark cases (M_risk=11)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 0,
+          "denominator": 11,
+          "value": 0.0,
+          "formatted": "0.0% (0/11)"
+        },
+        "tool_using_agent": {
+          "numerator": 3,
+          "denominator": 11,
+          "value": 0.2727,
+          "formatted": "27.3% (3/11)"
+        },
+        "sky_reader_full": {
+          "numerator": 9,
+          "denominator": 11,
+          "value": 0.8182,
+          "formatted": "81.8% (9/11)"
+        }
+      },
+      "calculation_method": "Exact match against ground truth hazard severity tiers",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Nominally significant vs Tool Agent by McNemar test (p=0.03125), but not significant under Bonferroni correction (alpha/12 = 0.00417)."
+    },
+    {
+      "metric_name": "Critical Risk Severity Underreporting",
+      "metric_key": "severity_underreported_count",
+      "formula": "count(expected in [HIGH, SEVERE] and predicted in [NONE, LOW])",
+      "numerator_description": "High or Severe hazards dangerously classified as Low or None",
+      "denominator_description": "Ground-truth risk-applicable cases (M_risk=11)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 0,
+          "denominator": 11,
+          "value": 0,
+          "formatted": "0 (Omitted completely)"
+        },
+        "tool_using_agent": {
+          "numerator": 1,
+          "denominator": 11,
+          "value": 1,
+          "formatted": "1 (TC-RSK-001 severe storm missed)"
+        },
+        "sky_reader_full": {
+          "numerator": 0,
+          "denominator": 11,
+          "value": 0,
+          "formatted": "0 (Zero underreported high/severe hazards)"
+        }
+      },
+      "calculation_method": "Count of hazardous false negative underreports",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Sky Reader had 0 false negative underreports for HIGH/SEVERE hazards, but omitted 2 LOW risk predictions (TC-INC-001, TC-INC-003)."
+    },
+    {
+      "metric_name": "Risk Classification Omission Count",
+      "metric_key": "risk_omission_count",
+      "formula": "count(expected != NONE and predicted == NONE)",
+      "numerator_description": "Hazard cases where system failed to emit any risk classification",
+      "denominator_description": "Ground-truth risk-applicable cases (M_risk=11)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 11,
+          "denominator": 11,
+          "value": 1.0,
+          "formatted": "11 / 11 (100.0% omission)"
+        },
+        "tool_using_agent": {
+          "numerator": 7,
+          "denominator": 11,
+          "value": 0.6364,
+          "formatted": "7 / 11 (63.6% omission)"
+        },
+        "sky_reader_full": {
+          "numerator": 2,
+          "denominator": 11,
+          "value": 0.1818,
+          "formatted": "2 / 11 (18.2% omission)"
+        }
+      },
+      "calculation_method": "Count of NONE predictions when ground truth severity exists",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Sky Reader's 2 missing cases were both LOW severity tasks with data degradation; omission is a safety gap, not proof of complete safety."
+    },
+    {
+      "metric_name": "Numerical Accuracy (Case-Level Mean)",
+      "metric_key": "mean_numerical_accuracy",
+      "formula": "(1 / M_num) * sum(correct_numbers_i / expected_numbers_i)",
+      "numerator_description": "Sum of case numerical accuracy ratios",
+      "denominator_description": "Numerical benchmark cases (M_num=43)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 6.1662,
+          "denominator": 43,
+          "value": 0.1434,
+          "formatted": "14.3% [95% CI: 6.2%, 23.6%]"
+        },
+        "tool_using_agent": {
+          "numerator": 20.6658,
+          "denominator": 43,
+          "value": 0.4806,
+          "formatted": "48.1% [95% CI: 35.3%, 61.2%]"
+        },
+        "sky_reader_full": {
+          "numerator": 14.6673,
+          "denominator": 43,
+          "value": 0.3411,
+          "formatted": "34.1% [95% CI: 22.5%, 46.1%]"
+        }
+      },
+      "calculation_method": "Case-level mean of tolerance-matched variable ratios",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Difference between Sky Reader and Tool Agent (-13.95%) is not statistically significant (p = 0.1310). Micro-averaged counts: Baseline 12/72 (16.7%), Tool 37/72 (51.4%), Sky Reader 28/72 (38.9%)."
+    },
+    {
+      "metric_name": "Factual Accuracy (Case-Level Mean)",
+      "metric_key": "mean_factual_accuracy",
+      "formula": "(1 / N) * sum(supported_facts_i / expected_facts_i)",
+      "numerator_description": "Sum of case factual accuracy ratios",
+      "denominator_description": "Total benchmark cases (N=50)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 9.05,
+          "denominator": 50,
+          "value": 0.181,
+          "formatted": "18.1% [95% CI: 11.2%, 25.8%]"
+        },
+        "tool_using_agent": {
+          "numerator": 19.715,
+          "denominator": 50,
+          "value": 0.3943,
+          "formatted": "39.4% [95% CI: 29.2%, 50.5%]"
+        },
+        "sky_reader_full": {
+          "numerator": 18.25,
+          "denominator": 50,
+          "value": 0.365,
+          "formatted": "36.5% [95% CI: 27.0%, 46.5%]"
+        }
+      },
+      "calculation_method": "Case-level mean of supported factual assertion ratios",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Difference between Sky Reader and Tool Agent (-2.93%) is not statistically significant (p = 0.5250). Micro-averaged counts: Baseline 34/149 (22.8%), Tool 60/149 (40.3%), Sky Reader 55/149 (36.9%)."
+    },
+    {
+      "metric_name": "Response Completeness Score",
+      "metric_key": "mean_completeness_score",
+      "formula": "(1 / N) * sum(addressed_facets_i / total_facets_i)",
+      "numerator_description": "Sum of query facet addressing ratios",
+      "denominator_description": "Total benchmark cases (N=50)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 39.185,
+          "denominator": 50,
+          "value": 0.7837,
+          "formatted": "78.4% [95% CI: 70.7%, 85.7%]"
+        },
+        "tool_using_agent": {
+          "numerator": 41.965,
+          "denominator": 50,
+          "value": 0.8393,
+          "formatted": "83.9% [95% CI: 76.9%, 90.4%]"
+        },
+        "sky_reader_full": {
+          "numerator": 42.8,
+          "denominator": 50,
+          "value": 0.856,
+          "formatted": "85.6% [95% CI: 77.5%, 92.6%]"
+        }
+      },
+      "calculation_method": "Case-level mean of required facet coverage",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Difference between Sky Reader and Tool Agent (+1.67%) is not statistically significant (p = 0.5750)."
+    },
+    {
+      "metric_name": "Mean Wall-Clock Latency",
+      "metric_key": "mean_latency_ms",
+      "formula": "(1 / N) * sum(latency_ms_i)",
+      "numerator_description": "Total response generation latency across canonical responses",
+      "denominator_description": "Total benchmark cases (N=50)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 145767.7,
+          "denominator": 50,
+          "value": 2915.35,
+          "formatted": "2,915.4 ms (2.92s) [95% CI: 2,220.5, 3,758.6]"
+        },
+        "tool_using_agent": {
+          "numerator": 968826.6,
+          "denominator": 50,
+          "value": 19376.53,
+          "formatted": "19,376.5 ms (19.38s) [95% CI: 15,881.9, 22,749.4]"
+        },
+        "sky_reader_full": {
+          "numerator": 1410013.1,
+          "denominator": 50,
+          "value": 28200.26,
+          "formatted": "28,200.3 ms (28.20s) [95% CI: 22,696.8, 33,723.4]"
+        }
+      },
+      "calculation_method": "Arithmetic mean of canonical execution times in milliseconds",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "First-attempt mean latency was 2,915.4 ms (Baseline), 19,376.5 ms (Tool Agent), and 30,112.7 ms (Sky Reader, including initial timeouts). Completed first-attempt Sky Reader runs averaged 26,639.4 ms."
+    },
+    {
+      "metric_name": "95th Percentile Latency (P95)",
+      "metric_key": "p95_latency_ms",
+      "formula": "percentile(canonical_latencies, 95)",
+      "numerator_description": "95th percentile point in sorted canonical latency distribution",
+      "denominator_description": "Distribution over N=50 cases",
+      "values": {
+        "baseline_llm": {
+          "value": 9109.64,
+          "formatted": "9,109.6 ms (9.11s)"
+        },
+        "tool_using_agent": {
+          "value": 37168.79,
+          "formatted": "37,168.8 ms (37.17s)"
+        },
+        "sky_reader_full": {
+          "value": 59881.94,
+          "formatted": "59,881.9 ms (59.88s)"
+        }
+      },
+      "calculation_method": "Empirical 95th percentile using numpy/scipy interpolation",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Reflects maximum latency incurred during complex 48-hour time series processing and verification."
+    },
+    {
+      "metric_name": "Physical MAE - Temperature",
+      "metric_key": "mae_temperature_celsius",
+      "formula": "(1 / K_temp) * sum(|pred_temp_k - ref_temp_k|)",
+      "numerator_description": "Sum of absolute temperature errors in degrees Celsius",
+      "denominator_description": "Matched temperature predictions (K_temp)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 152.6,
+          "denominator": 21,
+          "coverage": "21 / 33 expected (63.6%)",
+          "value": 7.27,
+          "formatted": "7.27 \u00b0C"
+        },
+        "tool_using_agent": {
+          "numerator": 124.9,
+          "denominator": 31,
+          "coverage": "31 / 33 expected (93.9%)",
+          "value": 4.03,
+          "formatted": "4.03 \u00b0C"
+        },
+        "sky_reader_full": {
+          "numerator": 133.7,
+          "denominator": 25,
+          "coverage": "25 / 33 expected (75.8%)",
+          "value": 5.35,
+          "formatted": "5.35 \u00b0C"
+        }
+      },
+      "calculation_method": "Physical dimension MAE over matched observation pairs",
+      "source_file": "backend/evaluation/analysis/error_analysis.json",
+      "notes": "Coverage must be reported alongside MAE; Tool Agent matches 31/33 variables, while Sky Reader filters 6 ambiguous assertions to prevent ungrounded claims."
+    },
+    {
+      "metric_name": "Physical MAE - Precipitation Accumulation",
+      "metric_key": "mae_precipitation_mm",
+      "formula": "(1 / K_precip) * sum(|pred_precip_k - ref_precip_k|)",
+      "numerator_description": "Sum of absolute precipitation errors in millimeters",
+      "denominator_description": "Matched precipitation accumulation predictions (K_precip)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 272.5,
+          "denominator": 5,
+          "coverage": "5 / 12 expected (41.7%)",
+          "value": 54.5,
+          "formatted": "54.50 mm"
+        },
+        "tool_using_agent": {
+          "numerator": 85.5,
+          "denominator": 7,
+          "coverage": "7 / 12 expected (58.3%)",
+          "value": 12.21,
+          "formatted": "12.21 mm"
+        },
+        "sky_reader_full": {
+          "numerator": 56.5,
+          "denominator": 7,
+          "coverage": "7 / 12 expected (58.3%)",
+          "value": 8.07,
+          "formatted": "8.07 mm"
+        }
+      },
+      "calculation_method": "Physical dimension MAE over matched precipitation predictions",
+      "source_file": "backend/evaluation/analysis/error_analysis.json",
+      "notes": "Sky Reader achieves the lowest MAE by enforcing physical unit consistency."
+    },
+    {
+      "metric_name": "Physical MAE - Wind Speed",
+      "metric_key": "mae_wind_speed_kmh",
+      "formula": "(1 / K_wind) * sum(|pred_wind_k - ref_wind_k|)",
+      "numerator_description": "Sum of absolute wind speed errors in km/h",
+      "denominator_description": "Matched wind speed predictions (K_wind)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 61.0,
+          "denominator": 5,
+          "coverage": "5 / 10 expected (50.0%)",
+          "value": 12.2,
+          "formatted": "12.20 km/h"
+        },
+        "tool_using_agent": {
+          "numerator": 4.4,
+          "denominator": 6,
+          "coverage": "6 / 10 expected (60.0%)",
+          "value": 0.73,
+          "formatted": "0.73 km/h"
+        },
+        "sky_reader_full": {
+          "numerator": 27.0,
+          "denominator": 4,
+          "coverage": "4 / 10 expected (40.0%)",
+          "value": 6.75,
+          "formatted": "6.75 km/h"
+        }
+      },
+      "calculation_method": "Physical dimension MAE over matched wind speed predictions",
+      "source_file": "backend/evaluation/analysis/error_analysis.json",
+      "notes": "Tool Agent extracts raw telemetry verbatim; Sky Reader aggregates into Beaufort scale ranges in some responses."
+    },
+    {
+      "metric_name": "Physical MAE - Precipitation Probability",
+      "metric_key": "mae_precipitation_prob_percent",
+      "formula": "(1 / K_prob) * sum(|pred_prob_k - ref_prob_k|)",
+      "numerator_description": "Sum of absolute probability errors in percentage points",
+      "denominator_description": "Matched precipitation probability predictions (K_prob)",
+      "values": {
+        "baseline_llm": {
+          "numerator": 83.0,
+          "denominator": 4,
+          "coverage": "4 / 9 expected (44.4%)",
+          "value": 20.75,
+          "formatted": "20.75 %"
+        },
+        "tool_using_agent": {
+          "numerator": 235.0,
+          "denominator": 6,
+          "coverage": "6 / 9 expected (66.7%)",
+          "value": 39.17,
+          "formatted": "39.17 %"
+        },
+        "sky_reader_full": {
+          "numerator": 0.0,
+          "denominator": 6,
+          "coverage": "6 / 9 expected (66.7%)",
+          "value": 0.0,
+          "formatted": "0.00 %"
+        }
+      },
+      "calculation_method": "Physical dimension MAE over matched probability predictions",
+      "source_file": "backend/evaluation/analysis/error_analysis.json",
+      "notes": "Tool Agent confused probability (%) with accumulation (mm) in 4 cases; Sky Reader achieved 0.00% error across all 6 matched cases."
+    },
+    {
+      "metric_name": "Legacy Aggregate MAE",
+      "metric_key": "legacy_aggregate_mae",
+      "formula": "(1 / K_total) * sum(|pred_k - ref_k|)",
+      "numerator_description": "Sum of unweighted mathematical absolute deviations across mixed units",
+      "denominator_description": "Total matched variables across all physical types",
+      "values": {
+        "baseline_llm": {
+          "numerator": 547.4,
+          "denominator": 37,
+          "value": 14.8,
+          "formatted": "14.80 (Mixed units)"
+        },
+        "tool_using_agent": {
+          "numerator": 564.8,
+          "denominator": 55,
+          "value": 10.27,
+          "formatted": "10.27 (Mixed units)"
+        },
+        "sky_reader_full": {
+          "numerator": 229.1,
+          "denominator": 46,
+          "value": 4.98,
+          "formatted": "4.98 (Mixed units)"
+        }
+      },
+      "calculation_method": "Historical unweighted arithmetic mean across \u00b0C, mm, km/h, and hPa deviations",
+      "source_file": "backend/evaluation/analysis/comparative_summary.json",
+      "notes": "Preserved exclusively for legacy traceability. Combining \u00b0C, mm, and km/h lacks physical dimensionality and must never be interpreted as a physical quantity."
+    }
+  ]
+}

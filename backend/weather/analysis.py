@@ -732,6 +732,13 @@ def analyze_weather_data(hourly_data: dict, focus: str = "all", day_offset: int 
     if focus == "comparison":
         return compare_days(hourly_data)
 
+    if focus in ("risk", "risks", "safety"):
+        try:
+            from backend.weather.risk_engine import WeatherRiskEngine
+        except ImportError:
+            from weather.risk_engine import WeatherRiskEngine
+        return WeatherRiskEngine().assess_risks(hourly_data, day_offset=day_offset).dict()
+
     # focus == "all": return balanced, high-signal structured intelligence
     temp_res = analyze_temperature(hourly_data, start_idx, 24)
     precip_res = analyze_precipitation(hourly_data, start_idx, 24)

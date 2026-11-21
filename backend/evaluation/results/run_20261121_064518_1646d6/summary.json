@@ -1,0 +1,43 @@
+{
+  "run_id": "run_20261121_064518_1646d6",
+  "started_at": "2026-11-21T06:45:18.061233+00:00",
+  "completed_at": "2026-11-21T06:51:34.501126+00:00",
+  "total_cases_selected": 5,
+  "total_executions": 15,
+  "completed_count": 14,
+  "failed_count": 0,
+  "timeout_count": 1,
+  "skipped_count": 0,
+  "systems_evaluated": [
+    "baseline_llm",
+    "sky_reader_full",
+    "tool_using_agent"
+  ],
+  "categories_evaluated": [
+    "multistep_reasoning"
+  ],
+  "config": {
+    "dataset_path": null,
+    "fixtures_path": null,
+    "results_dir": "/home/victus/sky reader /Sky-Reader/backend/evaluation/results",
+    "model": "openai/gpt-oss-120b",
+    "api_key": "[REDACTED]",
+    "timeout_seconds": 60.0,
+    "max_retries": 2,
+    "retry_backoff_seconds": 2.0,
+    "max_iterations": 10,
+    "fixture_mode": "synthetic_fixture",
+    "concurrency": 1,
+    "dry_run": false,
+    "selected_systems": [
+      "baseline_llm",
+      "tool_using_agent",
+      "sky_reader_full"
+    ],
+    "selected_categories": [
+      "multistep_reasoning"
+    ],
+    "selected_ids": null,
+    "max_cases": null
+  }
+}

@@ -1,5 +1,6 @@
 import WeatherSnapshot from "./WeatherSnapshot";
 import AuditDrawer from "./AuditDrawer";
+import RiskCard from "./RiskCard";
 
 function renderFormattedText(text) {
   if (!text) return null;
@@ -165,6 +166,11 @@ export default function ChatMessage({ message }) {
             claims={message.claims || []}
             text={message.text || ""}
           />
+        )}
+
+        {/* Phase 6 Safety & Weather Risk Assessment Card */}
+        {!isUser && message.riskAssessment && (
+          <RiskCard riskAssessment={message.riskAssessment} />
         )}
 
         {/* Audited Evidence Drawer (Phase 4) for assistant */}

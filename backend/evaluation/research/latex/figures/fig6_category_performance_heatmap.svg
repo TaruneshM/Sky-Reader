@@ -1,0 +1,255 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 520" width="100%" height="100%">
+  <rect width="960" height="520" fill="#0f172a" rx="8"/>
+  <text x="480" y="32" fill="#f8fafc" font-size="18" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Figure 6: Category-Level Evaluation Matrix Across 10 Benchmark Tasks</text>
+  <text x="480" y="50" fill="#94a3b8" font-size="12" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Hallucination Rate (HR %) and Factual Accuracy (FA %) by Architecture</text>
+
+  <!-- Column Headers -->
+  <text x="210" y="80" fill="#94a3b8" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Task Category</text>
+
+  <!-- System 1 Header -->
+  <rect x="320" y="65" width="190" height="24" fill="#ef4444" opacity="0.2" rx="3"/>
+  <text x="415" y="81" fill="#fca5a5" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Baseline LLM</text>
+
+  <!-- System 2 Header -->
+  <rect x="530" y="65" width="190" height="24" fill="#f59e0b" opacity="0.2" rx="3"/>
+  <text x="625" y="81" fill="#fcd34d" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Tool-Using Agent</text>
+
+  <!-- System 3 Header -->
+  <rect x="740" y="65" width="190" height="24" fill="#10b981" opacity="0.2" rx="3"/>
+  <text x="835" y="81" fill="#6ee7b7" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Sky Reader (Full)</text>
+
+  <!-- Sub-headers HR / FA -->
+  <text x="365" y="102" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Halluc %</text>
+  <text x="460" y="102" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Factual %</text>
+
+  <text x="575" y="102" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Halluc %</text>
+  <text x="670" y="102" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Factual %</text>
+
+  <text x="785" y="102" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Halluc %</text>
+  <text x="880" y="102" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Factual %</text>
+
+  <line x1="40" y1="110" x2="930" y2="110" stroke="#334155" stroke-width="1.5"/>
+
+  <!-- Row 1: Current Weather -->
+  <g transform="translate(0, 115)">
+    <text x="290" y="24" fill="#f8fafc" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">Current Weather</text>
+    <!-- Base: HR 66.7%, FA 0.0% -->
+    <rect x="325" y="6" width="80" height="26" fill="#ef4444" opacity="0.6" rx="3"/>
+    <text x="365" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">66.7%</text>
+    <rect x="420" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="460" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">0.0%</text>
+
+    <!-- Tool: HR 0.0%, FA 80.0% -->
+    <rect x="535" y="6" width="80" height="26" fill="#10b981" opacity="0.8" rx="3"/>
+    <text x="575" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">0.0%</text>
+    <rect x="630" y="6" width="80" height="26" fill="#10b981" opacity="0.6" rx="3"/>
+    <text x="670" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">80.0%</text>
+
+    <!-- Sky: HR 0.0%, FA 76.7% -->
+    <rect x="745" y="6" width="80" height="26" fill="#10b981" opacity="0.8" rx="3"/>
+    <text x="785" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">0.0%</text>
+    <rect x="840" y="6" width="80" height="26" fill="#10b981" opacity="0.6" rx="3"/>
+    <text x="880" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">76.7%</text>
+  </g>
+
+  <!-- Row 2: Hourly Forecast -->
+  <g transform="translate(0, 153)">
+    <text x="290" y="24" fill="#f8fafc" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">Hourly Forecast</text>
+    <!-- Base: HR 66.7%, FA 0.0% -->
+    <rect x="325" y="6" width="80" height="26" fill="#ef4444" opacity="0.6" rx="3"/>
+    <text x="365" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">66.7%</text>
+    <rect x="420" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="460" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">0.0%</text>
+
+    <!-- Tool: HR 40.0%, FA 20.0% -->
+    <rect x="535" y="6" width="80" height="26" fill="#f59e0b" opacity="0.6" rx="3"/>
+    <text x="575" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">40.0%</text>
+    <rect x="630" y="6" width="80" height="26" fill="#f59e0b" opacity="0.4" rx="3"/>
+    <text x="670" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">20.0%</text>
+
+    <!-- Sky: HR 11.7%, FA 10.0% -->
+    <rect x="745" y="6" width="80" height="26" fill="#10b981" opacity="0.7" rx="3"/>
+    <text x="785" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">11.7%</text>
+    <rect x="840" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="880" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">10.0%</text>
+  </g>
+
+  <!-- Row 3: Temperature Comparison -->
+  <g transform="translate(0, 191)">
+    <text x="290" y="24" fill="#f8fafc" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">Temperature Comparison</text>
+    <!-- Base: HR 50.0%, FA 6.7% -->
+    <rect x="325" y="6" width="80" height="26" fill="#ef4444" opacity="0.5" rx="3"/>
+    <text x="365" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">50.0%</text>
+    <rect x="420" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="460" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">6.7%</text>
+
+    <!-- Tool: HR 91.7%, FA 36.7% -->
+    <rect x="535" y="6" width="80" height="26" fill="#ef4444" opacity="0.8" rx="3"/>
+    <text x="575" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">91.7%</text>
+    <rect x="630" y="6" width="80" height="26" fill="#f59e0b" opacity="0.4" rx="3"/>
+    <text x="670" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">36.7%</text>
+
+    <!-- Sky: HR 20.0%, FA 10.0% -->
+    <rect x="745" y="6" width="80" height="26" fill="#10b981" opacity="0.6" rx="3"/>
+    <text x="785" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">20.0%</text>
+    <rect x="840" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="880" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">10.0%</text>
+  </g>
+
+  <!-- Row 4: Precipitation & Rain -->
+  <g transform="translate(0, 229)">
+    <text x="290" y="24" fill="#f8fafc" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">Precipitation &amp; Rain</text>
+    <!-- Base: HR 62.5%, FA 20.0% -->
+    <rect x="325" y="6" width="80" height="26" fill="#ef4444" opacity="0.6" rx="3"/>
+    <text x="365" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">62.5%</text>
+    <rect x="420" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="460" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">20.0%</text>
+
+    <!-- Tool: HR 70.0%, FA 6.7% -->
+    <rect x="535" y="6" width="80" height="26" fill="#ef4444" opacity="0.7" rx="3"/>
+    <text x="575" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">70.0%</text>
+    <rect x="630" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="670" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">6.7%</text>
+
+    <!-- Sky: HR 10.0%, FA 53.3% -->
+    <rect x="745" y="6" width="80" height="26" fill="#10b981" opacity="0.7" rx="3"/>
+    <text x="785" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">10.0%</text>
+    <rect x="840" y="6" width="80" height="26" fill="#10b981" opacity="0.5" rx="3"/>
+    <text x="880" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">53.3%</text>
+  </g>
+
+  <!-- Row 5: Weather Trends -->
+  <g transform="translate(0, 267)">
+    <text x="290" y="24" fill="#f8fafc" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">Weather Trends</text>
+    <!-- Base: HR 100.0%, FA 10.0% -->
+    <rect x="325" y="6" width="80" height="26" fill="#ef4444" opacity="0.9" rx="3"/>
+    <text x="365" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">100.0%</text>
+    <rect x="420" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="460" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">10.0%</text>
+
+    <!-- Tool: HR 50.0%, FA 23.3% -->
+    <rect x="535" y="6" width="80" height="26" fill="#ef4444" opacity="0.5" rx="3"/>
+    <text x="575" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">50.0%</text>
+    <rect x="630" y="6" width="80" height="26" fill="#f59e0b" opacity="0.3" rx="3"/>
+    <text x="670" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">23.3%</text>
+
+    <!-- Sky: HR 0.0%, FA 20.0% -->
+    <rect x="745" y="6" width="80" height="26" fill="#10b981" opacity="0.8" rx="3"/>
+    <text x="785" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">0.0%</text>
+    <rect x="840" y="6" width="80" height="26" fill="#f59e0b" opacity="0.3" rx="3"/>
+    <text x="880" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">20.0%</text>
+  </g>
+
+  <!-- Row 6: Weather Safety & Risk -->
+  <g transform="translate(0, 305)">
+    <text x="290" y="24" fill="#f8fafc" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">Weather Safety &amp; Risk</text>
+    <!-- Base: HR 66.7%, FA 46.0% -->
+    <rect x="325" y="6" width="80" height="26" fill="#ef4444" opacity="0.6" rx="3"/>
+    <text x="365" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">66.7%</text>
+    <rect x="420" y="6" width="80" height="26" fill="#f59e0b" opacity="0.5" rx="3"/>
+    <text x="460" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">46.0%</text>
+
+    <!-- Tool: HR 12.5%, FA 91.0% -->
+    <rect x="535" y="6" width="80" height="26" fill="#10b981" opacity="0.7" rx="3"/>
+    <text x="575" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">12.5%</text>
+    <rect x="630" y="6" width="80" height="26" fill="#10b981" opacity="0.8" rx="3"/>
+    <text x="670" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">91.0%</text>
+
+    <!-- Sky: HR 0.0%, FA 48.3% -->
+    <rect x="745" y="6" width="80" height="26" fill="#10b981" opacity="0.8" rx="3"/>
+    <text x="785" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">0.0%</text>
+    <rect x="840" y="6" width="80" height="26" fill="#f59e0b" opacity="0.5" rx="3"/>
+    <text x="880" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">48.3%</text>
+  </g>
+
+  <!-- Row 7: Multi-Step Reasoning -->
+  <g transform="translate(0, 343)">
+    <text x="290" y="24" fill="#f8fafc" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">Multi-Step Reasoning</text>
+    <!-- Base: HR 100.0%, FA 35.0% -->
+    <rect x="325" y="6" width="80" height="26" fill="#ef4444" opacity="0.9" rx="3"/>
+    <text x="365" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">100.0%</text>
+    <rect x="420" y="6" width="80" height="26" fill="#f59e0b" opacity="0.4" rx="3"/>
+    <text x="460" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">35.0%</text>
+
+    <!-- Tool: HR 20.0%, FA 63.3% -->
+    <rect x="535" y="6" width="80" height="26" fill="#10b981" opacity="0.6" rx="3"/>
+    <text x="575" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">20.0%</text>
+    <rect x="630" y="6" width="80" height="26" fill="#10b981" opacity="0.5" rx="3"/>
+    <text x="670" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">63.3%</text>
+
+    <!-- Sky: HR 0.0%, FA 61.7% -->
+    <rect x="745" y="6" width="80" height="26" fill="#10b981" opacity="0.8" rx="3"/>
+    <text x="785" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">0.0%</text>
+    <rect x="840" y="6" width="80" height="26" fill="#10b981" opacity="0.5" rx="3"/>
+    <text x="880" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">61.7%</text>
+  </g>
+
+  <!-- Row 8: Evidence-Based Reasoning -->
+  <g transform="translate(0, 381)">
+    <text x="290" y="24" fill="#f8fafc" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">Evidence-Based Reasoning</text>
+    <!-- Base: HR 41.7%, FA 40.0% -->
+    <rect x="325" y="6" width="80" height="26" fill="#ef4444" opacity="0.5" rx="3"/>
+    <text x="365" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">41.7%</text>
+    <rect x="420" y="6" width="80" height="26" fill="#f59e0b" opacity="0.4" rx="3"/>
+    <text x="460" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">40.0%</text>
+
+    <!-- Tool: HR 8.3%, FA 40.0% -->
+    <rect x="535" y="6" width="80" height="26" fill="#10b981" opacity="0.7" rx="3"/>
+    <text x="575" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">8.3%</text>
+    <rect x="630" y="6" width="80" height="26" fill="#f59e0b" opacity="0.4" rx="3"/>
+    <text x="670" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">40.0%</text>
+
+    <!-- Sky: HR 0.0%, FA 40.0% -->
+    <rect x="745" y="6" width="80" height="26" fill="#10b981" opacity="0.8" rx="3"/>
+    <text x="785" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">0.0%</text>
+    <rect x="840" y="6" width="80" height="26" fill="#f59e0b" opacity="0.4" rx="3"/>
+    <text x="880" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">40.0%</text>
+  </g>
+
+  <!-- Row 9: Missing / Incomplete Data -->
+  <g transform="translate(0, 419)">
+    <text x="290" y="24" fill="#f8fafc" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">Missing / Incomplete Data</text>
+    <!-- Base: HR 20.0%, FA 6.7% -->
+    <rect x="325" y="6" width="80" height="26" fill="#10b981" opacity="0.6" rx="3"/>
+    <text x="365" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">20.0%</text>
+    <rect x="420" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="460" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">6.7%</text>
+
+    <!-- Tool: HR 60.0%, FA 23.3% -->
+    <rect x="535" y="6" width="80" height="26" fill="#ef4444" opacity="0.6" rx="3"/>
+    <text x="575" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">60.0%</text>
+    <rect x="630" y="6" width="80" height="26" fill="#f59e0b" opacity="0.3" rx="3"/>
+    <text x="670" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">23.3%</text>
+
+    <!-- Sky: HR 25.0%, FA 30.0% -->
+    <rect x="745" y="6" width="80" height="26" fill="#10b981" opacity="0.6" rx="3"/>
+    <text x="785" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">25.0%</text>
+    <rect x="840" y="6" width="80" height="26" fill="#f59e0b" opacity="0.4" rx="3"/>
+    <text x="880" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">30.0%</text>
+  </g>
+
+  <!-- Row 10: Hallucination Resistance -->
+  <g transform="translate(0, 457)">
+    <text x="290" y="24" fill="#f8fafc" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">Hallucination Resistance</text>
+    <!-- Base: HR 0.0%, FA 16.7% -->
+    <rect x="325" y="6" width="80" height="26" fill="#10b981" opacity="0.8" rx="3"/>
+    <text x="365" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">0.0%</text>
+    <rect x="420" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="460" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">16.7%</text>
+
+    <!-- Tool: HR 16.0%, FA 10.0% -->
+    <rect x="535" y="6" width="80" height="26" fill="#10b981" opacity="0.6" rx="3"/>
+    <text x="575" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">16.0%</text>
+    <rect x="630" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="670" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">10.0%</text>
+
+    <!-- Sky: HR 0.0%, FA 15.0% -->
+    <rect x="745" y="6" width="80" height="26" fill="#10b981" opacity="0.8" rx="3"/>
+    <text x="785" y="23" fill="#fff" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">0.0%</text>
+    <rect x="840" y="6" width="80" height="26" fill="#ef4444" opacity="0.3" rx="3"/>
+    <text x="880" y="23" fill="#cbd5e1" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">15.0%</text>
+  </g>
+
+  <!-- Legend bottom -->
+  <text x="480" y="508" fill="#64748b" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Green highlights superior performance (Low HR / High FA); Red highlights severe error rates.</text>
+</svg>

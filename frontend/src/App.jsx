@@ -29,6 +29,7 @@ export default function App() {
 
   const followUpSuggestions = [
     "Should I carry an umbrella?",
+    "Are there any severe weather risks?",
     "Is it suitable for travelling?",
     "What are the temperature trends?",
     "What is the best time for outdoor activities?",
@@ -95,6 +96,7 @@ export default function App() {
         claims: data.claims || [],
         validationReport: data.validation_report || null,
         explanation: data.explanation || null,
+        riskAssessment: data.risk_assessment || null,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);

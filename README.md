@@ -68,6 +68,19 @@ The platform is designed with zero-tolerance for hallucinations: every AI-genera
   - Comprehensive benchmarking suite comparing Baseline LLMs, Phase 3 Agents, and Sky Reader Phase 4.
   - Full ablation studies measuring the empirical impact of domain tolerances, feedback loops, and derived evidence.
 
+### 🛡️ Phase 6: Safety, Risk Assessment & Uncertainty Awareness
+- **Deterministic Weather Risk Engine**: Analyzes forecast records across configurable thresholds to identify severe hazards:
+  - **Heavy Rainfall**: Detects flash flood and waterlogging risks based on 24h accumulation ($\ge 15$, $\ge 30$, $\ge 60\text{ mm}$) and peak hourly rates ($\ge 5$, $\ge 10$, $\ge 20\text{ mm/h}$).
+  - **High Rain Probability**: Categorizes precipitation probabilities ($\ge 60\%$, $\ge 80\%$, $\ge 95\%$) while separating likelihood from volume.
+  - **Severe Thunderstorms & Hail**: Flags WMO storm codes (95, 96, 99) and lightning hazards.
+  - **Strong Wind & Gales**: Beaufort-aligned hazard classification ($\ge 30$, $\ge 45$, $\ge 62\text{ km/h}$).
+  - **Extreme Heat & Cold**: Detects heatstroke thresholds ($\ge 35^\circ\text{C}$, $\ge 40^\circ\text{C}$, $\ge 45^\circ\text{C}$) and hypothermia/freezing conditions ($\le 0^\circ\text{C}$, $\le -10^\circ\text{C}$, $\le -20^\circ\text{C}$).
+- **Severity Classification**: Maps conditions into standardized risk levels: `LOW`, `MODERATE`, `HIGH`, and `SEVERE`.
+- **Actionable Safety Recommendations**: Generates non-alarmist, practical guidance (shelter indoors during lightning, avoid flood-prone routes, hydration, loose attire).
+- **Official Alerts vs. AI Risk Assessments**: Strict architectural distinction: all assessments are explicitly watermarked as AI-calculated from numerical forecasts and deterministic thresholds, never masquerading as official government emergency alerts.
+- **Uncertainty Communication**: Discloses probability interpretation (e.g. 75% probability = likely, not guaranteed), identifies missing or incomplete sensor channels, and notes forecast uncertainty.
+- **Visual Safety Cards (`RiskCard.jsx`)**: Displays severity badges, condition summaries, key measurements, precautions, and collapsible uncertainty notes directly in chat bubbles when hazards are assessed.
+
 ---
 
 ## 🏗️ Architecture & Dataflow
@@ -181,6 +194,7 @@ Sky-Reader/
 │   ├── test_phase2.py                 # Phase 2 agentic tool-calling integration suite
 │   ├── test_phase3.py                 # Phase 3 meteorological intelligence integration suite
 │   ├── test_phase4.py                 # Phase 4 end-to-end verification & explainability suite
+│   ├── test_phase6.py                 # Phase 6 weather safety & risk assessment integration suite
 │   ├── test_analysis.py               # Phase 3 meteorological engine unit tests
 │   ├── test_multiturn_chat.py         # Multi-turn conversational flow & reset verification test
 │   ├── agent/
@@ -191,6 +205,8 @@ Sky-Reader/
 │   ├── weather/
 │   │   ├── __init__.py
 │   │   ├── analysis.py                # Meteorological analysis & decision support engine
+│   │   ├── risk_engine.py             # Phase 6 deterministic weather risk assessment engine
+│   │   ├── risk_models.py             # Pydantic schemas: RiskLevel, RiskItem, WeatherRiskAssessment
 │   │   ├── service.py                 # Open-Meteo HTTP client with retry logic & formatters
 │   │   ├── models.py                  # Pydantic response models
 │   │   └── weather_codes.py           # WMO weather code to description & emoji mappings
@@ -202,16 +218,27 @@ Sky-Reader/
 │   │   ├── claim_validator.py         # Deterministic validator with domain tolerances
 │   │   ├── hallucination_controller.py# Metrics calculation, feedback loop & safe fallback
 │   │   └── explanation_engine.py      # Generates ExplanationProof & Markdown audit chains
-│   ├── evaluation/                    # Phase 4 Evaluation & Benchmarking
+│   ├── evaluation/                    # Phase 7 Benchmark Dataset & Evaluation Suite
+│   │   ├── __init__.py                # Package exports (models, loaders)
+│   │   ├── models.py                  # Pydantic benchmark validation schemas (TestCase, Dataset, Fixtures)
+│   │   ├── dataset_loader.py          # Loader & cross-reference validator functions
+│   │   ├── generate_benchmark_data.py # Deterministic dataset & synthetic fixture generator
+│   │   ├── datasets/                  # 50 validated benchmark test cases across 10 categories
+│   │   │   └── weather_benchmark.json
+│   │   ├── fixtures/                  # 12 high-fidelity synthetic weather fixtures
+│   │   │   └── weather_fixtures.json
 │   │   ├── metrics.py                 # Formulas for Grounding, Hallucination, F1, Overhead
 │   │   ├── benchmark.py               # Comparative benchmark script
-│   │   └── ablation.py                # Architectural ablation study runner
+│   │   ├── ablation.py                # Architectural ablation study runner
+│   │   └── README.md                  # Comprehensive evaluation dataset documentation
 │   └── tests/                         # Modular unit test suite
 │       ├── test_evidence_engine.py
 │       ├── test_claim_extractor.py
 │       ├── test_claim_validator.py
 │       ├── test_hallucination_controller.py
-│       └── test_explanation_engine.py
+│       ├── test_explanation_engine.py
+│       ├── test_risk_engine.py        # Phase 6 hazard & uncertainty unit tests
+│       └── test_evaluation_dataset.py # Phase 7.1 dataset validation & fixture unit tests
 └── frontend/
     ├── index.html
     ├── package.json
@@ -226,6 +253,7 @@ Sky-Reader/
             ├── WelcomeHero.jsx        # ChatGPT-style empty-state hero with quick prompt cards
             ├── ChatMessage.jsx        # Left/Right message bubbles with timestamp & formatted text
             ├── WeatherSnapshot.jsx    # Visual telemetry cards (temp, humidity, rain %, umbrella)
+            ├── RiskCard.jsx           # Phase 6 safety cards, severity badges & uncertainty notes
             ├── AuditDrawer.jsx        # Collapsible Phase 4 verification & explainability drawer
             ├── ThinkingIndicator.jsx  # Animated 3-dot typing status indicator
             ├── ChatInput.jsx          # Bottom fixed textarea, quick suggestions & send button
@@ -292,7 +320,8 @@ npm run dev
 | `GET` | `/health` | Health check endpoint |
 | `GET` | `/weather?location={city}` | Phase 1 current weather and 24h hourly forecast |
 | `GET` | `/api/weather/analysis?location={city}&focus={focus}&day_offset={0\|1}` | Phase 3 meteorological intelligence & decision support |
-| `POST` | `/api/agent/chat` | Phase 2, 3 & 4 verified conversational agent reasoning endpoint |
+| `GET` | `/api/weather/risks?location={city}&day_offset={0\|1}` | Phase 6 deterministic weather hazard detection & safety assessment |
+| `POST` | `/api/agent/chat` | Phase 2, 3, 4 & 6 verified conversational agent reasoning endpoint |
 | `POST` | `/api/evidence/validate` | Phase 4 deterministic claim extraction & validation for any text |
 | `GET` | `/api/evidence/summary?location={city}` | Phase 4 complete evidence collection & provenance records |
 
@@ -367,17 +396,31 @@ curl "http://127.0.0.1:8000/api/evidence/summary?location=Dehradun"
 
 Sky Reader includes modular unit tests, integration test suites, and empirical benchmarking tools:
 
-### 1. Phase 4 Unit Tests (Offline / Zero Network)
+### 1. Phase 6 & Phase 4 Unit Tests (Offline / Zero Network)
 ```bash
+# Phase 7.1 benchmark evaluation dataset & fixture unit tests (8 test suites)
+backend/venv/bin/python backend/tests/test_evaluation_dataset.py
+
+# Phase 6 weather safety, risk levels, and uncertainty unit tests (10 test cases)
+backend/venv/bin/python backend/tests/test_risk_engine.py
+
+# Phase 4 verification & explainability unit tests
 backend/venv/bin/python backend/tests/test_evidence_engine.py
 backend/venv/bin/python backend/tests/test_claim_extractor.py
 backend/venv/bin/python backend/tests/test_claim_validator.py
 backend/venv/bin/python backend/tests/test_hallucination_controller.py
 backend/venv/bin/python backend/tests/test_explanation_engine.py
 ```
-*(All 5 test suites pass deterministically).*
+*(All test suites pass deterministically without network dependencies).*
 
-### 2. Complete Phase 4 Integration Suite
+### 2. Complete Phase 6 Weather Safety & Risk Integration Suite
+Tests deterministic hazard evaluation, tool executor mappings, FastAPI `/api/weather/risks` endpoints, and Groq agent hazard routing:
+```bash
+PYTHONPATH=. backend/venv/bin/python backend/test_phase6.py
+```
+*(Result: 3/3 test suites pass).*
+
+### 3. Complete Phase 4 Integration Suite
 Tests evidence extraction, claim extraction, validation with tolerances, hallucination feedback, explanation proofs, FastAPI endpoints, and end-to-end agent reasoning:
 ```bash
 backend/venv/bin/python backend/test_phase4.py
@@ -428,6 +471,8 @@ backend/venv/bin/python backend/test_analysis.py
 - *"What is the best time for outdoor activities tomorrow in Tokyo?"*
 - *"Is tomorrow suitable for travelling in Chennai?"*
 - *"How will tomorrow's weather compare with today's in London?"*
+- *"Are there any weather risks, storms, or severe safety hazards in Dehradun tomorrow?"*
+- *"Is it safe to go hiking in Tokyo tomorrow given the wind and rain forecast?"*
 - *"Can you explain the meteorological evidence behind your recommendation?"*
 - *"What causes lightning and thunder?"* (answered directly as general knowledge without tool calls)
 

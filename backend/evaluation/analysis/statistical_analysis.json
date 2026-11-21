@@ -1,0 +1,401 @@
+{
+  "confidence_intervals_by_system": {
+    "baseline_llm": {
+      "sample_size": 50,
+      "numerical_accuracy_ci95": [
+        0.1434,
+        0.062,
+        0.2364
+      ],
+      "factual_accuracy_ci95": [
+        0.181,
+        0.1117,
+        0.2577
+      ],
+      "hallucination_rate_ci95": [
+        0.4949,
+        0.3333,
+        0.6566
+      ],
+      "completeness_score_ci95": [
+        0.7837,
+        0.707,
+        0.857
+      ],
+      "latency_ms_ci95": [
+        2915.3544,
+        2220.5476,
+        3758.6164
+      ]
+    },
+    "tool_using_agent": {
+      "sample_size": 50,
+      "numerical_accuracy_ci95": [
+        0.4806,
+        0.3527,
+        0.6124
+      ],
+      "factual_accuracy_ci95": [
+        0.3943,
+        0.292,
+        0.505
+      ],
+      "hallucination_rate_ci95": [
+        0.3591,
+        0.2227,
+        0.4947
+      ],
+      "completeness_score_ci95": [
+        0.8393,
+        0.7693,
+        0.9037
+      ],
+      "latency_ms_ci95": [
+        19376.5314,
+        15881.9348,
+        22749.3668
+      ]
+    },
+    "sky_reader_full": {
+      "sample_size": 50,
+      "numerical_accuracy_ci95": [
+        0.3411,
+        0.2248,
+        0.4612
+      ],
+      "factual_accuracy_ci95": [
+        0.365,
+        0.27,
+        0.465
+      ],
+      "hallucination_rate_ci95": [
+        0.0833,
+        0.0135,
+        0.1689
+      ],
+      "completeness_score_ci95": [
+        0.856,
+        0.7753,
+        0.926
+      ],
+      "latency_ms_ci95": [
+        28200.2622,
+        22696.8022,
+        33723.4102
+      ]
+    }
+  },
+  "paired_system_tests": {
+    "tool_using_agent_vs_baseline_llm": {
+      "matched_cases_count": 50,
+      "matched_test_case_ids": [
+        "TC-CMP-001",
+        "TC-CMP-002",
+        "TC-CMP-003",
+        "TC-CMP-004",
+        "TC-CMP-005",
+        "TC-CUR-001",
+        "TC-CUR-002",
+        "TC-CUR-003",
+        "TC-CUR-004",
+        "TC-CUR-005",
+        "TC-EVD-001",
+        "TC-EVD-002",
+        "TC-EVD-003",
+        "TC-EVD-004",
+        "TC-EVD-005",
+        "TC-HAL-001",
+        "TC-HAL-002",
+        "TC-HAL-003",
+        "TC-HAL-004",
+        "TC-HAL-005",
+        "TC-HLY-001",
+        "TC-HLY-002",
+        "TC-HLY-003",
+        "TC-HLY-004",
+        "TC-HLY-005",
+        "TC-INC-001",
+        "TC-INC-002",
+        "TC-INC-003",
+        "TC-INC-004",
+        "TC-INC-005",
+        "TC-MLT-001",
+        "TC-MLT-002",
+        "TC-MLT-003",
+        "TC-MLT-004",
+        "TC-MLT-005",
+        "TC-PRC-001",
+        "TC-PRC-002",
+        "TC-PRC-003",
+        "TC-PRC-004",
+        "TC-PRC-005",
+        "TC-RSK-001",
+        "TC-RSK-002",
+        "TC-RSK-003",
+        "TC-RSK-004",
+        "TC-RSK-005",
+        "TC-TRD-001",
+        "TC-TRD-002",
+        "TC-TRD-003",
+        "TC-TRD-004",
+        "TC-TRD-005"
+      ],
+      "excluded_cases": [],
+      "numerical_accuracy_diff": {
+        "n_pairs": 43,
+        "mean_diff": 0.3372,
+        "ci_95": [
+          0.1744,
+          0.5
+        ],
+        "p_value_two_sided": 0.0,
+        "p_value_display": "p < 0.001",
+        "statistically_significant": true
+      },
+      "factual_accuracy_diff": {
+        "n_pairs": 50,
+        "mean_diff": 0.2133,
+        "ci_95": [
+          0.1117,
+          0.3267
+        ],
+        "p_value_two_sided": 0.0,
+        "p_value_display": "p < 0.001",
+        "statistically_significant": true
+      },
+      "hallucination_rate_diff": {
+        "n_pairs": 50,
+        "mean_diff": -0.0107,
+        "ci_95": [
+          -0.1667,
+          0.1493
+        ],
+        "p_value_two_sided": 0.906,
+        "p_value_display": "p = 0.9060",
+        "statistically_significant": false
+      },
+      "completeness_score_diff": {
+        "n_pairs": 50,
+        "mean_diff": 0.0557,
+        "ci_95": [
+          -0.01,
+          0.126
+        ],
+        "p_value_two_sided": 0.093,
+        "p_value_display": "p = 0.0930",
+        "statistically_significant": false
+      }
+    },
+    "sky_reader_full_vs_tool_using_agent": {
+      "matched_cases_count": 50,
+      "matched_test_case_ids": [
+        "TC-CMP-001",
+        "TC-CMP-002",
+        "TC-CMP-003",
+        "TC-CMP-004",
+        "TC-CMP-005",
+        "TC-CUR-001",
+        "TC-CUR-002",
+        "TC-CUR-003",
+        "TC-CUR-004",
+        "TC-CUR-005",
+        "TC-EVD-001",
+        "TC-EVD-002",
+        "TC-EVD-003",
+        "TC-EVD-004",
+        "TC-EVD-005",
+        "TC-HAL-001",
+        "TC-HAL-002",
+        "TC-HAL-003",
+        "TC-HAL-004",
+        "TC-HAL-005",
+        "TC-HLY-001",
+        "TC-HLY-002",
+        "TC-HLY-003",
+        "TC-HLY-004",
+        "TC-HLY-005",
+        "TC-INC-001",
+        "TC-INC-002",
+        "TC-INC-003",
+        "TC-INC-004",
+        "TC-INC-005",
+        "TC-MLT-001",
+        "TC-MLT-002",
+        "TC-MLT-003",
+        "TC-MLT-004",
+        "TC-MLT-005",
+        "TC-PRC-001",
+        "TC-PRC-002",
+        "TC-PRC-003",
+        "TC-PRC-004",
+        "TC-PRC-005",
+        "TC-RSK-001",
+        "TC-RSK-002",
+        "TC-RSK-003",
+        "TC-RSK-004",
+        "TC-RSK-005",
+        "TC-TRD-001",
+        "TC-TRD-002",
+        "TC-TRD-003",
+        "TC-TRD-004",
+        "TC-TRD-005"
+      ],
+      "excluded_cases": [],
+      "numerical_accuracy_diff": {
+        "n_pairs": 43,
+        "mean_diff": -0.1395,
+        "ci_95": [
+          -0.314,
+          0.0349
+        ],
+        "p_value_two_sided": 0.131,
+        "p_value_display": "p = 0.1310",
+        "statistically_significant": false
+      },
+      "factual_accuracy_diff": {
+        "n_pairs": 50,
+        "mean_diff": -0.0293,
+        "ci_95": [
+          -0.1267,
+          0.06
+        ],
+        "p_value_two_sided": 0.525,
+        "p_value_display": "p = 0.5250",
+        "statistically_significant": false
+      },
+      "hallucination_rate_diff": {
+        "n_pairs": 50,
+        "mean_diff": -0.2543,
+        "ci_95": [
+          -0.375,
+          -0.145
+        ],
+        "p_value_two_sided": 0.0,
+        "p_value_display": "p < 0.001",
+        "statistically_significant": true
+      },
+      "completeness_score_diff": {
+        "n_pairs": 50,
+        "mean_diff": 0.0167,
+        "ci_95": [
+          -0.0433,
+          0.0717
+        ],
+        "p_value_two_sided": 0.575,
+        "p_value_display": "p = 0.5750",
+        "statistically_significant": false
+      }
+    },
+    "sky_reader_full_vs_baseline_llm": {
+      "matched_cases_count": 50,
+      "matched_test_case_ids": [
+        "TC-CMP-001",
+        "TC-CMP-002",
+        "TC-CMP-003",
+        "TC-CMP-004",
+        "TC-CMP-005",
+        "TC-CUR-001",
+        "TC-CUR-002",
+        "TC-CUR-003",
+        "TC-CUR-004",
+        "TC-CUR-005",
+        "TC-EVD-001",
+        "TC-EVD-002",
+        "TC-EVD-003",
+        "TC-EVD-004",
+        "TC-EVD-005",
+        "TC-HAL-001",
+        "TC-HAL-002",
+        "TC-HAL-003",
+        "TC-HAL-004",
+        "TC-HAL-005",
+        "TC-HLY-001",
+        "TC-HLY-002",
+        "TC-HLY-003",
+        "TC-HLY-004",
+        "TC-HLY-005",
+        "TC-INC-001",
+        "TC-INC-002",
+        "TC-INC-003",
+        "TC-INC-004",
+        "TC-INC-005",
+        "TC-MLT-001",
+        "TC-MLT-002",
+        "TC-MLT-003",
+        "TC-MLT-004",
+        "TC-MLT-005",
+        "TC-PRC-001",
+        "TC-PRC-002",
+        "TC-PRC-003",
+        "TC-PRC-004",
+        "TC-PRC-005",
+        "TC-RSK-001",
+        "TC-RSK-002",
+        "TC-RSK-003",
+        "TC-RSK-004",
+        "TC-RSK-005",
+        "TC-TRD-001",
+        "TC-TRD-002",
+        "TC-TRD-003",
+        "TC-TRD-004",
+        "TC-TRD-005"
+      ],
+      "excluded_cases": [],
+      "numerical_accuracy_diff": {
+        "n_pairs": 43,
+        "mean_diff": 0.1977,
+        "ci_95": [
+          0.0581,
+          0.3372
+        ],
+        "p_value_two_sided": 0.007,
+        "p_value_display": "p = 0.0070",
+        "statistically_significant": true
+      },
+      "factual_accuracy_diff": {
+        "n_pairs": 50,
+        "mean_diff": 0.184,
+        "ci_95": [
+          0.0757,
+          0.3033
+        ],
+        "p_value_two_sided": 0.0,
+        "p_value_display": "p < 0.001",
+        "statistically_significant": true
+      },
+      "hallucination_rate_diff": {
+        "n_pairs": 50,
+        "mean_diff": -0.265,
+        "ci_95": [
+          -0.4033,
+          -0.1233
+        ],
+        "p_value_two_sided": 0.0,
+        "p_value_display": "p < 0.001",
+        "statistically_significant": true
+      },
+      "completeness_score_diff": {
+        "n_pairs": 50,
+        "mean_diff": 0.0723,
+        "ci_95": [
+          -0.001,
+          0.1467
+        ],
+        "p_value_two_sided": 0.053,
+        "p_value_display": "p = 0.0530",
+        "statistically_significant": false
+      }
+    }
+  },
+  "bootstrap_parameters": {
+    "method": "Non-parametric paired case bootstrap resampling with replacement",
+    "resamples_B": 2000,
+    "random_seed": 42,
+    "resampling_unit": "test_case_id",
+    "confidence_level": 0.95
+  },
+  "limitations_and_caveats": {
+    "sample_size_notes": "Statistical sensitivity is constrained by the evaluation cohort size. While sufficient to detect large architectural effect sizes (delta > 0.15), small category subsets (n=5 per category) have high standard errors and low statistical power. Small variances (delta < 0.05) cannot be distinguished from LLM sampling noise.",
+    "multiple_comparisons_note": "Hypothesis tests across multiple metrics and systems are reported with nominal two-sided p-values without Family-Wise Error Rate (FWER) or False Discovery Rate (FDR) adjustment (such as Bonferroni). Readers should interpret marginal significances (p ~ 0.01 - 0.05) with appropriate conservatism due to cumulative Type I error inflation across multi-dimensional comparisons."
+  }
+}

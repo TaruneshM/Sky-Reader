@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 440" width="100%" height="100%">
+  <rect width="880" height="440" fill="#0f172a" rx="8"/>
+  <text x="440" y="34" fill="#f8fafc" font-size="18" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Figure 2: Hallucination &amp; Contradiction Profile Across Architectures (N=50)</text>
+  <text x="440" y="54" fill="#94a3b8" font-size="12" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">Evaluated across all extracted claims against deterministic ground truth</text>
+
+  <!-- Legend -->
+  <rect x="220" y="70" width="14" height="14" fill="#ef4444" rx="3"/>
+  <text x="240" y="82" fill="#cbd5e1" font-size="12" font-family="system-ui, -apple-system, sans-serif">Baseline LLM (Zero Tools)</text>
+  <rect x="410" y="70" width="14" height="14" fill="#f59e0b" rx="3"/>
+  <text x="430" y="82" fill="#cbd5e1" font-size="12" font-family="system-ui, -apple-system, sans-serif">Tool Agent (No Verification)</text>
+  <rect x="610" y="70" width="14" height="14" fill="#10b981" rx="3"/>
+  <text x="630" y="82" fill="#cbd5e1" font-size="12" font-family="system-ui, -apple-system, sans-serif">Complete Sky Reader</text>
+
+  <!-- Grid lines -->
+  <line x1="80" y1="360" x2="830" y2="360" stroke="#334155" stroke-width="1.5"/>
+  <line x1="80" y1="300" x2="830" y2="300" stroke="#334155" stroke-dasharray="4" stroke-width="1"/>
+  <line x1="80" y1="240" x2="830" y2="240" stroke="#334155" stroke-dasharray="4" stroke-width="1"/>
+  <line x1="80" y1="180" x2="830" y2="180" stroke="#334155" stroke-dasharray="4" stroke-width="1"/>
+  <line x1="80" y1="120" x2="830" y2="120" stroke="#334155" stroke-dasharray="4" stroke-width="1"/>
+
+  <text x="70" y="364" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">0%</text>
+  <text x="70" y="304" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">25%</text>
+  <text x="70" y="244" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">50%</text>
+  <text x="70" y="184" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">75%</text>
+  <text x="70" y="124" fill="#94a3b8" font-size="11" font-family="system-ui, -apple-system, sans-serif" text-anchor="end">100%</text>
+
+  <!-- Group 1: Hallucination Rate -->
+  <text x="175" y="385" fill="#e2e8f0" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Hallucination Rate</text>
+  <text x="175" y="402" fill="#64748b" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">(Lower is better)</text>
+  <!-- Baseline 49.5% -> h = 118.8, y = 241.2 -->
+  <rect x="120" y="241" width="32" height="119" fill="#ef4444" rx="4"/>
+  <text x="136" y="234" fill="#ef4444" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">49.5%</text>
+  <!-- Tool Agent 35.9% -> h = 86.2, y = 273.8 -->
+  <rect x="159" y="274" width="32" height="86" fill="#f59e0b" rx="4"/>
+  <text x="175" y="267" fill="#f59e0b" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">35.9%</text>
+  <!-- Sky Reader 8.3% -> h = 19.9, y = 340.1 -->
+  <rect x="198" y="340" width="32" height="20" fill="#10b981" rx="4"/>
+  <text x="214" y="333" fill="#10b981" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">8.3%</text>
+
+  <!-- Significance bracket for Hallucination Rate -->
+  <path d="M 175 220 L 175 208 L 214 208 L 214 220" fill="none" stroke="#38bdf8" stroke-width="1.5"/>
+  <text x="195" y="202" fill="#38bdf8" font-size="10" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">p &lt; 0.0001 (d=0.771)</text>
+
+  <!-- Group 2: Contradiction Rate -->
+  <text x="365" y="385" fill="#e2e8f0" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Contradiction Rate</text>
+  <text x="365" y="402" fill="#64748b" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">(Lower is better)</text>
+  <!-- Baseline 37.9% -> h = 91.0, y = 269 -->
+  <rect x="310" y="269" width="32" height="91" fill="#ef4444" rx="4"/>
+  <text x="326" y="262" fill="#ef4444" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">37.9%</text>
+  <!-- Tool Agent 17.7% -> h = 42.5, y = 317.5 -->
+  <rect x="349" y="318" width="32" height="42" fill="#f59e0b" rx="4"/>
+  <text x="365" y="311" fill="#f59e0b" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">17.7%</text>
+  <!-- Sky Reader 5.0% -> h = 12.0, y = 348 -->
+  <rect x="388" y="348" width="32" height="12" fill="#10b981" rx="4"/>
+  <text x="404" y="341" fill="#10b981" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">5.0%</text>
+
+  <!-- Group 3: Clean Ratio -->
+  <text x="555" y="385" fill="#e2e8f0" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Clean Case Ratio</text>
+  <text x="555" y="402" fill="#64748b" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">(Zero Hallucinations, Higher is better)</text>
+  <!-- Baseline 64.0% -> h = 153.6, y = 206.4 -->
+  <rect x="500" y="206" width="32" height="154" fill="#ef4444" rx="4"/>
+  <text x="516" y="199" fill="#ef4444" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">64.0%</text>
+  <!-- Tool Agent 64.0% -> h = 153.6, y = 206.4 -->
+  <rect x="539" y="206" width="32" height="154" fill="#f59e0b" rx="4"/>
+  <text x="555" y="199" fill="#f59e0b" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">64.0%</text>
+  <!-- Sky Reader 90.0% -> h = 216.0, y = 144 -->
+  <rect x="578" y="144" width="32" height="216" fill="#10b981" rx="4"/>
+  <text x="594" y="137" fill="#10b981" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">90.0%</text>
+
+  <!-- Significance bracket for Clean Ratio -->
+  <path d="M 555 125 L 555 115 L 594 115 L 594 125" fill="none" stroke="#38bdf8" stroke-width="1.5"/>
+  <text x="575" y="108" fill="#38bdf8" font-size="10" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">+26.0% gain (p &lt; 0.005)</text>
+
+  <!-- Group 4: Ambiguous / Unverifiable -->
+  <text x="745" y="385" fill="#e2e8f0" font-size="12" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">Unverifiable Claims</text>
+  <text x="745" y="402" fill="#64748b" font-size="10" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">(Lower is better)</text>
+  <!-- Baseline 17.4% -> h = 41.8, y = 318.2 -->
+  <rect x="690" y="318" width="32" height="42" fill="#ef4444" rx="4"/>
+  <text x="706" y="311" fill="#ef4444" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">17.4%</text>
+  <!-- Tool Agent 22.6% -> h = 54.2, y = 305.8 -->
+  <rect x="729" y="306" width="32" height="54" fill="#f59e0b" rx="4"/>
+  <text x="745" y="299" fill="#f59e0b" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">22.6%</text>
+  <!-- Sky Reader 3.9% -> h = 9.4, y = 350.6 -->
+  <rect x="768" y="351" width="32" height="9" fill="#10b981" rx="4"/>
+  <text x="784" y="344" fill="#10b981" font-size="11" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" text-anchor="middle">3.9%</text>
+</svg>

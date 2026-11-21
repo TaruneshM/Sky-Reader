@@ -1,0 +1,49 @@
+{
+  "run_id": "run_20261121_065501_3b721b",
+  "started_at": "2026-11-21T06:55:01.029166+00:00",
+  "completed_at": "2026-11-21T06:59:25.557166+00:00",
+  "total_cases_selected": 7,
+  "total_executions": 7,
+  "completed_count": 7,
+  "failed_count": 0,
+  "timeout_count": 0,
+  "skipped_count": 0,
+  "systems_evaluated": [
+    "sky_reader_full"
+  ],
+  "categories_evaluated": [
+    "current_weather",
+    "evidence_based_reasoning",
+    "hourly_forecast",
+    "multistep_reasoning",
+    "temperature_comparison"
+  ],
+  "config": {
+    "dataset_path": null,
+    "fixtures_path": null,
+    "results_dir": "/home/victus/sky reader /Sky-Reader/backend/evaluation/results",
+    "model": "openai/gpt-oss-120b",
+    "api_key": "[REDACTED]",
+    "timeout_seconds": 100.0,
+    "max_retries": 2,
+    "retry_backoff_seconds": 2.0,
+    "max_iterations": 10,
+    "fixture_mode": "synthetic_fixture",
+    "concurrency": 1,
+    "dry_run": false,
+    "selected_systems": [
+      "sky_reader_full"
+    ],
+    "selected_categories": null,
+    "selected_ids": [
+      "TC-CUR-004",
+      "TC-CUR-005",
+      "TC-EVD-004",
+      "TC-HLY-005",
+      "TC-CMP-002",
+      "TC-CMP-005",
+      "TC-MLT-004"
+    ],
+    "max_cases": null
+  }
+}
