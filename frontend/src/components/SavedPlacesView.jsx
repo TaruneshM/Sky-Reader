@@ -5,7 +5,6 @@ import {
   Trash2,
   Compass,
   MessageSquare,
-  Sparkles,
   MapPin,
   RefreshCw,
   Search,

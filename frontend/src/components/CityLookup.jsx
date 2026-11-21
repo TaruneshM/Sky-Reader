@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Search,
   MapPin,
+  Bookmark,
   Droplets,
   Wind,
   Compass,
@@ -20,8 +21,14 @@ import { WeatherIcon } from "../utils/weatherIcons";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-export default function CityLookup({ onConsultAgent, onWeatherLoaded }) {
-  const [location, setLocation] = useState("Dehradun");
+export default function CityLookup({
+  onConsultAgent,
+  onWeatherLoaded,
+  initialCity,
+  savedCities = [],
+  onToggleSaveCity,
+}) {
+  const [location, setLocation] = useState(initialCity || "Dehradun");
   const [weather, setWeather] = useState(null);
   const [lookupError, setLookupError] = useState("");
   const [lookupLoading, setLookupLoading] = useState(false);
@@ -71,18 +78,21 @@ export default function CityLookup({ onConsultAgent, onWeatherLoaded }) {
     }
   }
 
-  // Load initial city on mount
+  // Load initial city on mount or when initialCity changes
   useEffect(() => {
     let ignore = false;
+    const targetCity = initialCity || "Dehradun";
+
     async function loadInitial() {
       setLookupLoading(true);
       try {
         const response = await fetch(
-          `${API_BASE_URL}/weather?location=Dehradun`
+          `${API_BASE_URL}/weather?location=${encodeURIComponent(targetCity)}`
         );
         const data = await response.json();
         if (!ignore && response.ok) {
           setWeather(data);
+          setLocation(targetCity);
           if (onWeatherLoaded) {
             onWeatherLoaded(data);
           }
@@ -101,7 +111,7 @@ export default function CityLookup({ onConsultAgent, onWeatherLoaded }) {
     return () => {
       ignore = true;
     };
-  }, [onWeatherLoaded]);
+  }, [initialCity, onWeatherLoaded]);
 
   // Compute stats from forecast
   const forecastHours = weather?.forecast || [];
@@ -232,6 +242,52 @@ export default function CityLookup({ onConsultAgent, onWeatherLoaded }) {
                 <div className="location-name-row">
                   <MapPin size={22} className="location-pin-icon" />
                   <h2 className="location-name">{weather.location.name}</h2>
+                  {onToggleSaveCity && (
+                    <button
+                      type="button"
+                      className={`hero-save-place-btn ${
+                        savedCities.some(
+                          (c) =>
+                            c.toLowerCase() ===
+                            (weather.location.name || "").toLowerCase()
+                        )
+                          ? "saved"
+                          : ""
+                      }`}
+                      onClick={() => onToggleSaveCity(weather.location.name)}
+                      title={
+                        savedCities.some(
+                          (c) =>
+                            c.toLowerCase() ===
+                            (weather.location.name || "").toLowerCase()
+                        )
+                          ? "Remove from Saved Places"
+                          : "Save to My Places"
+                      }
+                    >
+                      <Bookmark
+                        size={15}
+                        fill={
+                          savedCities.some(
+                            (c) =>
+                              c.toLowerCase() ===
+                              (weather.location.name || "").toLowerCase()
+                          )
+                            ? "currentColor"
+                            : "none"
+                        }
+                      />
+                      <span>
+                        {savedCities.some(
+                          (c) =>
+                            c.toLowerCase() ===
+                            (weather.location.name || "").toLowerCase()
+                        )
+                          ? "Saved"
+                          : "Save Place"}
+                      </span>
+                    </button>
+                  )}
                 </div>
                 <span className="location-sub">
                   {[weather.location.region, weather.location.country]

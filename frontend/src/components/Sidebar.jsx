@@ -18,6 +18,7 @@ export default function Sidebar({
   user,
   chatSessions = [],
   onSelectSession,
+  savedCities = [],
 }) {
   return (
     <>
@@ -93,12 +94,15 @@ export default function Sidebar({
             type="button"
             className={`nav-pill-btn ${activeTab === "saved" ? "active" : ""}`}
             onClick={() => {
-              setActiveTab("lookup");
+              setActiveTab("saved");
               if (window.innerWidth < 1024) onClose();
             }}
           >
             <Bookmark size={17} className="nav-item-icon" />
             <span className="nav-item-text">Saved Places</span>
+            {savedCities.length > 0 && (
+              <span className="nav-item-badge">{savedCities.length}</span>
+            )}
           </button>
 
           <button

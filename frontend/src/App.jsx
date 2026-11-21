@@ -9,6 +9,7 @@ import Sidebar from "./components/Sidebar";
 import WeatherAtmosphere from "./components/WeatherAtmosphere";
 import LoginPage from "./components/LoginPage";
 import PreferencesView from "./components/PreferencesView";
+import SavedPlacesView from "./components/SavedPlacesView";
 import { detectWeatherScene } from "./utils/weatherAtmosphere";
 import "./App.css";
 
@@ -35,12 +36,89 @@ export default function App() {
     }
   });
 
-  const [activeTab, setActiveTab] = useState("agent"); // "agent" or "lookup"
+  const [activeTab, setActiveTab] = useState("agent"); // "agent", "lookup", "saved", or "preferences"
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Selected AI Meteorological Model (Sky Reader 4, Turbo, Flash, Ensemble)
+  const [selectedModel, setSelectedModel] = useState(() => {
+    try {
+      return localStorage.getItem("skyreader_model") || "Sky Reader 4";
+    } catch {
+      return "Sky Reader 4";
+    }
+  });
+
+  const handleSelectModel = (modelId) => {
+    setSelectedModel(modelId);
+    try {
+      localStorage.setItem("skyreader_model", modelId);
+    } catch (e) {
+      console.warn("Could not save model:", e);
+    }
+  };
+
+  // Saved Places Watchlist
+  const [savedCities, setSavedCities] = useState(() => {
+    try {
+      const saved = localStorage.getItem("skyreader_saved_places");
+      if (saved) return JSON.parse(saved);
+      if (user?.saved_cities && user.saved_cities.length > 0) return user.saved_cities;
+      return ["Tokyo", "Dehradun", "Paris", "Zurich"];
+    } catch {
+      return ["Tokyo", "Dehradun", "Paris", "Zurich"];
+    }
+  });
+
+  const [lookupInitialCity, setLookupInitialCity] = useState("Dehradun");
+
+  const syncSavedCitiesToBackend = async (cities) => {
+    try {
+      localStorage.setItem("skyreader_saved_places", JSON.stringify(cities));
+      const token = localStorage.getItem("skyreader_token");
+      if (token) {
+        await fetch(`${API_BASE_URL}/api/user/saved-cities`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ saved_cities: cities }),
+        });
+      }
+    } catch (e) {
+      console.warn("Could not sync saved cities to backend:", e);
+    }
+  };
+
+  const handleAddSavedCity = (cityName) => {
+    setSavedCities((prev) => {
+      if (prev.some((c) => c.toLowerCase() === cityName.toLowerCase())) return prev;
+      const updated = [cityName, ...prev];
+      syncSavedCitiesToBackend(updated);
+      return updated;
+    });
+  };
+
+  const handleRemoveSavedCity = (cityName) => {
+    setSavedCities((prev) => {
+      const updated = prev.filter((c) => c.toLowerCase() !== cityName.toLowerCase());
+      syncSavedCitiesToBackend(updated);
+      return updated;
+    });
+  };
+
+  const handleToggleSaveCity = (cityName) => {
+    if (!cityName) return;
+    if (savedCities.some((c) => c.toLowerCase() === cityName.toLowerCase())) {
+      handleRemoveSavedCity(cityName);
+    } else {
+      handleAddSavedCity(cityName);
+    }
+  };
 
   // Atmospheric simulation scene mode: 'auto' | 'sun' | 'rain' | 'stars' | 'wind' | 'snow' | 'thunder' | 'clouds'
   const [atmosphereMode, setAtmosphereMode] = useState(() => {
@@ -202,6 +280,7 @@ export default function App() {
         body: JSON.stringify({
           message: queryText,
           conversation_history: historyPayload,
+          model: selectedModel,
         }),
       });
 
@@ -343,6 +422,7 @@ export default function App() {
             user={user}
             chatSessions={chatSessions}
             onSelectSession={handleSelectSession}
+            savedCities={savedCities}
           />
 
           {/* Right Main Content Area inside Floating Window */}
@@ -356,6 +436,8 @@ export default function App() {
               atmosphereMode={atmosphereMode}
               onSelectAtmosphereMode={setAtmosphereMode}
               activeScene={activeScene}
+              selectedModel={selectedModel}
+              onSelectModel={handleSelectModel}
             />
 
             {/* Content Body: Chat Agent Tab */}
@@ -400,6 +482,25 @@ export default function App() {
                 <CityLookup
                   onConsultAgent={handleConsultAgentFromOther}
                   onWeatherLoaded={handleWeatherLoaded}
+                  initialCity={lookupInitialCity}
+                  savedCities={savedCities}
+                  onToggleSaveCity={handleToggleSaveCity}
+                />
+              </main>
+            )}
+
+            {/* Content Body: Saved Places Watchlist Tab */}
+            {activeTab === "saved" && (
+              <main className="saved-places-main-wrapper">
+                <SavedPlacesView
+                  savedCities={savedCities}
+                  onAddCity={handleAddSavedCity}
+                  onRemoveCity={handleRemoveSavedCity}
+                  onSelectCity={(city) => {
+                    setLookupInitialCity(city);
+                    setActiveTab("lookup");
+                  }}
+                  onConsultAgent={handleConsultAgentFromOther}
                 />
               </main>
             )}

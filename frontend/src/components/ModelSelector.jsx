@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, ChevronDown, Check, Zap, Gauge, Layers } from "lucide-react";
 
-export const SKY_MODELS = [
+const SKY_MODELS = [
   {
     id: "Sky Reader 4",
     name: "Sky Reader 4",
@@ -60,7 +60,6 @@ export default function ModelSelector({ selectedModel = "Sky Reader 4", onSelect
 
   const activeModelObj =
     SKY_MODELS.find((m) => m.id === selectedModel) || SKY_MODELS[0];
-  const IconComp = activeModelObj.icon;
 
   return (
     <div className="model-selector-container" ref={containerRef}>
