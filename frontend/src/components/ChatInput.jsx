@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import { Send, Sparkles, AlertCircle, Loader2 } from "lucide-react";
 
 export default function ChatInput({
   input,
@@ -16,6 +17,17 @@ export default function ChatInput({
     }
   }, []);
 
+  // Auto-adjust textarea height
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(
+        textareaRef.current.scrollHeight,
+        140
+      )}px`;
+    }
+  }, [input]);
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -27,41 +39,47 @@ export default function ChatInput({
 
   return (
     <div className="chat-input-wrapper">
+      {/* Error banner */}
       {error && (
         <div className="chat-error-banner" role="alert">
-          <span className="error-icon">⚠️</span>
+          <AlertCircle size={16} className="error-icon-svg" />
           <span className="error-text">{error}</span>
         </div>
       )}
 
-      {/* Input Form Bar */}
+      {/* Modern floating input bar */}
       <div className="chat-input-bar">
         <textarea
           ref={textareaRef}
           className="chat-textarea"
-          placeholder="Ask a weather question (e.g., 'Will it rain tomorrow in Paris?')..."
+          rows={1}
+          placeholder="Ask anything about the weather (e.g., 'Will it rain in London tomorrow evening?')..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={loading}
-          rows={1}
         />
+
         <button
           type="button"
           className="chat-send-btn"
-          onClick={onSend}
+          onClick={() => {
+            if (!loading && input.trim()) onSend();
+          }}
           disabled={loading || !input.trim()}
-          title="Send message (Enter)"
+          title="Send inquiry (Enter)"
+          aria-label="Send message"
         >
           {loading ? (
-            <span className="spinner-icon">⏳</span>
+            <Loader2 size={18} className="spinner-animate" />
           ) : (
-            <span className="send-icon">➤</span>
+            <Send size={18} />
           )}
         </button>
       </div>
-      <div className="chat-input-hint">
-        Press <strong>Enter</strong> to send, <strong>Shift + Enter</strong> for a new line. Context is preserved for follow-up questions.
+
+      <div className="chat-input-footnote">
+        <span>Press <kbd>Enter</kbd> to submit, <kbd>Shift + Enter</kbd> for newline • Powered by Open-Meteo & Groq</span>
       </div>
     </div>
   );

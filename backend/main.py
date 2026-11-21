@@ -1,5 +1,5 @@
 from typing import Any, List, Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -19,6 +19,14 @@ try:
     from evidence.claim_validator import ClaimValidator
     from evidence.hallucination_controller import HallucinationController
     from evidence.explanation_engine import ExplanationEngine
+    from database import (
+        init_db,
+        create_user,
+        authenticate_user,
+        create_session,
+        get_user_by_session_token,
+        delete_session,
+    )
 except ImportError:
     from backend.weather.service import (
         geocode_location,
@@ -35,6 +43,14 @@ except ImportError:
     from backend.evidence.claim_validator import ClaimValidator
     from backend.evidence.hallucination_controller import HallucinationController
     from backend.evidence.explanation_engine import ExplanationEngine
+    from backend.database import (
+        init_db,
+        create_user,
+        authenticate_user,
+        create_session,
+        get_user_by_session_token,
+        delete_session,
+    )
 
 
 app = FastAPI(
@@ -42,6 +58,36 @@ app = FastAPI(
     description="Backend API for the Sky Reader agentic weather intelligence system.",
     version="0.2.0",
 )
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+
+class UserRegisterRequest(BaseModel):
+    email: str = Field(..., description="User's email address")
+    password: str = Field(..., min_length=6, description="User's password (min 6 chars)")
+    name: Optional[str] = Field(default="", description="User's full name")
+
+
+class UserLoginRequest(BaseModel):
+    email: str = Field(..., description="User's email address")
+    password: str = Field(..., description="User's password")
+
+
+class UserProfile(BaseModel):
+    id: int
+    email: str
+    name: str
+    created_at: str
+    saved_cities: List[str] = []
+
+
+class AuthResponse(BaseModel):
+    user: UserProfile
+    token: str
+    message: str = "Success"
 
 
 app.add_middleware(
@@ -89,6 +135,54 @@ def root():
     return {
         "message": "Sky Reader backend is alive 🌦️"
     }
+
+
+@app.post("/api/auth/register", response_model=AuthResponse)
+async def register_endpoint(request: UserRegisterRequest):
+    try:
+        user_data = create_user(request.email, request.password, request.name or "")
+        token = create_session(user_data["id"])
+        return AuthResponse(
+            user=UserProfile(**user_data),
+            token=token,
+            message="User registration successful",
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+
+@app.post("/api/auth/login", response_model=AuthResponse)
+async def login_endpoint(request: UserLoginRequest):
+    user_data = authenticate_user(request.email, request.password)
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    token = create_session(user_data["id"])
+    return AuthResponse(
+        user=UserProfile(**user_data),
+        token=token,
+        message="Login successful",
+    )
+
+
+@app.get("/api/auth/me", response_model=UserProfile)
+async def get_current_user_endpoint(authorization: Optional[str] = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authentication token.")
+    token = authorization.split("Bearer ")[1].strip()
+    user = get_user_by_session_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Session expired or invalid.")
+    return UserProfile(**user)
+
+
+@app.post("/api/auth/logout")
+async def logout_endpoint(authorization: Optional[str] = Header(None)):
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split("Bearer ")[1].strip()
+        delete_session(token)
+    return {"message": "Logged out successfully"}
 
 
 @app.get("/weather", response_model=WeatherResponse)

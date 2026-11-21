@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { User, Bot, Copy, Check, Sparkles } from "lucide-react";
 import WeatherSnapshot from "./WeatherSnapshot";
 import AuditDrawer from "./AuditDrawer";
 import RiskCard from "./RiskCard";
@@ -119,7 +121,6 @@ function renderFormattedText(text) {
 
 function formatInlineText(text) {
   if (!text) return "";
-  // Simple regex to parse **bold** and `code`
   const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
@@ -134,26 +135,51 @@ function formatInlineText(text) {
 
 export default function ChatMessage({ message }) {
   const isUser = message.sender === "user";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (!message.text) return;
+    navigator.clipboard.writeText(message.text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className={`chat-message-row ${isUser ? "user-row" : "assistant-row"}`}>
       {!isUser && (
         <div className="message-avatar assistant-avatar" aria-hidden="true">
-          🌦️
+          <Bot size={17} />
         </div>
       )}
 
       <div className={`message-bubble ${isUser ? "user-bubble" : "assistant-bubble"}`}>
         <div className="message-header-meta">
-          <span className="sender-name">
-            {isUser ? "You" : "Sky Reader Agent"}
-          </span>
-          {message.iterations > 1 && (
-            <span className="iterations-tag" title="Agent reasoning loops executed">
-              ⚡ {message.iterations} steps
+          <div className="header-meta-left">
+            <span className="sender-name">
+              {isUser ? "You" : "Sky Reader Agent"}
             </span>
-          )}
-          <span className="message-time">{message.timestamp}</span>
+            {message.iterations > 1 && (
+              <span className="iterations-tag" title="Agent reasoning loops executed">
+                <Sparkles size={11} className="tag-sparkle" />
+                {message.iterations} steps
+              </span>
+            )}
+          </div>
+
+          <div className="header-meta-right">
+            <span className="message-time">{message.timestamp}</span>
+            {!isUser && (
+              <button
+                type="button"
+                className="message-copy-btn"
+                onClick={handleCopy}
+                title="Copy response"
+                aria-label="Copy response"
+              >
+                {copied ? <Check size={13} className="text-emerald" /> : <Copy size={13} />}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="message-body">
@@ -185,7 +211,7 @@ export default function ChatMessage({ message }) {
 
       {isUser && (
         <div className="message-avatar user-avatar" aria-hidden="true">
-          👤
+          <User size={17} />
         </div>
       )}
     </div>

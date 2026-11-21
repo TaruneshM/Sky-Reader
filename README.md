@@ -1,72 +1,88 @@
 # 🌦️ Sky Reader (WeatherGPT)
-### Agentic AI Weather Intelligence, Reasoning & Verification System
+### Agentic AI Weather Intelligence, Reasoning & Verification Platform
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688.svg)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57.svg)](https://www.sqlite.org/)
 [![Groq](https://img.shields.io/badge/Groq-Cloud%20LLM-f55036.svg)](https://groq.com/)
 [![Open-Meteo](https://img.shields.io/badge/Data-Open--Meteo-orange.svg)](https://open-meteo.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Sky Reader** is an agentic AI weather intelligence and verification platform. Beyond traditional weather retrieval, Sky Reader unifies **real-time Open-Meteo observations**, a **deterministic Python meteorological analysis engine**, **Groq LLM tool-calling**, and a **formal Evidence Generation & Claim Validation System**.
+**Sky Reader** is an agentic AI meteorological intelligence and deterministic claim verification platform. Beyond traditional weather forecasting apps, Sky Reader unifies **real-time Open-Meteo observations**, a **deterministic Python meteorological analysis engine**, **Groq LLM tool-calling**, a **formal Evidence Generation & Claim Validation System**, and a **visionOS/macOS-inspired glassmorphism frontend** featuring live particle simulation canvases, SQLite user authentication, and multi-model AI dispatching.
 
-The platform is designed with zero-tolerance for hallucinations: every AI-generated claim is parsed, audited against verified ground-truth meteorological records, and paired with an audited **Explanation Proof** before being served to the user.
+The platform is engineered with zero-tolerance for hallucinations: every AI-generated claim is parsed, audited against verified ground-truth meteorological records, and paired with an audited **Explanation Proof** before being served to the user.
 
 ---
 
-## 🌟 Key Capabilities by Phase
+## 🌟 Key Features & Capabilities
 
-### 📍 Phase 1: Real-Time Weather Foundation
-- **Automated Geocoding**: Resolves natural-language place names into precise latitude, longitude, and administrative metadata.
-- **Current Meteorological Observations**: Temperature, apparent ("feels-like") temperature, relative humidity, wind speed, wind direction, surface pressure, cloud cover, and WMO weather condition with emoji icons.
-- **Hourly Forecast**: Up to 48 hours of detailed hourly weather projections.
-- **Strict Pydantic Validation**: End-to-end type safety and schema validation across all responses.
+### 🎨 1. Visionary Glassmorphism UI & Ambient Atmospheric Canvas
+- **Floating Glass Application Frame**: VisionOS/macOS-inspired frosted window (`backdrop-filter: blur(28px)`), rounded pill architecture, and realistic drifting sky clouds.
+- **HTML5 Canvas Atmospheric Particle Engine**: Dynamic real-time weather simulations that automatically react to real weather or user preference:
+  - ☀️ **Sunshine & Warm Radiance**: Golden sun rays and luminous particles.
+  - 🌧️ **Rain & Precipitation**: Slanted raindrops with impact ripples.
+  - ✨ **Midnight Stars**: Twinkling stardust and calm night sky.
+  - 🍃 **Wind & Drifting Foliage**: Swaying leaves following fluid aerodynamic turbulence.
+  - ❄️ **Snow & Blizzard**: Softly drifting snowflakes.
+  - ⚡ **Thunderstorm**: Atmospheric lightning flashes and deep rain bursts.
+  - ☁️ **Overcast**: Soft drifting ambient cloud layers.
+  - 🔄 **Auto Mode**: Detects atmospheric conditions dynamically from Open-Meteo telemetry and agent claim extractions.
+- **Eye-Friendly Warm Light & Dark Themes**: High-contrast dark mode for evening focus, paired with a soft warm parchment/linen light theme (`#ede8df` → `#c8bfb2`) specifically designed to eliminate screen glare and eye strain.
 
-### 🤖 Phase 2: Agentic AI Tool Calling
+---
+
+### 🧠 2. AI Model Engine Selector (`ModelSelector`)
+Integrated centered dropdown pill allowing instant switching between specialized meteorological reasoning engines:
+- ✦ **Sky Reader 4 (Default / Precision)**: Flagship reasoning engine with strict factual claim audits and zero-hallucination verification.
+- ⚡ **Sky Reader 4 Turbo (High Velocity)**: Optimized for rapid multi-point hourly telemetry, swift radar analytics, and dynamic route planning.
+- ⏱️ **Sky Reader 3.5 Flash (Ultra-Low Latency)**: Instant responses for quick temperature queries and daily summaries.
+- 🌐 **Sky Reader Ensemble (Consensus Audit)**: Cross-validates atmospheric observations against deterministic physical models and consensus checks.
+
+---
+
+### 🔖 3. Saved Places Watchlist (`SavedPlacesView`)
+- **Watchlist Dashboard**: Manage saved global locations with live temperature, condition label, humidity, wind velocity, and day/night badges.
+- **Search & Auto-Validate**: Add new global locations with instant geocoding verification.
+- **1-Click Quick Add Chips**: Pre-curated chips for world capitals (Tokyo, Zurich, Paris, New York, Reykjavik, Sydney, Dehradun).
+- **Deep Integration**:
+  - Jump directly into **Dashboard & Trips** for full 48-hour hourly forecasting.
+  - 1-click **Ask AI** to consult the meteorological agent about that city.
+  - **Save Place Bookmark Button** in the main city lookup header to bookmark any searched location.
+  - Real-time counter badge on the left sidebar navigation pill.
+  - Synced across `localStorage` and the SQLite database backend.
+
+---
+
+### 🔐 4. SQLite Authentication & Session Management
+- **Encrypted Local Database (`backend/skyreader.db`)**:
+  - `users` table: id, email, name, salt + PBKDF2-HMAC-SHA256 password hash, creation date, and saved cities JSON.
+  - `sessions` table: cryptographically secure tokens, user ID, expiration timestamp, and cascade deletion.
+- **Restful Auth Endpoints**:
+  - `POST /api/auth/register`: New user onboarding with display name.
+  - `POST /api/auth/login`: Authenticate email/password and issue session token.
+  - `GET /api/auth/me`: Validate session token and return user profile.
+  - `POST /api/auth/logout`: Invalidate session token.
+  - `POST /api/user/saved-cities`: Synchronize saved places watchlist for authenticated users.
+- **Animated Twilight Login Page**:
+  - HTML5 Canvas aurora bands and stardust particles.
+  - Glassmorphic login card with leading field icons (User, Mail, Lock).
+  - Quick demo credentials autofill (`explorer@skyreader.ai` / `weather123`).
+  - Google Social Login integration mock.
+  - Dedicated Theme Toggle button on the authentication screen.
+  - Automatic routing: unauthenticated guests land on the login screen; active sessions enter the app immediately.
+
+---
+
+### 🤖 5. Agentic AI Tool-Calling & Verification Loop
 - **Autonomous Tool Dispatch**: Groq LLM dynamically determines whether a query requires geocoding, current weather, hourly forecasting, deep analysis, or direct conversational answers.
 - **Complete Reasoning Cycle**: *User Query → Tool Invocation → Python Execution → Data Return → Model Synthesis → Grounded Answer*.
-- **Rate-Limit & Fault Protection**: Built-in exponential backoff retry logic protecting against Groq free-tier token-per-minute (TPM) limits.
-
-### 🧠 Phase 3: Meteorological Intelligence & Decision Support
-- **Temperature Trend Dynamics**: Identifies trajectories (`increasing`, `decreasing`, `steady`), computes diurnal ranges, hourly deltas, and detects steep morning warming and evening drops.
-- **Perceived Comfort Analysis**: Combines relative humidity and thermal indices (`dry`, `comfortable`, `moderately humid`, `oppressive`) to explain human thermal comfort.
-- **Precipitation Probability vs. Volume**: Explicitly distinguishes between **rain probability** (e.g. 90% chance of brief sprinkles) and **expected rainfall accumulation** (0.1 mm vs. 25 mm downpour), isolating peak risk hours.
-- **Wind Dynamics & Beaufort Scale**: Translates angles into 16 cardinal compass directions, classifies Beaufort force scales, and flags gale/storm gusts (≥20 km/h).
-- **Atmospheric Pattern Detection**: Correlates falling barometric pressure with rising moisture and cloud cover to detect approaching weather fronts or storms.
-- **Time Aggregations (6-Hour Blocks)**: Aggregates forecasts into **Night (00–06)**, **Morning (06–12)**, **Afternoon (12–18)**, and **Evening (18–24)** blocks.
-- **Decision Support Engine**:
-  - ☔ **Umbrella Advisory**: Threshold-based recommendations with associated confidence levels.
-  - 🏃 **Outdoor Activity Windows**: Ranks 6-hour blocks to highlight optimal windows (mild temperature, low rain probability, gentle wind).
-  - 🚗 **Travel Suitability**: Evaluates hazards (heavy precipitation, severe winds, fog, thunderstorms) and generates practical travel advisories.
-
-### 💬 Conversational Chatbot Interface (ChatGPT-Style)
-- **Persistent Multi-Turn Stream**: Full conversational chat stream with right-aligned user messages and left-aligned AI assistant bubbles.
-- **Contextual Follow-Up Reasoning**: Supports multi-turn follow-ups without re-stating location or date (e.g., *"Weather in Dehradun tomorrow"* → *"Should I carry an umbrella?"* → *"What about travelling?"*).
-- **Session Isolation & Context Reset**: "✨ New Chat" clears message history both in UI state and in backend memory payloads.
-- **Evidence Isolation Guarantee**: Previous conversational turns are passed to the LLM for dialogue context, but are strictly excluded from the factual evidence collection — preventing historical messages from being treated as fresh meteorological evidence.
-- **Dynamic Weather Snapshot Cards**: AI responses embed structured telemetry cards (`🌡️ Temperature`, `💧 Humidity`, `💨 Wind`, `🌧️ Rain Chance`, `☔ Umbrella`) dynamically derived from backend claims.
-- **Live Phase 4 Audit Drawer**: Every AI response includes a collapsible audit drawer displaying live backend verification metrics (`is_trustworthy`, claim breakdown, validation status badges, executed tool badges, data sources, and limitations).
-- **ChatGPT-Style Input Bar**: Fixed bottom bar with auto-resizing textarea, keyboard submission (`Enter` to send, `Shift+Enter` for newline), animated thinking/typing indicator, and responsive mobile-first glassmorphism design.
-
-### 🔬 Phase 4: Explainability, Evidence Generation & Claim Validation
-- **Structured Evidence Engine**: Extracts and tags all weather data into provenance-tracked records distinguishing between `OBSERVED` (real-time Open-Meteo observations), `FORECAST` (numerical weather prediction models), and `DERIVED` (Phase 3 analytical calculations).
-- **Deterministic Claim Extractor**: Uses regex patterns to extract measurable factual claims (temperatures, precipitation probabilities, rainfall volumes, wind speeds, pressures, qualitative trends, umbrella recommendations) while filtering out pleasantries and opinions.
-- **Deterministic Claim Validator**: Audits every extracted claim against the `EvidenceCollection` using domain-justified meteorological tolerances:
-  - Temperature & Apparent Temp: $\pm 1.0^\circ\text{C}$ / $\pm 1.2^\circ\text{C}$ (handles natural rounding)
-  - Relative Humidity: $\pm 3.0\%$
-  - Precipitation Probability: $\pm 5.0\%$
-  - Precipitation Accumulation: $\pm 0.5\text{ mm}$
-  - Wind Speed: $\pm 2.5\text{ km/h}$
-  - Surface Pressure: $\pm 2.0\text{ hPa}$
-  - Verification Statuses: `SUPPORTED`, `PARTIALLY_SUPPORTED`, `CONTRADICTED`, `INSUFFICIENT_EVIDENCE`.
-- **Hallucination Controller & Regeneration Feedback Loop**:
-  - Computes `hallucination_rate`, `contradiction_rate`, `unsupported_rate`, and `is_trustworthy`.
-  - Zero-tolerance for contradictions: if detected, automatically initiates targeted corrective regeneration referencing ground-truth evidence.
-  - Safe Deterministic Fallback: if regeneration fails or retries are exhausted, returns a reliable, verified factual summary.
-- **Explanation & Reasoning Proofs**: Constructs a structured `ExplanationProof` linking conclusions directly to supporting evidence IDs, raw measurements, analysis methods, and meteorological limitations/uncertainty.
-- **Empirical Evaluation & Benchmarking**:
-  - Comprehensive benchmarking suite comparing Baseline LLMs, Phase 3 Agents, and Sky Reader Phase 4.
-  - Full ablation studies measuring the empirical impact of domain tolerances, feedback loops, and derived evidence.
+- **Structured Evidence Engine**: Extracts and tags all weather data into provenance-tracked records: `OBSERVED`, `FORECAST`, and `DERIVED`.
+- **Deterministic Claim Extractor & Validator**:
+  - Regex-based factual claim parsing (temperature, rain chance, wind speed, pressure, trends, umbrella advisories).
+  - Domain-calibrated tolerances ($\pm 1.0^\circ\text{C}$ temperature, $\pm 5.0\%$ rain probability, $\pm 2.5\text{ km/h}$ wind).
+  - Real-time status classifications: `SUPPORTED`, `PARTIALLY_SUPPORTED`, `CONTRADICTED`, `INSUFFICIENT_EVIDENCE`.
+- **Hallucination Controller & Self-Correction**: Automatically detects contradictions and triggers targeted corrective regeneration with ground-truth evidence before returning to user.
 
 ### 🛡️ Phase 6: Safety, Risk Assessment & Uncertainty Awareness
 - **Deterministic Weather Risk Engine**: Analyzes forecast records across configurable thresholds to identify severe hazards:
@@ -83,14 +99,28 @@ The platform is designed with zero-tolerance for hallucinations: every AI-genera
 
 ---
 
-## 🏗️ Architecture & Dataflow
+### 🧭 6. City Lookup, Telemetry & Preferences
+- **48-Hour Hourly Forecast Slider**: Hourly temperature cards, precipitation probability markers, and current hour highlight.
+- **Telemetry Grid**: Beaufort wind scale, cardinal compass directions, barometric pressure trend, and humidity comfort indexing.
+- **Decision Support Engine**:
+  - ☔ **Umbrella Advisory**: Threshold-based recommendations with associated confidence levels.
+  - 🏃 **Outdoor Activity Windows**: Ranks 6-hour blocks (Night, Morning, Afternoon, Evening) for ideal outdoor conditions.
+  - 🚗 **Travel Suitability**: Evaluates hazards (heavy rain, severe winds, fog, thunderstorms).
+- **Preferences & Settings Panel (`PreferencesView`)**:
+  - Units toggle (Celsius °C / Fahrenheit °F).
+  - Atmospheric scene override.
+  - AI reasoning depth & hallucination verification toggles.
+  - Chat history management and cache reset.
 
-### Overall System Architecture
+---
+
+## 🏗️ System Architecture
 
 ```mermaid
 flowchart TD
     User([User]) <--> Frontend["React 19 + Vite Frontend<br/>localhost:5173"]
     Frontend <--> API["FastAPI Backend<br/>localhost:8000"]
+    API <--> SQLite[("SQLite Database<br/>skyreader.db")]
     API <--> Agent["Agent Reasoning Loop<br/>backend/agent/agent.py"]
     Agent <--> GroqLLM["Groq Cloud LLM<br/>openai/gpt-oss-120b"]
     Agent <--> Executor["Python Tool Executor<br/>backend/agent/executor.py"]
@@ -98,7 +128,7 @@ flowchart TD
     Executor <--> Service["Open-Meteo Service<br/>backend/weather/service.py"]
     Service <--> OpenMeteo[("Open-Meteo APIs<br/>Geocoding & Forecast")]
 
-    %% Phase 4 Explainability & Validation Pipeline
+    %% Evidence Generation & Verification
     Agent <--> EvEngine["Evidence Generation Engine<br/>backend/evidence/evidence_engine.py"]
     Agent <--> ClaimExt["Claim Extractor<br/>backend/evidence/claim_extractor.py"]
     Agent <--> ClaimVal["Claim Validator<br/>backend/evidence/claim_validator.py"]
@@ -106,81 +136,24 @@ flowchart TD
     Agent <--> ExplEngine["Explanation Proof Engine<br/>backend/evidence/explanation_engine.py"]
 ```
 
-### Phase 4 Verification & Feedback Pipeline
-
-```mermaid
-sequenceDiagram
-    actor User
-    participant Agent as Agent Execution Loop
-    participant Groq as Groq LLM
-    participant Exec as Python Tool Executor
-    participant EvEngine as Evidence Engine
-    participant Val as Claim Extractor & Validator
-    participant Ctrl as Hallucination Controller
-    participant Expl as Explanation Engine
-
-    User->>Agent: "What is the temperature in Dehradun?"
-    Agent->>Groq: Query with tools
-    Groq-->>Agent: Tool Call: get_current_weather
-    Agent->>Exec: Execute tools
-    Exec-->>Agent: Raw measurements (e.g. 17.8°C, 84% humidity)
-    Agent->>EvEngine: Generate EvidenceCollection (OBSERVED, FORECAST, DERIVED)
-    Agent->>Groq: Supply tool results
-    Groq-->>Agent: Candidate response text
-    Agent->>Val: Extract factual claims
-    Val->>Val: Validate claims against EvidenceCollection within domain tolerances
-    Val-->>Ctrl: ValidationResults (SUPPORTED / CONTRADICTED)
-    alt Contradiction Detected
-        Ctrl->>Agent: Trigger targeted correction loop with ground-truth evidence
-        Agent->>Groq: Corrected Prompt with verified numbers
-        Groq-->>Agent: Corrected response
-    end
-    Ctrl-->>Agent: Audit Report (is_trustworthy=True)
-    Agent->>Expl: Generate ExplanationProof
-    Expl-->>Agent: Structured proof with limitations & audit trail
-    Agent-->>User: Verified Response + Claims + Audit Report + Proof
-```
-
----
-
-## 📊 Benchmark & Ablation Study Results
-
-Sky Reader Phase 4 was evaluated across diverse meteorological test scenarios comparing un-grounded baseline generation, Phase 3 analytical agents, and the complete Phase 4 verified pipeline.
-
-### Benchmark Evaluation
-
-| System Architecture | Claim Grounding | Hallucination Rate | Hard Contradictions | Trustworthy % |
-|---|---|---|---|---|
-| **Baseline (Un-grounded LLM)** | 0.0% | 100.0% | 100.0% | 0.0% |
-| **Phase 3 Agent (Analysis Only)** | 100.0% | 0.0% | 0.0% | 100.0% |
-| **Sky Reader Phase 4 (Full Verified)** | **100.0%** | **0.0%** | **0.0%** | **100.0%** |
-
-*Deterministic Validation Overhead: **0.06 ms** per response (virtually instantaneous in-memory execution).*
-
-### Ablation Study
-
-| Ablation Configuration | Claim Grounding | Hallucination Rate | Trustworthy % | Primary Cause of Degradation |
-|---|---|---|---|---|
-| **1. Full Sky Reader (Phase 4)** | **100.0%** | **0.0%** | **100.0%** | Optimal end-to-end verification |
-| **2. No Feedback Loop** | 0.0% | 100.0% | 0.0% | Hallucinated text is passed directly to the user |
-| **3. Zero Tolerance (No margins)** | 80.0% | 20.0% | 60.0% | Harmless natural rounding (e.g. 23°C for 22.5°C) flagged as errors |
-| **4. No Derived Evidence** | 80.0% | 20.0% | 60.0% | Trend and decision claims lack analytical supporting records |
-
 ---
 
 ## 🧰 Tech Stack
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| **Frontend** | React 19, Vite, Plain CSS | ChatGPT-style conversational chat stream + City Lookup views |
-| **Backend** | Python 3.10+, FastAPI, Pydantic, HTTPX | Async REST API, Pydantic v2 schemas, CORS middleware |
-| **AI Inference** | Groq Cloud SDK (`AsyncGroq`) | Fast LLM inference using `openai/gpt-oss-120b` with tool calling |
-| **Verification Engine** | Deterministic Python | Regex claim parsing, domain tolerance validation, provenance tracking |
-| **Weather Data** | Open-Meteo API | Geocoding, current observations, hourly forecasts, daily projections |
+| **Frontend Framework** | React 19, Vite | Fast modular component hierarchy & reactive state |
+| **Styling & Effects** | Pure CSS3 & HTML5 Canvas | Glassmorphism, particle physics, custom scrollbars, dual themes |
+| **Icons** | Lucide React | Clean, scalable iconography for weather, navigation, and telemetry |
+| **Backend Framework** | Python 3.10+, FastAPI, Pydantic v2 | High-throughput async REST API, strict schemas, CORS |
+| **Database** | SQLite3, PBKDF2-HMAC-SHA256 | Local, zero-configuration user storage and session management |
+| **AI Inference** | Groq Cloud SDK (`AsyncGroq`) | Ultra-fast LLM inference using `openai/gpt-oss-120b` with tool calling |
+| **Verification Engine** | Deterministic Python | Provenance tagging, regex claim parsing, domain tolerance validation |
+| **Weather Telemetry** | Open-Meteo API | Free, high-accuracy global geocoding, current data, and hourly forecasts |
 
 ---
 
-## 📁 Project Structure
+## 📁 Project Directory Structure
 
 ```text
 Sky-Reader/
@@ -188,8 +161,10 @@ Sky-Reader/
 ├── .gitignore
 ├── backend/
 │   ├── .env                           # Environment variables (GROQ_API_KEY, GROQ_MODEL)
+│   ├── skyreader.db                   # SQLite database (auto-generated on startup)
+│   ├── database.py                    # SQLite schema, password hashing, session tokens
 │   ├── requirements.txt               # fastapi, httpx, pydantic, groq, python-dotenv
-│   ├── main.py                        # FastAPI routes (Weather, Analysis, Chat, Evidence)
+│   ├── main.py                        # FastAPI routes (Auth, Weather, Analysis, Chat, Evidence, Risks)
 │   ├── test_executor.py               # Phase 1 tool executor test
 │   ├── test_phase2.py                 # Phase 2 agentic tool-calling integration suite
 │   ├── test_phase3.py                 # Phase 3 meteorological intelligence integration suite
@@ -198,21 +173,21 @@ Sky-Reader/
 │   ├── test_analysis.py               # Phase 3 meteorological engine unit tests
 │   ├── test_multiturn_chat.py         # Multi-turn conversational flow & reset verification test
 │   ├── agent/
-│   │   ├── __init__.py                # Package exports
-│   │   ├── agent.py                   # Groq tool-calling agent with Phase 4 validation loop
+│   │   ├── __init__.py
+│   │   ├── agent.py                   # Groq tool-calling agent with validation loop
 │   │   ├── executor.py                # Tool dispatcher executing weather & analysis functions
-│   │   └── tools.py                   # OpenAPI/Groq schemas for weather tools
+│   │   └── tools.py                   # OpenAPI schemas for weather tools
 │   ├── weather/
 │   │   ├── __init__.py
-│   │   ├── analysis.py                # Meteorological analysis & decision support engine
+│   │   ├── analysis.py                # Meteorological trends, comfort, Beaufort, decision support
 │   │   ├── risk_engine.py             # Phase 6 deterministic weather risk assessment engine
 │   │   ├── risk_models.py             # Pydantic schemas: RiskLevel, RiskItem, WeatherRiskAssessment
 │   │   ├── service.py                 # Open-Meteo HTTP client with retry logic & formatters
 │   │   ├── models.py                  # Pydantic response models
 │   │   └── weather_codes.py           # WMO weather code to description & emoji mappings
-│   ├── evidence/                      # Phase 4 Evidence & Verification System
-│   │   ├── __init__.py                # Package exports
-│   │   ├── evidence_models.py         # Pydantic schemas: EvidenceItem, FactualClaim, Proof
+│   ├── evidence/                      # Evidence & Claim Verification Subsystem
+│   │   ├── __init__.py
+│   │   ├── evidence_models.py         # EvidenceItem, FactualClaim, ExplanationProof schemas
 │   │   ├── evidence_engine.py         # Extracts structured records with provenance tagging
 │   │   ├── claim_extractor.py         # Deterministic regex-based factual claim extractor
 │   │   ├── claim_validator.py         # Deterministic validator with domain tolerances
@@ -231,13 +206,15 @@ Sky-Reader/
 │   │   ├── benchmark.py               # Comparative benchmark script
 │   │   ├── ablation.py                # Architectural ablation study runner
 │   │   └── README.md                  # Comprehensive evaluation dataset documentation
-│   └── tests/                         # Modular unit test suite
+│   └── tests/                         # Modular unit & integration test suites
 │       ├── test_evidence_engine.py
 │       ├── test_claim_extractor.py
 │       ├── test_claim_validator.py
 │       ├── test_hallucination_controller.py
 │       ├── test_explanation_engine.py
 │       ├── test_risk_engine.py        # Phase 6 hazard & uncertainty unit tests
+│       ├── test_temporal_context.py   # Phase 8.1 timezone & forecast window tests
+│       ├── test_rate_limit_and_routing.py # Phase 8.1 rate limit & routing tests
 │       └── test_evaluation_dataset.py # Phase 7.1 dataset validation & fixture unit tests
 └── frontend/
     ├── index.html
@@ -245,24 +222,41 @@ Sky-Reader/
     ├── vite.config.js
     └── src/
         ├── main.jsx
-        ├── index.css
-        ├── App.jsx                    # Root state manager (multi-turn history, auto-scroll)
-        ├── App.css                    # ChatGPT-style styling, glassmorphism, responsive
+        ├── App.jsx                    # Root state manager (auth, atmospheric canvas, view tabs)
+        ├── App.css                    # Complete CSS tokens, glassmorphism, animations, dual themes
         └── components/                # Modular UI component hierarchy
-            ├── ChatHeader.jsx         # Header branding, view switcher, New Chat trigger
-            ├── WelcomeHero.jsx        # ChatGPT-style empty-state hero with quick prompt cards
-            ├── ChatMessage.jsx        # Left/Right message bubbles with timestamp & formatted text
-            ├── WeatherSnapshot.jsx    # Visual telemetry cards (temp, humidity, rain %, umbrella)
+            ├── ChatHeader.jsx         # Header bar with model selector, atmosphere, theme, New Chat
+            ├── ModelSelector.jsx      # Interactive dropdown selector for AI reasoning engines
+            ├── WeatherAtmosphere.jsx  # HTML5 Canvas particle simulation engine
+            ├── AtmosphereSelector.jsx # Ambient weather animation selector pill
+            ├── Sidebar.jsx            # Responsive left navigation with unconstrained scrolling & badges
+            ├── SavedPlacesView.jsx    # Dedicated watchlist view with live city cards & quick add
+            ├── LoginPage.jsx          # Twilight aurora canvas login card with authentication
+            ├── PreferencesView.jsx    # Settings panel: units, themes, atmosphere overrides
+            ├── WelcomeHero.jsx        # Conversational starter cards and capsule input
+            ├── ChatMessage.jsx        # Left/Right message bubbles with copy, timestamp & formatted text
+            ├── WeatherSnapshot.jsx    # Visual telemetry cards (temp, humidity, wind, rain, umbrella)
             ├── RiskCard.jsx           # Phase 6 safety cards, severity badges & uncertainty notes
             ├── AuditDrawer.jsx        # Collapsible Phase 4 verification & explainability drawer
             ├── ThinkingIndicator.jsx  # Animated 3-dot typing status indicator
-            ├── ChatInput.jsx          # Bottom fixed textarea, quick suggestions & send button
+            ├── ChatInput.jsx          # Modern floating textarea, footnote & send button
             └── CityLookup.jsx         # Preserved Phase 1 city weather search & hourly forecast
+        │   ├── ChatMessage.jsx        # Left/right chat bubbles with timestamp & telemetry embeds
+        │   ├── WeatherSnapshot.jsx    # Visual telemetry cards (temp, humidity, rain %, umbrella)
+        │   ├── AuditDrawer.jsx        # Collapsible verification & explainability drawer
+        │   ├── ThinkingIndicator.jsx  # Animated typing status indicator
+        │   ├── ChatInput.jsx          # Bottom fixed textarea, quick suggestions & send button
+        │   ├── CityLookup.jsx         # 48h forecast, hourly slider, telemetry & bookmark toggle
+        │   └── PreferencesView.jsx    # Settings panel for units, theme, and AI reasoning depth
+        └── utils/
+            ├── weatherAtmosphere.js   # Atmosphere detection logic & scene presets
+            └── weatherIcons.jsx       # WMO code to Lucide weather icon mapper
+>>>>>>> b88b7eb200530ec549a267ca87b8814a6f56cc38
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quickstart Guide
 
 ### Prerequisites
 - **Python 3.10+**
@@ -282,26 +276,21 @@ GROQ_API_KEY=gsk_your_groq_api_key_here
 GROQ_MODEL=openai/gpt-oss-120b
 ```
 
-### 3. Install Backend Dependencies & Run Server
+### 3. Install & Start Backend Server
 ```bash
-# Create and activate virtual environment
-python3 -m venv backend/venv
-
-# Linux / macOS
-source backend/venv/bin/activate
 # Windows
+python -m venv backend\venv
 backend\venv\Scripts\activate
+pip install -r backend\requirements.txt
 
-# Install dependencies
-pip install -r backend/requirements.txt
-
-# Start FastAPI server
-uvicorn backend.main:app --reload --port 8000
+# Run FastAPI server
+cd backend
+uvicorn main:app --reload --port 8000
 ```
 - API live at: **http://127.0.0.1:8000**
 - Interactive Swagger docs: **http://127.0.0.1:8000/docs**
 
-### 4. Install Frontend Dependencies & Run Dev Server
+### 4. Install & Start Frontend Server
 In a separate terminal:
 ```bash
 cd frontend
@@ -312,16 +301,20 @@ npm run dev
 
 ---
 
-## 🔌 API Reference
+## 🔌 API Reference Summary
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/` | Service status welcome message |
-| `GET` | `/health` | Health check endpoint |
-| `GET` | `/weather?location={city}` | Phase 1 current weather and 24h hourly forecast |
+| `POST` | `/api/auth/register` | Register a new user profile in SQLite |
+| `POST` | `/api/auth/login` | Authenticate user and issue session token |
+| `GET` | `/api/auth/me` | Retrieve profile of authenticated user |
+| `POST` | `/api/auth/logout` | Terminate and invalidate session token |
+| `POST` | `/api/user/saved-cities` | Synchronize saved watchlist locations |
+| `GET` | `/weather?location={city}` | Phase 1 current weather and 24h/48h hourly forecast |
 | `GET` | `/api/weather/analysis?location={city}&focus={focus}&day_offset={0\|1}` | Phase 3 meteorological intelligence & decision support |
 | `GET` | `/api/weather/risks?location={city}&day_offset={0\|1}` | Phase 6 deterministic weather hazard detection & safety assessment |
-| `POST` | `/api/agent/chat` | Phase 2, 3, 4 & 6 verified conversational agent reasoning endpoint |
+| `POST` | `/api/agent/chat` | Phase 2, 3, 4, 6 & 8 verified conversational agent reasoning endpoint |
 | `POST` | `/api/evidence/validate` | Phase 4 deterministic claim extraction & validation for any text |
 | `GET` | `/api/evidence/summary?location={city}` | Phase 4 complete evidence collection & provenance records |
 
@@ -476,10 +469,11 @@ backend/venv/bin/python backend/test_analysis.py
 - *"Can you explain the meteorological evidence behind your recommendation?"*
 - *"What causes lightning and thunder?"* (answered directly as general knowledge without tool calls)
 
+
 ---
 
 ## 📜 License & Acknowledgements
 
 - **License**: MIT License
-- **Weather Data**: Real-time and forecast data provided by [Open-Meteo](https://open-meteo.com/).
-- **LLM Inference**: Cloud inference provided by [Groq](https://groq.com/).
+- **Weather Data**: Real-time telemetry provided by [Open-Meteo](https://open-meteo.com/).
+- **AI Inference**: High-speed LLM inference powered by [Groq](https://groq.com/).
