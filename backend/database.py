@@ -241,3 +241,16 @@ def delete_session(token: str) -> bool:
   conn.commit()
   conn.close()
   return True
+
+
+def update_user_saved_cities(user_id: int, saved_cities: list) -> bool:
+  conn = get_db_connection()
+  cursor = conn.cursor()
+  cursor.execute(
+      "UPDATE users SET saved_cities = ? WHERE id = ?",
+      (json.dumps(saved_cities), user_id),
+  )
+  conn.commit()
+  conn.close()
+  return True
+

@@ -26,6 +26,7 @@ try:
         create_session,
         get_user_by_session_token,
         delete_session,
+        update_user_saved_cities,
     )
 except ImportError:
     from backend.weather.service import (
@@ -50,6 +51,7 @@ except ImportError:
         create_session,
         get_user_by_session_token,
         delete_session,
+        update_user_saved_cities,
     )
 
 
@@ -105,6 +107,7 @@ class AgentChatRequest(BaseModel):
         default_factory=list,
         description="Optional list of prior conversation turns [{'role': 'user'|'assistant', 'content': str}]."
     )
+    model: Optional[str] = Field(default="Sky Reader 4", description="The meteorological AI model engine")
 
 
 class AgentChatResponse(BaseModel):
@@ -181,6 +184,25 @@ async def logout_endpoint(authorization: Optional[str] = Header(None)):
         token = authorization.split("Bearer ")[1].strip()
         delete_session(token)
     return {"message": "Logged out successfully"}
+
+
+class SavedCitiesUpdateRequest(BaseModel):
+    saved_cities: List[str]
+
+
+@app.post("/api/user/saved-cities")
+async def update_saved_cities_endpoint(
+    request: SavedCitiesUpdateRequest,
+    authorization: Optional[str] = Header(None)
+):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid authentication token.")
+    token = authorization.split("Bearer ")[1].strip()
+    user = get_user_by_session_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Session expired or invalid.")
+    update_user_saved_cities(user["id"], request.saved_cities)
+    return {"message": "Saved cities updated successfully", "saved_cities": request.saved_cities}
 
 
 @app.get("/weather", response_model=WeatherResponse)
