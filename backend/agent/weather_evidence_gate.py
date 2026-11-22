@@ -46,11 +46,44 @@ FORECAST_WORDING = re.compile(r"\b(?:forecast|tomorrow|tonight|overnight|will|ex
 # Only simple numeric continuations can inherit the immediately preceding observed location.
 # Full matching excludes new places, forecast qualifiers, and incidental factual assertions.
 OBSERVED_CONTINUATION = re.compile(
-    r"^(?:and\s+)?(?:the\s+)?"
-    r"(?:temperature|humidity|wind speed|wind gusts?|it)(?: there)?\s+(?:is|are)\s+"
-    r"[−-]?\d+(?:\.\d+)?\s*(?:°\s*C|%|km\s*/\s*h)(?: there)?[.!]?$",
+    r"^(?:and\s+)?(?:the\s+)?(?P<metric>(?:current )?temperature|humidity|wind speed|"
+    r"wind gusts?|winds?|it)(?: there)?\s+(?P<verb>is|are|feels like)\s+(?:at\s+)?"
+    r"[−-]?\d+(?:\.\d+)?\s*(?P<unit>°\s*C|%|km\s*/\s*h)(?: there)?[.!]?$",
     re.I,
 )
+NEUTRAL_OBSERVATION_SIGNPOST = re.compile(r"here['’]s the current observation[.!]?", re.I)
+
+
+def observation_variable(clause):
+    match = OBSERVED_CONTINUATION.fullmatch(clause.strip())
+    if not match:
+        return None
+    metric = match["metric"].lower()
+    verb = match["verb"].lower()
+    unit = re.sub(r"\s+", "", match["unit"]).lower()
+    if verb == "feels like":
+        return "apparent_temperature" if metric == "it" and unit == "°c" else None
+    if metric == "humidity":
+        return "humidity" if unit == "%" else None
+    if metric.startswith("wind"):
+        return ("wind_gust" if "gust" in metric else "wind_speed") if unit == "km/h" else None
+    return "temperature" if unit == "°c" else None
+
+
+def explicit_observation_variable(clause, location):
+    """Recognize common city positions without accepting extra named places or qualifiers."""
+    city = re.escape(location)
+    text = clause.strip()
+    prefix = r"^(?:currently\s+)?in\s+" + city + r"(?:,\s*|\s+)"
+    metric = re.sub(prefix, "", text, count=1, flags=re.I)
+    if metric != text:
+        return observation_variable(metric)
+    # A single exact city subject or a place qualifier on a measurement.
+    subject = re.sub(r"^" + city + r"(?=\s+is\b)", "It", text, count=1, flags=re.I)
+    if subject != text:
+        return observation_variable(subject)
+    qualified = re.sub(r"\s+in\s+" + city + r"(?=\s+(?:is|are)\b)", "", text, count=1, flags=re.I)
+    return observation_variable(qualified) if qualified != text else None
 
 
 def model_weather_answer_is_grounded(text, evidence, auditor, *, weather_request=False):
@@ -115,7 +148,8 @@ def first_weather_gate_rejection(text, evidence, auditor, *, weather_request=Fal
         mentioned = {location for location in locations if re.search(
             r"(?<!\w)" + re.escape(location) + r"(?!\w)", clause, re.I
         )}
-        numeric_continuation = bool(OBSERVED_CONTINUATION.fullmatch(clause.strip()))
+        continuation_variable = observation_variable(clause)
+        numeric_continuation = continuation_variable is not None
         inheritance_attempted = inherited = False
         terms = WEATHER_TERMS.search(clause)
         quantities = MEASUREMENT.search(clause)
@@ -130,9 +164,12 @@ def first_weather_gate_rejection(text, evidence, auditor, *, weather_request=Fal
             # A standalone weather condition still conveys a factual assertion.
             if not (terms and re.fullmatch(r"[\w -]+[.!]?", clause.strip()) and len(clause.split()) <= 4):
                 if clause.strip():
-                    anchor = None
+                    if anchor and previous_validated and NEUTRAL_OBSERVATION_SIGNPOST.fullmatch(clause.strip()):
+                        previous_anchor_status = "neutral_observation_signpost"
+                    else:
+                        anchor = None
+                        previous_anchor_status = "previous_clause_not_audited"
                     previous_validated = False
-                    previous_anchor_status = "previous_clause_not_audited"
                 continue
         if evidence is None:
             return rejected(index, "missing_evidence")
@@ -162,12 +199,13 @@ def first_weather_gate_rejection(text, evidence, auditor, *, weather_request=Fal
             for claim in claims
         ):
             return rejected(index, "unaudited_condition")
+        if inherited and not any(claim.variable.value == continuation_variable for claim in claims):
+            return rejected(index, "no_extractable_clause_claim")
         previous_validated = True
         if observation_only and len(locations) == 1 and len(mentioned) == 1:
             location = next(iter(mentioned))
-            prefix = r"^(?:currently\s+)?in\s+" + re.escape(location) + r"(?:,\s*|\s+)"
-            metric = re.sub(prefix, "", clause.strip(), count=1, flags=re.I)
-            anchor = location if metric != clause.strip() and OBSERVED_CONTINUATION.fullmatch(metric) else None
+            explicit_variable = explicit_observation_variable(clause, location)
+            anchor = location if any(claim.variable.value == explicit_variable for claim in claims) else None
             previous_anchor_status = "explicit_observation_anchor" if anchor else "anchor_grammar_mismatch"
         elif inherited:
             previous_anchor_status = "inherited_observation_anchor"

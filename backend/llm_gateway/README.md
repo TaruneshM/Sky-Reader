@@ -62,3 +62,17 @@ recent successful provider response, fallback transitions, HTTP status when
 known, dispatch certainty, replay eligibility, latency, and provider-specific known
 token totals with unknown counts. A successful provider response can still fail the
 evidence audit. No prompts, headers or provider error bodies are included.
+
+## Evidence validation and live status
+
+A normalized provider response is still a draft. The agent checks extracted claims,
+requested-answer completeness, and clause-level safety before delivery. Stage 1.7D
+limited recovery uses trusted current-temperature evidence after eligible final-gate
+rejection and makes no extra model call. Stage 1.7E broadens supported observation
+wording without removing the claim audit. See the [root architecture guide](../../README.md).
+
+The [approved Stage 1.7D Groq run](../evaluation/stage17c/17D-GROQ-LIVE-REPORT.md)
+passed both evidence layers and completeness for one fixed Lisbon sample. Gemini
+and OpenRouter have mocked adapter and fallback coverage. Their approved live
+requests returned HTTP 404, and their successful live readiness remains unverified.
+See the [diagnostic outcomes](../evaluation/stage17c/FIX2-REPORT.md).

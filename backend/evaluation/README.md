@@ -192,11 +192,14 @@ PYTHONPATH=. backend/venv/bin/python backend/tests/test_evaluation_runner.py
 # Run Phase 7.1 dataset validation tests (schema integrity, fixture cross-referencing)
 PYTHONPATH=. backend/venv/bin/python backend/tests/test_evaluation_dataset.py
 
-# Run full backend test suite (43 unit tests)
-PYTHONPATH=. backend/venv/bin/python -m unittest discover -s backend/tests -p "test_*.py"
+# Run the current offline backend regression suite from the repository root
+GROQ_API_KEY= GEMINI_API_KEY= OPENROUTER_API_KEY= backend/venv/bin/python -m pytest \
+  backend/tests backend/test_analysis.py backend/test_phase4.py
 ```
 
 ---
+
+For the current frozen-suite command, verified Stage 1.7E metrics and live-validation scope, see the [root README](../../README.md#testing-and-evaluation).
 
 ## ⚠️ Known Limitations & Scope Boundaries
 

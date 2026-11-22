@@ -1,495 +1,326 @@
-# 🌦️ Sky Reader (WeatherGPT)
-### Agentic AI Weather Intelligence, Reasoning & Verification Platform
+# Sky Reader
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688.svg)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
-[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57.svg)](https://www.sqlite.org/)
-[![Groq](https://img.shields.io/badge/Groq-Cloud%20LLM-f55036.svg)](https://groq.com/)
-[![Open-Meteo](https://img.shields.io/badge/Data-Open--Meteo-orange.svg)](https://open-meteo.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+Sky Reader is an evidence-grounded weather assistant. Ask about current conditions, a forecast window, a trip, or two destinations. The application resolves the place, retrieves weather data, and checks factual claims against the evidence before delivering an answer.
 
-**Sky Reader** is an agentic AI meteorological intelligence and deterministic claim verification platform. Beyond traditional weather forecasting apps, Sky Reader unifies **real-time Open-Meteo observations**, a **deterministic Python meteorological analysis engine**, **Groq LLM tool-calling**, a **formal Evidence Generation & Claim Validation System**, and a **visionOS/macOS-inspired glassmorphism frontend** featuring live particle simulation canvases, SQLite user authentication, and multi-model AI dispatching.
+The current architecture is implemented through **Stage 1.7E**. Simple requests can be answered deterministically. More detailed requests can use an LLM to explain prepared weather evidence, with separate checks for factual grounding, answer completeness, and final delivery.
 
-The platform is engineered with zero-tolerance for hallucinations: every AI-generated claim is parsed, audited against verified ground-truth meteorological records, and paired with an audited **Explanation Proof** before being served to the user.
+## Features
 
----
+- **Weather chat and city lookup** for current observations and supported local forecast windows.
+- **Conversation-aware requests** with typed place resolution, clarification, explicit geographic qualifiers, and follow-ups that retain verified context.
+- **Weather comparisons and risk guidance** covering supported destination pairs, relative time windows, clothing, and outdoor activity.
+- **Evidence and audit views** showing claims, supporting data, validation status, provenance, and risk information when available.
+- **Account and guest workspaces** with scoped browser transcripts and server-side revision checks for planner state.
+- **Server-configured model routing** with Groq as the default and optional sequential fallback through Gemini and OpenRouter.
 
-## 🌟 Key Features & Capabilities
+## Technology stack
 
-### 🎨 1. Visionary Glassmorphism UI & Ambient Atmospheric Canvas
-- **Floating Glass Application Frame**: VisionOS/macOS-inspired frosted window (`backdrop-filter: blur(28px)`), rounded pill architecture, and realistic drifting sky clouds.
-- **HTML5 Canvas Atmospheric Particle Engine**: Dynamic real-time weather simulations that automatically react to real weather or user preference:
-  - ☀️ **Sunshine & Warm Radiance**: Golden sun rays and luminous particles.
-  - 🌧️ **Rain & Precipitation**: Slanted raindrops with impact ripples.
-  - ✨ **Midnight Stars**: Twinkling stardust and calm night sky.
-  - 🍃 **Wind & Drifting Foliage**: Swaying leaves following fluid aerodynamic turbulence.
-  - ❄️ **Snow & Blizzard**: Softly drifting snowflakes.
-  - ⚡ **Thunderstorm**: Atmospheric lightning flashes and deep rain bursts.
-  - ☁️ **Overcast**: Soft drifting ambient cloud layers.
-  - 🔄 **Auto Mode**: Detects atmospheric conditions dynamically from Open-Meteo telemetry and agent claim extractions.
-- **Eye-Friendly Warm Light & Dark Themes**: High-contrast dark mode for evening focus, paired with a soft warm parchment/linen light theme (`#ede8df` → `#c8bfb2`) specifically designed to eliminate screen glare and eye strain.
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, Vite, JavaScript, CSS, Lucide icons |
+| API and application models | Python, FastAPI, Pydantic, HTTPX |
+| Weather | Open-Meteo geocoding and forecast APIs, process-local TTL caches |
+| LLM | Groq SDK, Gemini REST, OpenRouter Chat Completions |
+| Persistence | SQLite for account/session and thread context, browser storage for the UI transcript |
+| Verification | pytest, Node test runner, ESLint, Vite build, mocked provider and frozen evaluation suites |
 
----
+## Architecture
 
-### 🧠 2. AI Model Engine Selector (`ModelSelector`)
-Integrated centered dropdown pill allowing instant switching between specialized meteorological reasoning engines:
-- ✦ **Sky Reader 4 (Default / Precision)**: Flagship reasoning engine with strict factual claim audits and zero-hallucination verification.
-- ⚡ **Sky Reader 4 Turbo (High Velocity)**: Optimized for rapid multi-point hourly telemetry, swift radar analytics, and dynamic route planning.
-- ⏱️ **Sky Reader 3.5 Flash (Ultra-Low Latency)**: Instant responses for quick temperature queries and daily summaries.
-- 🌐 **Sky Reader Ensemble (Consensus Audit)**: Cross-validates atmospheric observations against deterministic physical models and consensus checks.
+### 1. High-level system architecture
 
----
+React renders the chat, lookup, session controls, and audit details. FastAPI owns the request boundary. The planner retrieves weather evidence, and the gateway is used only when the agent needs model output.
 
-### 🔖 3. Saved Places Watchlist (`SavedPlacesView`)
-- **Watchlist Dashboard**: Manage saved global locations with live temperature, condition label, humidity, wind velocity, and day/night badges.
-- **Search & Auto-Validate**: Add new global locations with instant geocoding verification.
-- **1-Click Quick Add Chips**: Pre-curated chips for world capitals (Tokyo, Zurich, Paris, New York, Reykjavik, Sydney, Dehradun).
-- **Deep Integration**:
-  - Jump directly into **Dashboard & Trips** for full 48-hour hourly forecasting.
-  - 1-click **Ask AI** to consult the meteorological agent about that city.
-  - **Save Place Bookmark Button** in the main city lookup header to bookmark any searched location.
-  - Real-time counter badge on the left sidebar navigation pill.
-  - Synced across `localStorage` and the SQLite database backend.
+```mermaid
+flowchart LR
+    U["User"]
+    subgraph Browser["Browser"]
+        UI["React and Vite workspace"]
+        BS["Browser transcript and preferences"]
+        UI <--> BS
+    end
+    subgraph Backend["Sky Reader backend"]
+        API["FastAPI"]
+        State["Auth and thread services"]
+        DB[("SQLite")]
+        Agent["Agent orchestration"]
+        Plan["Weather router and planner"]
+        Weather["Weather service and TTL caches"]
+        Evidence["Evidence engine"]
+        Gateway["LLM gateway"]
+        Checks["Claim audit, completeness, and safety gates"]
+        Delivery["Final response and proof"]
+        API <--> State
+        State <--> DB
+        API --> Agent
+        API -->|"standalone lookup, analysis, risk, evidence"| Weather
+        Agent --> Plan
+        Plan <--> Weather
+        Plan -->|"prepared destinations"| Agent
+        Agent --> Evidence
+        Agent -->|"when synthesis is needed"| Gateway
+        Gateway --> Checks
+        Evidence --> Checks
+        Checks --> Delivery
+        Delivery --> API
+    end
+    subgraph External["External services"]
+        OM["Open-Meteo"]
+        LLM["Groq, Gemini, OpenRouter"]
+    end
+    U --> UI
+    UI <--> API
+    Weather <--> OM
+    Gateway <--> LLM
+```
 
----
+### 2. End-to-end weather request pipeline
 
-### 🔐 4. Accounts, guest access, and conversation storage
-
-- Email/password authentication uses SQLite with salted PBKDF2 password hashes and 14-day bearer sessions. The browser validates saved tokens through `GET /api/auth/me` before displaying account content. A temporarily unavailable server leaves the account locked and provides a retry.
-- **Stay signed in** stores the token for later browser visits. Turning it off keeps the token in tab session storage, which survives reloads in that tab. Logout immediately removes browser credentials and asks `POST /api/auth/logout` to revoke the token. If revocation fails, the UI reports it while remaining signed out locally.
-- **Continue as guest** establishes a separate server-issued credential. The browser keeps guest credentials and transcripts in tab session storage. They survive a reload in the same tab. Leaving guest mode clears the tab's guest data and requests server revocation.
-- Signed-in transcripts remain in browser storage scoped to the account and are available again after signing in. The browser remembers the selected thread and its server association. Clear History removes local transcripts and requests deletion of server context for the active owner. The app reports a failed server clear separately.
-- The server persists only the versioned weather planner state for each thread, including confirmed locations, pending clarification, and forecast scope. Transcripts remain in the browser and are not synchronized across devices. People or scripts with access to the same browser profile can read its browser-local data. The frontend exposes Google sign-in and password reset as unavailable.
-- The built-in demo account is disabled by default. Set `SKYREADER_ENABLE_DEMO=1` explicitly for local development to permit it. With the flag off, existing demo rows are preserved and their sessions cannot be used.
-
----
-
-### 🤖 5. Agentic AI Tool-Calling & Verification Loop
-- **Autonomous Tool Dispatch**: Groq LLM dynamically determines whether a query requires geocoding, current weather, hourly forecasting, deep analysis, or direct conversational answers.
-- **Complete Reasoning Cycle**: *User Query → Tool Invocation → Python Execution → Data Return → Model Synthesis → Grounded Answer*.
-- **Structured Evidence Engine**: Extracts and tags all weather data into provenance-tracked records: `OBSERVED`, `FORECAST`, and `DERIVED`.
-- **Deterministic Claim Extractor & Validator**:
-  - Regex-based factual claim parsing (temperature, rain chance, wind speed, pressure, trends, umbrella advisories).
-  - Domain-calibrated tolerances ($\pm 1.0^\circ\text{C}$ temperature, $\pm 5.0\%$ rain probability, $\pm 2.5\text{ km/h}$ wind).
-  - Real-time status classifications: `SUPPORTED`, `PARTIALLY_SUPPORTED`, `CONTRADICTED`, `INSUFFICIENT_EVIDENCE`.
-- **Hallucination Controller & Self-Correction**: Automatically detects contradictions and triggers targeted corrective regeneration with ground-truth evidence before returning to user.
-
-### 🛡️ Phase 6: Safety, Risk Assessment & Uncertainty Awareness
-- **Deterministic Weather Risk Engine**: Analyzes forecast records across configurable thresholds to identify severe hazards:
-  - **Heavy Rainfall**: Detects flash flood and waterlogging risks based on 24h accumulation ($\ge 15$, $\ge 30$, $\ge 60\text{ mm}$) and peak hourly rates ($\ge 5$, $\ge 10$, $\ge 20\text{ mm/h}$).
-  - **High Rain Probability**: Categorizes precipitation probabilities ($\ge 60\%$, $\ge 80\%$, $\ge 95\%$) while separating likelihood from volume.
-  - **Severe Thunderstorms & Hail**: Flags WMO storm codes (95, 96, 99) and lightning hazards.
-  - **Strong Wind & Gales**: Beaufort-aligned hazard classification ($\ge 30$, $\ge 45$, $\ge 62\text{ km/h}$).
-  - **Extreme Heat & Cold**: Detects heatstroke thresholds ($\ge 35^\circ\text{C}$, $\ge 40^\circ\text{C}$, $\ge 45^\circ\text{C}$) and hypothermia/freezing conditions ($\le 0^\circ\text{C}$, $\le -10^\circ\text{C}$, $\le -20^\circ\text{C}$).
-- **Severity Classification**: Maps conditions into standardized risk levels: `LOW`, `MODERATE`, `HIGH`, and `SEVERE`.
-- **Actionable Safety Recommendations**: Generates non-alarmist, practical guidance (shelter indoors during lightning, avoid flood-prone routes, hydration, loose attire).
-- **Official Alerts vs. AI Risk Assessments**: Strict architectural distinction: all assessments are explicitly watermarked as AI-calculated from numerical forecasts and deterministic thresholds, never masquerading as official government emergency alerts.
-- **Uncertainty Communication**: Discloses probability interpretation (e.g. 75% probability = likely, not guaranteed), identifies missing or incomplete sensor channels, and notes forecast uncertainty.
-- **Visual Safety Cards (`RiskCard.jsx`)**: Displays severity badges, condition summaries, key measurements, precautions, and collapsible uncertainty notes directly in chat bubbles when hazards are assessed.
-
----
-
-### 🧭 6. City Lookup, Telemetry & Preferences
-- **48-Hour Hourly Forecast Slider**: Hourly temperature cards, precipitation probability markers, and current hour highlight.
-- **Telemetry Grid**: Beaufort wind scale, cardinal compass directions, barometric pressure trend, and humidity comfort indexing.
-- **Decision Support Engine**:
-  - ☔ **Umbrella Advisory**: Threshold-based recommendations with associated confidence levels.
-  - 🏃 **Outdoor Activity Windows**: Ranks 6-hour blocks (Night, Morning, Afternoon, Evening) for ideal outdoor conditions.
-  - 🚗 **Travel Suitability**: Evaluates hazards (heavy rain, severe winds, fog, thunderstorms).
-- **Preferences & Settings Panel (`PreferencesView`)**:
-  - Units toggle (Celsius °C / Fahrenheit °F).
-  - Atmospheric scene override.
-  - AI reasoning depth & hallucination verification toggles.
-  - Chat history management and cache reset.
-
----
-
-## 🏗️ System Architecture
+Owned threads supply trusted planner context. The router and planner resolve the requested city and period before preparing data. Clarifications and typed failures can stop processing early. Deterministic answers bypass the model; prepared synthesis follows the separate model-draft validation path.
 
 ```mermaid
 flowchart TD
-    User([User]) <--> Frontend["React 19 + Vite Frontend<br/>localhost:5173"]
-    Frontend <--> API["FastAPI Backend<br/>localhost:8000"]
-    API <--> SQLite[("SQLite Database<br/>skyreader.db")]
-    API <--> Agent["Agent Reasoning Loop<br/>backend/agent/agent.py"]
-    Agent <--> GroqLLM["Groq Cloud LLM<br/>openai/gpt-oss-120b"]
-    Agent <--> Executor["Python Tool Executor<br/>backend/agent/executor.py"]
-    Executor <--> Analysis["Meteorological Engine<br/>backend/weather/analysis.py"]
-    Executor <--> Service["Open-Meteo Service<br/>backend/weather/service.py"]
-    Service <--> OpenMeteo[("Open-Meteo APIs<br/>Geocoding & Forecast")]
-
-    %% Evidence Generation & Verification
-    Agent <--> EvEngine["Evidence Generation Engine<br/>backend/evidence/evidence_engine.py"]
-    Agent <--> ClaimExt["Claim Extractor<br/>backend/evidence/claim_extractor.py"]
-    Agent <--> ClaimVal["Claim Validator<br/>backend/evidence/claim_validator.py"]
-    Agent <--> HallucCtrl["Hallucination Controller<br/>backend/evidence/hallucination_controller.py"]
-    Agent <--> ExplEngine["Explanation Proof Engine<br/>backend/evidence/explanation_engine.py"]
+    A["Submit question in React"] --> B["FastAPI validates payload and thread context when supplied"]
+    B -->|"invalid input, owner, or revision"| X["Typed or HTTP error; no successful thread commit"]
+    B --> C["Parse weather intent, place, period, and components"]
+    C --> D{"Can the planner resolve the request?"}
+    D -->|"needs more information"| L["Clarification or safe limitation"]
+    D -->|"weather provider fails"| X
+    D -->|"resolved"| E["Fetch scoped observations or forecasts"]
+    E --> F["Prepare destination data and evidence"]
+    F --> G{"Can the agent answer deterministically?"}
+    G -->|"yes"| H["Render weather facts and applicable risk findings"]
+    H --> I["Audit response and check coverage"]
+    G -->|"LLM synthesis needed"| J["Build bounded prompt and dispatch through gateway"]
+    J -->|"terminal provider error without safe fallback"| X
+    J --> K["Normalize draft, audit extracted claims, check completeness"]
+    K -->|"required checks fail"| L
+    K --> M["Run final clause-level gate"]
+    M -->|"pass"| N["Audit final text and construct proof"]
+    M -->|"reject"| O{"Eligible prepared current-temperature recovery?"}
+    O -->|"yes"| P["Render limited answer from trusted observation"]
+    P --> Q{"Fresh gate, audit, and metric checks pass?"}
+    Q -->|"yes"| N
+    Q -->|"no"| L
+    O -->|"no"| L
+    I --> N
+    L --> R["Serialize permitted response"]
+    N --> R
+    R --> S["Commit scoped planner revision when applicable"]
+    S --> T["Render final text and available audit metadata in React"]
 ```
 
----
+### 3. Provider selection, fallback, and budgets
 
-## 🧰 Tech Stack
+Groq is the default. Deployments may pin an enabled provider or opt into sequential fallback. The default order is Groq, Gemini, then OpenRouter. A switch requires an eligible transient failure on the first replay-safe model turn and remaining shared budget.
 
-| Layer | Technology | Purpose |
+```mermaid
+flowchart TD
+    A["Agent requires model output"] --> B{"Routing configuration"}
+    B -->|"default or explicit selection"| C["Pin one configured provider"]
+    B -->|"opt-in fallback"| D["Filter configured priority list"]
+    C --> E["Check shared attempts, input estimate, output cap, and deadline"]
+    D --> E
+    E -->|"budget unavailable"| F["Typed budget failure"]
+    E --> G{"Selected adapter"}
+    G --> H["Groq SDK"]
+    G --> I["Gemini REST"]
+    G --> J["OpenRouter REST with free-model and zero-price controls"]
+    H --> K{"Provider outcome"}
+    I --> K
+    J --> K
+    K -->|"success"| L["Normalized text, tool IDs, finish reason, and usage"]
+    K -->|"eligible failure on replay-safe initial turn"| M{"Fallback enabled and another provider available?"}
+    M -->|"yes"| D2["Rebuild from original context and prepared evidence"]
+    D2 --> E
+    M -->|"no"| N["Typed provider failure"]
+    K -->|"terminal error or provider-specific state already exists"| N
+    L --> O["Keep later tool turns and corrections on the same provider"]
+    O --> P["Evidence and completeness checks remain mandatory"]
+```
+
+### 4. Evidence validation and grounded recovery
+
+**Passing the whole-draft audit does not automatically approve delivery.** The first audit checks extracted claims, while completeness checks that those supported claims answer the request. Separately, the final gate examines weather-shaped clauses, including assertions the extractor may have missed.
+
+```mermaid
+flowchart TD
+    W["Trusted evidence items with city, time, units, and source"] --> A["Extract and audit draft claims"]
+    D["Normalized model draft"] --> A
+    A -->|"supported claims"| C{"Required measurements and scope covered?"}
+    A -->|"audit fails"| F["Bounded correction or safe fallback"]
+    F --> C
+    C -->|"no verified complete candidate"| S["Safe limitation"]
+    C -->|"yes"| G{"Final clause-level evidence gate"}
+    W --> G
+    G -->|"location binding, numerical and safety checks pass"| O["Deliver audited response and proof"]
+    G -->|"reject draft"| R{"One verified current-temperature observation for one city?"}
+    R -->|"no"| S
+    R -->|"yes"| N["Render fresh city-explicit observation and explanation limitation"]
+    W --> N
+    N --> V{"Recheck final gate, claim audit, and measurement coverage"}
+    V -->|"pass"| L["Deliver grounded limited answer; explanatory completeness is false"]
+    V -->|"fail"| S
+```
+
+### 5. Conversation ownership and revision flow
+
+The browser keeps the visible transcript. The server keeps owner-scoped structured weather context such as confirmed locations, destination slots, and applicable forecast windows. Revision checks protect against stale writes.
+
+```mermaid
+sequenceDiagram
+    participant UI as React workspace
+    participant API as FastAPI
+    participant DB as SQLite threads
+    participant Agent as Weather agent
+    UI->>API: Send credential, thread ID, revision, and recent messages
+    API->>DB: Load context and verify owner and revision
+    alt Incorrect owner or stale revision
+        API-->>UI: Error or revision conflict
+    else Context accepted
+        API->>Agent: Question and trusted planner state
+        alt Raised provider error
+            Agent-->>API: Typed failure
+            API-->>UI: Error without a thread commit
+        else Deliverable response or safe limitation
+            Agent-->>API: Final text, provenance, and proposed planner state
+            API->>DB: Recheck owner and revision, then save
+            API-->>UI: Final response and new revision on successful commit
+            UI->>UI: Append response to browser transcript
+        end
+    end
+```
+
+## How Sky Reader works
+
+1. **Understand the request.** The router extracts weather intent, location, requested measurements, applicable activity, and period. The shared planner uses verified thread context to continue a task or asks for clarification when the place or comparison is unresolved.
+2. **Retrieve the right data.** Typed geocoding distinguishes resolved, ambiguous, missing, and unavailable outcomes. Resolution considers explicit qualifiers and trustworthy candidate metadata. Weather retrieval uses confirmed coordinates. Forecast periods are scoped in the destination’s local time. Geocoding, current weather, hourly forecasts, and daily forecasts have separate in-memory caches.
+3. **Prepare facts and decide how to answer.** Deterministic branches can render supported observations, forecasts, comparisons, or guidance from the requested measurements and risk evidence. When synthesis is needed, the model sees a compact city- and period-scoped evidence packet. The original weather payload is retained for verification.
+4. **Validate before delivery.** The evidence engine represents observations, forecast points, and derived findings separately. Claims are checked against matching evidence and expose supporting IDs. Completeness considers the requested measurements, city, period, and relevant hazard or advice requirements.
+5. **Protect the final response.** Clause validation requires an explicit evidence city or a narrowly permitted observation anchor. Stage 1.7E recognizes common single-city observation forms and some numeric continuations, including humidity, apparent temperature, and wind. Each inherited claim still undergoes unit, location, time, and numerical checks. Arbitrary skipped prose, mixed observation/forecast evidence, and multiple candidate cities restrict inheritance.
+6. **Recover selectively.** Stage 1.7D can discard a rejected draft and render a limited current-temperature answer using exactly one verified observation for one city. The replacement is revalidated without an extra LLM call. It explicitly states that the detailed explanation was not verified. Compound, multi-city, forecast, and safety requests are outside this recovery path.
+
+## Multi-provider gateway
+
+| Provider | Adapter and controls | Verification status |
 |---|---|---|
-| **Frontend Framework** | React 19, Vite | Fast modular component hierarchy & reactive state |
-| **Styling & Effects** | Pure CSS3 & HTML5 Canvas | Glassmorphism, particle physics, custom scrollbars, dual themes |
-| **Icons** | Lucide React | Clean, scalable iconography for weather, navigation, and telemetry |
-| **Backend Framework** | Python 3.10+, FastAPI, Pydantic v2 | High-throughput async REST API, strict schemas, CORS |
-| **Database** | SQLite3, PBKDF2-HMAC-SHA256 | Local, zero-configuration user storage and session management |
-| **AI Inference** | Groq Cloud SDK (`AsyncGroq`) | Ultra-fast LLM inference using `openai/gpt-oss-120b` with tool calling |
-| **Verification Engine** | Deterministic Python | Provenance tagging, regex claim parsing, domain tolerance validation |
-| **Weather Telemetry** | Open-Meteo API | Free, high-accuracy global geocoding, current data, and hourly forecasts |
+| Groq | Default adapter and default model `openai/gpt-oss-120b`. Existing SDK calls are normalized into bounded assistant messages. | Stage 1.7D passed one approved Lisbon live request through both audit layers and completeness. |
+| Gemini | Google GenerateContent REST adapter. Tool state and supported thought signatures remain request-local and provider-specific. | Mocked adapter and fallback coverage. The approved live model returned HTTP 404; account/model access remains unresolved. |
+| OpenRouter | Chat Completions REST adapter. Explicit free-model allowlist, zero prompt and completion price ceilings, and provider-side fallback disabled. | Mocked adapter and fallback coverage. The approved free model returned HTTP 404; serving-route availability remains unresolved. |
 
----
+The browser does not select providers. Provider choice is server configuration, or an explicit choice by a backend caller. Fallback is off by default. Eligible failures include throttling, selected service errors, clear connection failures, and timeouts on the first replay-safe model turn. Authentication, malformed output, evidence rejection, and exhausted budgets do not trigger migration. Later tool turns and corrections remain pinned to the responding provider. Normal chat weather retrieval is planner-owned; tool schemas remain available to the injected executor compatibility path.
 
-## 📁 Project Directory Structure
+All model attempts share request-local token reservations, attempt counts, round and correction caps, and a monotonic model deadline. Reported usage reconciles estimates. Omitted usage remains unknown. See the [gateway configuration and limits](backend/llm_gateway/README.md).
+
+## Project structure
 
 ```text
 Sky-Reader/
-├── README.md                          # Comprehensive project documentation
-├── .gitignore
 ├── backend/
-│   ├── .env                           # Environment variables (GROQ_API_KEY, GROQ_MODEL)
-│   ├── skyreader.db                   # SQLite database (auto-generated on startup)
-│   ├── database.py                    # SQLite schema, password hashing, session tokens
-│   ├── requirements.txt               # fastapi, httpx, pydantic, groq, python-dotenv
-│   ├── main.py                        # FastAPI routes (Auth, Weather, Analysis, Chat, Evidence, Risks)
-│   ├── test_executor.py               # Phase 1 tool executor test
-│   ├── test_phase2.py                 # Phase 2 agentic tool-calling integration suite
-│   ├── test_phase3.py                 # Phase 3 meteorological intelligence integration suite
-│   ├── test_phase4.py                 # Phase 4 end-to-end verification & explainability suite
-│   ├── test_phase6.py                 # Phase 6 weather safety & risk assessment integration suite
-│   ├── test_analysis.py               # Phase 3 meteorological engine unit tests
-│   ├── test_multiturn_chat.py         # Multi-turn conversational flow & reset verification test
-│   ├── agent/
-│   │   ├── __init__.py
-│   │   ├── agent.py                   # Groq tool-calling agent with validation loop
-│   │   ├── executor.py                # Tool dispatcher executing weather & analysis functions
-│   │   └── tools.py                   # OpenAPI schemas for weather tools
-│   ├── weather/
-│   │   ├── __init__.py
-│   │   ├── analysis.py                # Meteorological trends, comfort, Beaufort, decision support
-│   │   ├── risk_engine.py             # Phase 6 deterministic weather risk assessment engine
-│   │   ├── risk_models.py             # Pydantic schemas: RiskLevel, RiskItem, WeatherRiskAssessment
-│   │   ├── service.py                 # Open-Meteo HTTP client with retry logic & formatters
-│   │   ├── models.py                  # Pydantic response models
-│   │   └── weather_codes.py           # WMO weather code to description & emoji mappings
-│   ├── evidence/                      # Evidence & Claim Verification Subsystem
-│   │   ├── __init__.py
-│   │   ├── evidence_models.py         # EvidenceItem, FactualClaim, ExplanationProof schemas
-│   │   ├── evidence_engine.py         # Extracts structured records with provenance tagging
-│   │   ├── claim_extractor.py         # Deterministic regex-based factual claim extractor
-│   │   ├── claim_validator.py         # Deterministic validator with domain tolerances
-│   │   ├── hallucination_controller.py# Metrics calculation, feedback loop & safe fallback
-│   │   └── explanation_engine.py      # Generates ExplanationProof & Markdown audit chains
-│   ├── evaluation/                    # Phase 7 Benchmark Dataset & Evaluation Suite
-│   │   ├── __init__.py                # Package exports (models, loaders)
-│   │   ├── models.py                  # Pydantic benchmark validation schemas (TestCase, Dataset, Fixtures)
-│   │   ├── dataset_loader.py          # Loader & cross-reference validator functions
-│   │   ├── generate_benchmark_data.py # Deterministic dataset & synthetic fixture generator
-│   │   ├── datasets/                  # 50 validated benchmark test cases across 10 categories
-│   │   │   └── weather_benchmark.json
-│   │   ├── fixtures/                  # 12 high-fidelity synthetic weather fixtures
-│   │   │   └── weather_fixtures.json
-│   │   ├── metrics.py                 # Formulas for Grounding, Hallucination, F1, Overhead
-│   │   ├── benchmark.py               # Comparative benchmark script
-│   │   ├── ablation.py                # Architectural ablation study runner
-│   │   └── README.md                  # Comprehensive evaluation dataset documentation
-│   └── tests/                         # Modular unit & integration test suites
-│       ├── test_evidence_engine.py
-│       ├── test_claim_extractor.py
-│       ├── test_claim_validator.py
-│       ├── test_hallucination_controller.py
-│       ├── test_explanation_engine.py
-│       ├── test_risk_engine.py        # Phase 6 hazard & uncertainty unit tests
-│       ├── test_temporal_context.py   # Phase 8.1 timezone & forecast window tests
-│       ├── test_rate_limit_and_routing.py # Phase 8.1 rate limit & routing tests
-│       └── test_evaluation_dataset.py # Phase 7.1 dataset validation & fixture unit tests
+│   ├── main.py                  FastAPI endpoints and API contracts
+│   ├── database.py              SQLite schema, account and session operations
+│   ├── conversation_store.py    Thread ownership, revisions and persisted context
+│   ├── agent/                   Routing, planner, state, prompts, budgets and final gate
+│   ├── weather/                 Open-Meteo clients, caches, models, analysis and risk
+│   ├── evidence/                Evidence items, claim extraction, audit and proof
+│   ├── llm_gateway/             Provider configuration, adapters and normalized messages
+│   ├── evaluation/              Historical benchmarks, frozen suite and live harnesses
+│   ├── tests/                   Backend regression tests
+│   └── requirements.txt
 └── frontend/
-    ├── index.html
-    ├── package.json
-    ├── vite.config.js
-    └── src/
-        ├── main.jsx
-        ├── App.jsx                    # Root state manager (auth, atmospheric canvas, view tabs)
-        ├── App.css                    # Complete CSS tokens, glassmorphism, animations, dual themes
-        └── components/                # Modular UI component hierarchy
-            ├── ChatHeader.jsx         # Header bar with model selector, atmosphere, theme, New Chat
-            ├── ModelSelector.jsx      # Interactive dropdown selector for AI reasoning engines
-            ├── WeatherAtmosphere.jsx  # HTML5 Canvas particle simulation engine
-            ├── AtmosphereSelector.jsx # Ambient weather animation selector pill
-            ├── Sidebar.jsx            # Responsive left navigation with unconstrained scrolling & badges
-            ├── SavedPlacesView.jsx    # Dedicated watchlist view with live city cards & quick add
-            ├── LoginPage.jsx          # Twilight aurora canvas login card with authentication
-            ├── PreferencesView.jsx    # Settings panel: units, themes, atmosphere overrides
-            ├── WelcomeHero.jsx        # Conversational starter cards and capsule input
-            ├── ChatMessage.jsx        # Left/Right message bubbles with copy, timestamp & formatted text
-            ├── WeatherSnapshot.jsx    # Visual telemetry cards (temp, humidity, wind, rain, umbrella)
-            ├── RiskCard.jsx           # Phase 6 safety cards, severity badges & uncertainty notes
-            ├── AuditDrawer.jsx        # Collapsible Phase 4 verification & explainability drawer
-            ├── ThinkingIndicator.jsx  # Animated 3-dot typing status indicator
-            ├── ChatInput.jsx          # Modern floating textarea, footnote & send button
-            └── CityLookup.jsx         # Preserved Phase 1 city weather search & hourly forecast
-        │   ├── ChatMessage.jsx        # Left/right chat bubbles with timestamp & telemetry embeds
-        │   ├── WeatherSnapshot.jsx    # Visual telemetry cards (temp, humidity, rain %, umbrella)
-        │   ├── AuditDrawer.jsx        # Collapsible verification & explainability drawer
-        │   ├── ThinkingIndicator.jsx  # Animated typing status indicator
-        │   ├── ChatInput.jsx          # Bottom fixed textarea, quick suggestions & send button
-        │   ├── CityLookup.jsx         # 48h forecast, hourly slider, telemetry & bookmark toggle
-        │   └── PreferencesView.jsx    # Settings panel for units, theme, and AI reasoning depth
-        └── utils/
-            ├── weatherAtmosphere.js   # Atmosphere detection logic & scene presets
-            └── weatherIcons.jsx       # WMO code to Lucide weather icon mapper
->>>>>>> b88b7eb200530ec549a267ca87b8814a6f56cc38
+    ├── src/
+    │   ├── App.jsx              Workspace composition and API origin
+    │   ├── components/          Chat, city lookup, audit, risk and preferences
+    │   └── utils/               Auth session, chat threads and browser persistence
+    ├── tests/                   Node-based frontend regressions
+    └── package.json
 ```
 
----
+## Local setup
 
-## 🚀 Quickstart Guide
+Use Python 3.12 for the verified backend workflow and Node.js 22.12+ in a supported LTS release for the frontend. Run the commands from the repository root. The examples use a POSIX shell. On Windows, activate the virtual environment with `backend\venv\Scripts\activate` using an appropriate shell, and use an ignored backend dotenv file or exported process variables for provider settings.
 
-### Prerequisites
-- **Python 3.10+**
-- **Node.js 18+** and **npm**
-- **Groq API Key** (available free at [console.groq.com](https://console.groq.com/))
+### Start FastAPI
 
-### 1. Clone the Repository
 ```bash
-git clone https://github.com/TaruneshM/Sky-Reader.git
-cd Sky-Reader
+python3.12 -m venv backend/venv
+source backend/venv/bin/activate
+python -m pip install -r backend/requirements.txt
+python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-### 2. Configure Backend Environment
-Create or edit `backend/.env`:
-```bash
-GROQ_API_KEY=gsk_your_groq_api_key_here
-GROQ_MODEL=openai/gpt-oss-120b
-```
+Use the ignored `backend/.env` file or server process environment for secrets. There is no required frontend dotenv file. Open-Meteo and eligible deterministic weather paths do not require an LLM key. To use default model-assisted synthesis, set `GROQ_API_KEY`. Optional settings include `GROQ_MODEL`, `LLM_PROVIDER`, `LLM_ENABLED_PROVIDERS`, `LLM_FALLBACK_ENABLED`, and `LLM_PROVIDER_ORDER`. To enable a secondary provider, supply its key and explicit model through `GEMINI_API_KEY` and `GEMINI_MODEL`, or `OPENROUTER_API_KEY` and `OPENROUTER_MODEL`. Keep credentials out of the browser and repository root dotenv file.
 
-### 3. Install & Start Backend Server
-```bash
-# Windows
-python -m venv backend\venv
-backend\venv\Scripts\activate
-pip install -r backend\requirements.txt
+The API is at [127.0.0.1:8000](http://127.0.0.1:8000), with [interactive API docs](http://127.0.0.1:8000/docs) and a [health route](http://127.0.0.1:8000/health).
 
-# Run FastAPI server
-cd backend
-uvicorn main:app --reload --port 8000
-```
-- API live at: **http://127.0.0.1:8000**
-- Interactive Swagger docs: **http://127.0.0.1:8000/docs**
+### Start React
 
-### 4. Install & Start Frontend Server
-In a separate terminal:
 ```bash
 cd frontend
-npm install
-npm run dev
-```
-- Frontend live at: **http://localhost:5173**
-
----
-
-## 🔌 API Reference Summary
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | Service status welcome message |
-| `POST` | `/api/auth/register` | Register a new user profile in SQLite |
-| `POST` | `/api/auth/login` | Authenticate user and issue session token |
-| `GET` | `/api/auth/me` | Retrieve profile of authenticated user |
-| `POST` | `/api/auth/logout` | Terminate and invalidate session token |
-| `GET` | `/weather?location={city}` | Phase 1 current weather and 24h/48h hourly forecast |
-| `GET` | `/api/weather/analysis?location={city}&focus={focus}&day_offset={0\|1}` | Phase 3 meteorological intelligence & decision support |
-| `GET` | `/api/weather/risks?location={city}&day_offset={0\|1}` | Phase 6 deterministic weather hazard detection & safety assessment |
-| `POST` | `/api/agent/chat` | Phase 2, 3, 4, 6 & 8 verified conversational agent reasoning endpoint |
-| `POST` | `/api/evidence/validate` | Phase 4 deterministic claim extraction & validation for any text |
-| `GET` | `/api/evidence/summary?location={city}` | Phase 4 complete evidence collection & provenance records |
-
-### Public and authenticated routes
-
-Weather lookup, deterministic weather and evidence routes, and legacy chat are public. Login and registration are public entry points. Profile access, logout, and account thread operations require the bearer token from login or registration. Guest thread operations require a server-issued guest credential. The backend exposes no endpoint for reading raw planner state or synchronizing conversation transcripts.
-
-Both chat aliases share rolling process-local limits. Set `SKYREADER_CHAT_REQUESTS_PER_IP_PER_MINUTE` (default `12`) and `SKYREADER_CHAT_REQUESTS_PER_MINUTE` (default `60`) to positive integers. Excess requests receive HTTP 429 with a retry hint before agent execution. Chat messages are limited to 4,000 characters, and only the last six history entries are used, with at most 4,000 characters per entry. These limits apply to guest and signed-in traffic and are independent across processes. Behind a proxy, client addresses depend on the server’s trusted-proxy configuration.
-
-### Thread-scoped planner state
-
-- Create a guest session with `POST /api/guest/session` if the browser is in guest mode. Pass its credential in `X-Guest-Session`. It expires after seven days and can be revoked with `DELETE /api/guest/session`, which deletes its threads. SQLite keeps a credential hash and a separate owner ID. Account clients send `Authorization: Bearer …`. Each request supplies one credential.
-- Create a thread with `POST /api/chat/threads`. The response contains an opaque `thread_id` and initial `thread_revision`. Include both in subsequent chat requests. Responses for committed turns provide the next revision in `X-Thread-Revision`. A chat request without either field still uses the stateless transcript path.
-- A thread update revalidates the session and compares the revision in a SQLite write transaction. A conflict returns HTTP 409 and the current revision for the authorized caller. The browser updates its revision and waits for a new submission. Repeating a request with its old revision cannot apply the transition twice. Fatal errors and detected disconnects before commit leave the prior state intact. Structured clarification and handled provider failures can advance the revision while retaining confirmed context.
-- `DELETE /api/chat/threads` clears planner state for the active owner. `DELETE /api/chat/threads/{thread_id}` deletes a single owned thread. Both are idempotent and reveal no foreign-thread information. A pending turn cannot recreate a deleted thread. Account logout revokes the active bearer session and retains the account's threads for future sign-in.
-- Threads expire after 30 days without a committed update. A guest thread also becomes inaccessible when its guest credential expires. New guest sessions and threads trigger cleanup of expired rows. Lifecycle routes have their own process-local limits of 30 requests per IP and 180 total per minute.
-- Keep the SQLite file on persistent local storage across restarts and use HTTPS for credential transport in hosted deployments. Workers must use the same database file for consistent authorization and revisions. A disconnected turn that already committed can still advance its revision. Requests can continue running upstream after browser cancellation.
-
-### Example 1: Multi-Turn Verified Agent Chat Response
-```bash
-curl -X POST "http://127.0.0.1:8000/api/agent/chat" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "message": "Should I carry an umbrella?",
-       "conversation_history": [
-         {"role": "user", "content": "What is the weather in Dehradun tomorrow?"},
-         {"role": "assistant", "content": "Tomorrow in Dehradun will be mostly clear with a high of 26°C and 0% rain chance."}
-       ]
-     }'
-```
-```json
-{
-  "response": "The current temperature in Paris is 8.8 °C with 86% humidity and wind at 6.7 km/h...",
-  "tool_calls": [
-    {"tool": "geocode_location", "arguments": {"location": "Paris"}},
-    {"tool": "get_current_weather", "arguments": {"latitude": 48.85, "longitude": 2.35}}
-  ],
-  "iterations": 2,
-  "claims": [
-    {
-      "claim_id": "claim_1",
-      "statement": "The current temperature in Paris is 8.8 °C",
-      "variable": "temperature",
-      "claimed_value": 8.8,
-      "unit": "°C",
-      "claim_type": "numerical_value"
-    }
-  ],
-  "validation_report": {
-    "total_claims": 3,
-    "supported_claims": 3,
-    "contradicted_claims": 0,
-    "unsupported_claims": 0,
-    "hallucination_rate": 0.0,
-    "contradiction_rate": 0.0,
-    "is_trustworthy": true
-  },
-  "explanation": {
-    "query": "What is the current weather in Paris?",
-    "conclusion": "The current temperature in Paris is 8.8 °C...",
-    "claim_validation_status": "100% Grounded (3/3 claims verified)",
-    "hallucination_risk": "Low",
-    "data_sources": ["Open-Meteo Current Weather API"],
-    "limitations_and_uncertainty": "Numerical weather prediction accuracy naturally degrades beyond 24-48 hours..."
-  }
-}
+npm ci
+npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-### Example 2: On-Demand Claim Validation
-```bash
-curl -X POST "http://127.0.0.1:8000/api/evidence/validate" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "location": "Dehradun",
-       "text": "The temperature is 22.0 °C and humidity is 60%."
-     }'
-```
+Open [127.0.0.1:5173](http://127.0.0.1:5173). The checked-in frontend uses `http://127.0.0.1:8000` as its backend origin. FastAPI CORS permits the default local Vite origins on port 5173.
 
-### Example 3: Evidence Collection Summary
-```bash
-curl "http://127.0.0.1:8000/api/evidence/summary?location=Dehradun"
-```
+### API surface
 
----
+| API routes | Purpose |
+|---|---|
+| `POST /api/agent/chat` | Chat with optional thread identity and expected revision |
+| `GET /weather` | Standalone city lookup and weather |
+| `GET /api/weather/analysis`, `GET /api/weather/risks` | Weather analysis and risk assessment |
+| `POST /api/evidence/validate`, `GET /api/evidence/summary` | Standalone claim validation and evidence inspection |
+| `/api/auth/*`, `/api/guest/session`, `/api/chat/threads` | Account, guest, and thread lifecycle |
 
-## 🧪 Testing & Verification Suites
+## Testing and evaluation
 
-Sky Reader includes modular unit tests, integration test suites, and empirical benchmarking tools:
-
-### Offline authentication and conversation checks
+Install `pytest` into the activated backend environment for offline regression work. Run the backend and frozen suite from the repository root with mocked providers. On a memory-constrained Linux host, use a verified cgroup with `MemoryHigh=512M`, `MemoryMax=768M`, and `MemorySwapMax=0`, and run checks sequentially with a bounded timeout. Avoid legacy live integration scripts when verifying offline.
 
 ```bash
-npm --prefix frontend test
-npm --prefix frontend run lint
-npm --prefix frontend run build
-python -m pytest backend/tests backend/test_analysis.py backend/test_phase4.py
+python -m pip install pytest
+GROQ_API_KEY= GEMINI_API_KEY= OPENROUTER_API_KEY= python -m pytest \
+  backend/tests backend/test_analysis.py backend/test_phase4.py
+GROQ_API_KEY= GEMINI_API_KEY= OPENROUTER_API_KEY= python -m backend.evaluation.stage163.run \
+  --output /tmp/skyreader-stage163-results.json
 ```
 
-The frontend checks cover request ownership, session transitions, browser storage isolation, and rendered login controls. Backend checks use temporary SQLite databases and mocked weather/provider requests.
+From the frontend directory:
 
-### 1. Phase 6 & Phase 4 Unit Tests (Offline / Zero Network)
 ```bash
-# Phase 7.1 benchmark evaluation dataset & fixture unit tests (8 test suites)
-backend/venv/bin/python backend/tests/test_evaluation_dataset.py
-
-# Phase 6 weather safety, risk levels, and uncertainty unit tests (10 test cases)
-backend/venv/bin/python backend/tests/test_risk_engine.py
-
-# Phase 4 verification & explainability unit tests
-backend/venv/bin/python backend/tests/test_evidence_engine.py
-backend/venv/bin/python backend/tests/test_claim_extractor.py
-backend/venv/bin/python backend/tests/test_claim_validator.py
-backend/venv/bin/python backend/tests/test_hallucination_controller.py
-backend/venv/bin/python backend/tests/test_explanation_engine.py
-```
-*(All test suites pass deterministically without network dependencies).*
-
-### 2. Complete Phase 6 Weather Safety & Risk Integration Suite
-Tests deterministic hazard evaluation, tool executor mappings, FastAPI `/api/weather/risks` endpoints, and Groq agent hazard routing:
-```bash
-PYTHONPATH=. backend/venv/bin/python backend/test_phase6.py
-```
-*(Result: 3/3 test suites pass).*
-
-### 3. Complete Phase 4 Integration Suite
-Tests evidence extraction, claim extraction, validation with tolerances, hallucination feedback, explanation proofs, FastAPI endpoints, and end-to-end agent reasoning:
-```bash
-backend/venv/bin/python backend/test_phase4.py
-```
-*(Result: 7/7 test suites pass).*
-
-### 3. Empirical Benchmarking & Ablation Studies
-```bash
-# Run comparative benchmark across architectures
-backend/venv/bin/python backend/evaluation/benchmark.py
-
-# Run ablation study on tolerances, feedback, and derived evidence
-backend/venv/bin/python backend/evaluation/ablation.py
+npm test
+npm run lint
+npm run build
 ```
 
-### 4. Multi-Turn Contextual Conversation Flow Test
-Tests conversational memory across follow-up queries (*"Dehradun tomorrow"* → *"Should I carry an umbrella?"* → *"What about travelling?"*) and validates context clearing on "New Chat":
-```bash
-PYTHONPATH=. backend/venv/bin/python backend/test_multiturn_chat.py
-```
-*(Result: 4/4 conversational turns pass cleanly).*
+The latest **Stage 1.7E offline verification** recorded **395 backend tests passed** and **79 focused tests passed**. The focused batch overlaps the backend suite.
 
-### 5. Phase 3 & Phase 2 Integration Tests
-```bash
-# Phase 3 meteorological intelligence
-PYTHONPATH=. backend/venv/bin/python backend/test_phase3.py
+| Frozen 120-case metric | Stage 1.7E |
+|---|---:|
+| Answer completeness | 101/120 |
+| Required hazard coverage | 12/12 |
+| Both-city measurement coverage | 7/8 |
+| Grounded audited outputs | 88/88 |
+| Unaudited numerical weather answers | 0 |
 
-# Phase 2 Groq tool-calling agent loop
-PYTHONPATH=. backend/venv/bin/python backend/test_phase2.py
-```
+These results describe specific mocked fixtures and scoring denominators. The [frozen evaluation report](backend/evaluation/stage163/REPORT.md) documents the corpus and rubric. The [evaluation subsystem guide](backend/evaluation/README.md) describes the historical benchmark tooling.
 
-### 6. Phase 1 Executor & Analysis Unit Tests
-```bash
-# Phase 1 executor
-PYTHONPATH=. backend/venv/bin/python backend/test_executor.py
+## Live validation and limitations
 
-# Phase 3 offline analysis math
-backend/venv/bin/python backend/test_analysis.py
-```
+The single approved [Stage 1.7D Groq run](backend/evaluation/stage17c/17D-GROQ-LIVE-REPORT.md) used a fixed Lisbon observation. It passed whole-draft grounding, the final evidence gate, and delivered-answer completeness without limited recovery. This verifies one live synthesis sample. The recovery path is covered by offline tests. Gemini and OpenRouter adapters have mocked coverage, and their approved live requests returned 404. See the [multi-provider diagnostic report](backend/evaluation/stage17c/DIAGNOSTIC-RETEST-REPORT.md) and [root-cause investigation](backend/evaluation/stage17c/FIX2-REPORT.md).
 
----
+- Natural-language validation is conservative. A draft can contain a correctly supported claim and still be withheld if another clause cannot be grounded.
+- Grounded recovery is deliberately limited to a verified single-city current-temperature observation after final-gate rejection.
+- Forecast windows, geocoding data, provider model availability, and quotas constrain responses. A resolved city or supported adapter does not guarantee a particular forecast or provider route.
+- Broader production reliability, high-severity live weather coverage, and successful live secondary-provider synthesis remain unverified.
 
-## 💡 Example Queries Supported
+## Development milestones
 
-- *"What is the current temperature in Dehradun?"*
-- *"Will it rain tomorrow in Paris? Should I carry an umbrella?"*
-- *"Is the temperature increasing or decreasing over the next 24 hours in Delhi?"*
-- *"What is the best time for outdoor activities tomorrow in Tokyo?"*
-- *"Is tomorrow suitable for travelling in Chennai?"*
-- *"How will tomorrow's weather compare with today's in London?"*
-- *"Are there any weather risks, storms, or severe safety hazards in Dehradun tomorrow?"*
-- *"Is it safe to go hiking in Tokyo tomorrow given the wind and rain forecast?"*
-- *"Can you explain the meteorological evidence behind your recommendation?"*
-- *"What causes lightning and thunder?"* (answered directly as general knowledge without tool calls)
+| Milestone | Implemented work |
+|---|---|
+| Weather and evidence foundations | Forecast retrieval, weather analysis, risk assessment, claim validation, and proof metadata |
+| Stages 1.5–1.6.1 | Shared planning, typed geocoding, owner-scoped SQLite state, and safe provider failure handling |
+| Stages 1.6.2–1.6.5 | Deterministic responses, completeness checks, evidence safety gates, bounded synthesis, and approval-gated live harnesses |
+| Stages 1.7A–1.7C | Provider adapters, optional sequential fallback, and live compatibility diagnostics |
+| Stages 1.7D–1.7E | Evidence-aligned prompts, limited grounded recovery, and safer recognition of natural observation continuations |
 
-
----
-
-## 📜 License & Acknowledgements
-
-- **License**: MIT License
-- **Weather Data**: Real-time telemetry provided by [Open-Meteo](https://open-meteo.com/).
-- **AI Inference**: High-speed LLM inference powered by [Groq](https://groq.com/).
+Pending verification includes live secondary-provider readiness and broader end-to-end reliability. The [architecture audit](backend/evaluation/stage17c/ARCHITECTURE-AUDIT.md) records the investigation that led to the Stage 1.7D and 1.7E changes.

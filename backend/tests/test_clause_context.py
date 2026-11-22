@@ -83,7 +83,7 @@ def test_truncated_unsupported_draft_still_fails_evidence_gate():
     ("It will be sunny tomorrow.", "numeric_continuation_required", False, True),
     ("The humidity in the other city is 64%.", "numeric_continuation_required", False, False),
     ("In Paris the humidity is 64%.", "numeric_continuation_required", False, False),
-    ("It is 64% there.", "extractable_claim_required", True, False),
+    ("It is 64% there.", "numeric_continuation_required", False, False),
 ])
 def test_location_rejection_explains_the_failed_prerequisite(tail, prerequisite, numeric, forecast):
     from backend.agent.weather_evidence_gate import first_weather_gate_rejection
@@ -149,3 +149,30 @@ def test_candidate_scope_failure_is_distinct_from_grammar(scope):
     else:
         assert decision["failed_prerequisite"] == "multiple_evidence_locations"
         assert decision["candidate_location_count"] == 2
+
+
+@pytest.mark.parametrize(("draft", "accepted"), [
+    ("The current temperature in Lisbon is 21°C. The humidity is 64%.", True),
+    ("Currently in Lisbon, the temperature is 21°C. It feels like 20°C.", True),
+    ("Lisbon is 21°C. Here's the current observation. The humidity is 64%.", True),
+    ("Lisbon is 21°C. Winds are at 12 km/h.", True),
+    ("Lisbon is 21°C. It feels like 99°C.", False),
+    ("Lisbon is 21°C. It feels like 20°C in Paris.", False),
+    ("Lisbon is 21°C. It feels like 20°C tomorrow.", False),
+    ("Lisbon is 21°C. Elsewhere it feels like 20°C.", False),
+    ("Lisbon is 21°C. Here's the current observation in Paris. The humidity is 64%.", False),
+    ("Lisbon is 21°C. Here's the current observation. It's safe to walk.", False),
+    ("Lisbon is 21°C. It feels like 20%.", False),
+    ("Lisbon is 21°C. It feels like 20°C, now in Paris.", False),
+    ("In Lisbon or Paris the temperature is 21°C. The humidity is 64%.", False),
+    ("Lisbon is 21°C. The sky is clear tomorrow. The humidity is 64%.", False),
+    ("Lisbon is 21°C. Current observation: humidity is 64%.", False),
+    ("Lisbon is 21°C. Here's the current observation. Here's the current observation. The humidity is 64%.", False),
+    ("Lisbon is 21°C. The wind gusts are at 12 km/h.", False),
+])
+def test_semantic_observation_compatibility(draft, accepted):
+    raw = {"current": {**OBSERVATION["current"], "apparent_temperature": 20, "wind_speed_10m": 12}}
+    evidence = EvidenceEngine().generate_evidence(current_data=raw, location_meta=PLACE)
+    assert model_weather_answer_is_grounded(
+        draft, evidence, HallucinationController(), weather_request=True,
+    ) is accepted
