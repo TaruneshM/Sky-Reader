@@ -1,17 +1,181 @@
-# Sky Reader
+<h1 align="center">Sky Reader</h1>
 
-Sky Reader is an evidence-grounded weather assistant. Ask about current conditions, a forecast window, a trip, or two destinations. The application resolves the place, retrieves weather data, and checks factual claims against the evidence before delivering an answer.
+<p align="center"><strong>Evidence-grounded agentic weather intelligence</strong></p>
 
-The current architecture is implemented through **Stage 1.7E**. Simple requests can be answered deterministically. More detailed requests can use an LLM to explain prepared weather evidence, with separate checks for factual grounding, answer completeness, and final delivery.
+<p align="center">
+  Ask about current conditions, plan around a forecast, or compare two destinations.
+  Sky Reader resolves places and local forecast windows, then checks weather claims against their sources before delivery.
+</p>
 
-## Features
+<p align="center">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-087EA4">
+  <img alt="Python" src="https://img.shields.io/badge/Python-backend-3776AB">
+  <img alt="FastAPI" src="https://img.shields.io/badge/API-FastAPI-007A70">
+  <img alt="Open-Meteo" src="https://img.shields.io/badge/Weather-Open--Meteo-315F9D">
+  <img alt="SQLite" src="https://img.shields.io/badge/Storage-SQLite-315880">
+</p>
 
-- **Weather chat and city lookup** for current observations and supported local forecast windows.
-- **Conversation-aware requests** with typed place resolution, clarification, explicit geographic qualifiers, and follow-ups that retain verified context.
-- **Weather comparisons and risk guidance** covering supported destination pairs, relative time windows, clothing, and outdoor activity.
-- **Evidence and audit views** showing claims, supporting data, validation status, provenance, and risk information when available.
-- **Account and guest workspaces** with scoped browser transcripts and server-side revision checks for planner state.
-- **Server-configured model routing** with Groq as the default and optional sequential fallback through Gemini and OpenRouter.
+<p align="center">
+  <a href="#architecture">Architecture</a> ·
+  <a href="#multi-provider-llm-gateway">Provider gateway</a> ·
+  <a href="#local-development">Quickstart</a> ·
+  <a href="#testing-and-evaluation">Evaluation</a> ·
+  <a href="#implementation-status">Status</a>
+</p>
+
+## Key capabilities
+
+| Capability | What it supports |
+| --- | --- |
+| Weather chat and city lookup | Current observations, supported local forecast windows, and follow-ups that use confirmed context |
+| Comparisons and planning | Supported destination pairs and relative time windows, with clothing, outdoor activity, and weather-risk guidance |
+| Evidence and provenance | Claim statuses, supporting measurements, source information, and applicable risk findings in the workspace |
+| Account and guest workspaces | Scoped browser transcripts and server-side thread context with revision checks |
+
+## Why Sky Reader
+
+Sky Reader uses a weather-specific planner to connect conversational questions to Open-Meteo measurements. It can answer supported requests directly from prepared facts, or use a language model to synthesize a more detailed explanation. It checks whether each answer is grounded and whether it covers the question before returning it.
+
+The model gateway separates provider mechanics from weather planning and verification. Server configuration controls provider selection, and optional fallback shares a single request budget across providers.
+
+## Architecture
+
+React hosts the chat, city lookup, session controls, and audit views. FastAPI validates requests and exposes standalone weather, analysis, risk, and evidence routes. The chat agent coordinates the planner, weather service, evidence engine, and model gateway.
+
+```mermaid
+flowchart TB
+    subgraph Client["Browser"]
+        UI["React workspace"] <--> Local["Transcript and preferences"]
+    end
+    UI <--> API["FastAPI"]
+    subgraph Server["Backend"]
+        API <--> Threads["Authentication and thread services"]
+        Threads <--> DB[("SQLite")]
+        API <--> Agent["Weather agent"]
+        Agent <--> Planner["Request router and shared planner"]
+        Planner <--> Weather["Weather service and TTL caches"]
+        API -->|"Standalone weather routes"| Weather
+        Agent <--> Evidence["Evidence engine and delivery checks"]
+        Agent -->|"When synthesis is needed"| Gateway["LLM gateway"]
+    end
+    Weather <--> OM["Open-Meteo"]
+    Gateway <--> Providers["Groq, Gemini, OpenRouter"]
+```
+
+## Request pipeline
+
+The router extracts the intent, requested measurements, place, period, and relevant activity. The planner uses verified thread context for follow-ups. Typed geocoding distinguishes resolved, ambiguous, missing, and unavailable results, using explicit qualifiers and geocoder metadata to rank candidates. Weather lookups use confirmed coordinates and destination-local forecast windows. Geocoding, current weather, hourly forecasts, and daily forecasts have separate process-local caches.
+
+The agent can render supported observations, forecasts, comparisons, and guidance deterministically. For model synthesis, it builds a compact evidence packet scoped to each destination and period, while retaining the original weather payload for verification.
+
+```mermaid
+flowchart TB
+    Q["Question and trusted thread context"] --> P["Route and plan place, period, and intent"]
+    P -->|"Unresolved or unsupported"| S["Clarification or safe limitation"]
+    P -->|"Invalid request or typed provider failure"| X["API error"]
+    P -->|"Resolved"| W["Fetch scoped weather and prepare evidence"]
+    W -->|"Provider failure"| X
+    W --> D{"Deterministic answer available?"}
+    D -->|"Yes"| F["Render and verify facts and risks"]
+    D -->|"Synthesis needed"| M["Send bounded evidence prompt via gateway"]
+    M -->|"Terminal provider failure"| X
+    M --> V["Audit draft, check completeness, and apply final gate"]
+    F -->|"Verified"| R["Return answer and proof"]
+    V -->|"Verified draft or recovery"| R
+    V -->|"Unable to verify"| S
+    R --> T["Commit applicable thread revision and render in React"]
+    S --> T
+```
+
+## Multi-provider LLM gateway
+
+| Provider | Adapter and controls | Verification status |
+|---|---|---|
+| Groq | Default adapter and default model `openai/gpt-oss-120b`. Existing SDK calls are normalized into bounded assistant messages. | One Stage 1.7D live synthesis passed. |
+| Gemini | Google GenerateContent REST adapter. Tool state and supported thought signatures remain request-local and provider-specific. | Mocked adapter and fallback coverage. Live HTTP 404. |
+| OpenRouter | Chat Completions REST adapter. Explicit free-model allowlist, zero prompt and completion price ceilings, and provider-side fallback disabled. | Mocked adapter and fallback coverage. Live HTTP 404. |
+
+Provider selection is configured on the server or set explicitly by a backend caller. Fallback is off by default. Eligible failures include throttling, selected service errors, clear connection failures, and timeouts on the first replay-safe model turn. Authentication, malformed output, evidence rejection, and exhausted budgets do not trigger migration. Later tool turns and corrections remain pinned to the responding provider. Normal chat weather retrieval is planner-owned; tool schemas remain available to the injected executor compatibility path.
+
+All model attempts share request-local token reservations, attempt counts, round and correction caps, and a monotonic model deadline. Reported usage reconciles estimates. Omitted usage remains unknown. See the [gateway configuration and limits](backend/llm_gateway/README.md).
+
+```mermaid
+flowchart TB
+    A["Agent requests model synthesis"] --> R{"Server routing mode"}
+    R -->|"Default or explicit selection"| P["Pin one provider"]
+    R -->|"Opt-in fallback"| O["Build enabled priority list"]
+    P --> B{"Shared attempt, token, and deadline budget"}
+    O --> B
+    B -->|"Exhausted"| E["Typed failure"]
+    B -->|"Available"| D["Call selected adapter"]
+    D -.- G["Groq SDK"]
+    D -.- M["Gemini REST"]
+    D -.- Z["OpenRouter REST, free-only controls"]
+    D -->|"Success"| S["Normalize output and pin later turns"]
+    D -->|"Failure"| F{"Replay-safe transient failure and next provider?"}
+    F -->|"Yes, fallback enabled"| N["Rebuild from original context"]
+    N --> B
+    F -->|"No"| E
+```
+
+## Evidence verification and safety
+
+The evidence engine represents observations, forecast points, and derived findings separately. Evidence items carry a city, period, units, source, and ID. The whole-draft audit checks extracted claims against those items. Completeness checks whether the supported claims cover the requested measurements, city, period, and relevant hazards or advice.
+
+The final gate checks individual weather-shaped clauses, including statements the claim extractor may have missed. Stage 1.7E can establish an anchor from an audited explicit-city observation and use it for supported continuations such as humidity, apparent temperature, and wind. Inherited claims still require matching measurements, units, location, and time scope. Ambiguous cities, mixed observation and forecast scope, and unclassified prose constrain inheritance.
+
+```mermaid
+flowchart TB
+    A["Model draft and trusted weather evidence"] --> B["Whole-draft audit and bounded correction if eligible"]
+    B --> C{"Grounded draft covers the request?"}
+    C -->|"No"| L["Safe limitation or audited deterministic comparison"]
+    C -->|"Yes"| G{"Final clause-level evidence gate"}
+    G -->|"Pass"| D["Audit delivered text and attach proof"]
+    G -->|"Reject"| R{"Eligible single-city current-temperature recovery?"}
+    R -->|"No"| L
+    R -->|"Yes"| F["Render a fresh answer from the verified observation"]
+    F --> V{"Final gate, audit, and measurement coverage pass?"}
+    V -->|"Yes"| U["Deliver grounded limited answer"]
+    V -->|"No"| L
+```
+
+## Grounded recovery and graceful degradation
+
+When a prepared single-city current-temperature draft fails the final gate, recovery can render a fresh city-explicit answer from exactly one verified observation. Sky Reader rechecks the replacement without another LLM call. The answer states that the detailed explanation could not be verified, and the explanatory completeness result remains false. Compound, multi-city, forecast, and safety requests are outside this recovery path.
+
+The planner can ask for a location clarification or explain forecast limits. Typed provider failures can exit without a successful thread write.
+
+## Conversations and persistence
+
+React maintains the visible transcript and preferences in browser storage. SQLite keeps account and session records plus structured thread state, including confirmed places, comparison slots, and applicable forecast windows. Account or guest identity scopes the thread, and revision checks guard against stale writes both before planning and at commit.
+
+```mermaid
+sequenceDiagram
+    participant UI as React workspace
+    participant API as FastAPI
+    participant DB as SQLite
+    participant A as Weather agent
+    UI->>API: Send credential, thread ID, revision, and recent messages
+    API->>DB: Resolve session and check thread owner and revision
+    alt Owner or revision check fails
+        API-->>UI: Error or revision conflict
+    else Trusted context loaded
+        API->>A: Plan and answer with scoped context
+        alt Raised provider failure
+            A-->>API: Typed error
+            API-->>UI: Error without thread commit
+        else Deliverable response or safe limitation
+            A-->>API: Response, proof when available, proposed context
+            API->>DB: Recheck owner and revision before saving
+            alt Write conflict
+                API-->>UI: Revision conflict
+            else Commit succeeds
+                API-->>UI: Response and new revision
+                UI->>UI: Append to browser transcript
+            end
+        end
+    end
+```
 
 ## Technology stack
 
@@ -21,238 +185,49 @@ The current architecture is implemented through **Stage 1.7E**. Simple requests 
 | API and application models | Python, FastAPI, Pydantic, HTTPX |
 | Weather | Open-Meteo geocoding and forecast APIs, process-local TTL caches |
 | LLM | Groq SDK, Gemini REST, OpenRouter Chat Completions |
+| Evidence | Python claim extraction, validation, completeness checks, and proof metadata |
 | Persistence | SQLite for account/session and thread context, browser storage for the UI transcript |
 | Verification | pytest, Node test runner, ESLint, Vite build, mocked provider and frozen evaluation suites |
 
-## Architecture
+## Local development
 
-### 1. High-level system architecture
+Use Python 3.12 and a supported Node.js LTS release at or above 22.12 for the following workflow. The examples use a POSIX shell.
 
-React renders the chat, lookup, session controls, and audit details. FastAPI owns the request boundary. The planner retrieves weather evidence, and the gateway is used only when the agent needs model output.
-
-```mermaid
-flowchart LR
-    U["User"]
-    subgraph Browser["Browser"]
-        UI["React and Vite workspace"]
-        BS["Browser transcript and preferences"]
-        UI <--> BS
-    end
-    subgraph Backend["Sky Reader backend"]
-        API["FastAPI"]
-        State["Auth and thread services"]
-        DB[("SQLite")]
-        Agent["Agent orchestration"]
-        Plan["Weather router and planner"]
-        Weather["Weather service and TTL caches"]
-        Evidence["Evidence engine"]
-        Gateway["LLM gateway"]
-        Checks["Claim audit, completeness, and safety gates"]
-        Delivery["Final response and proof"]
-        API <--> State
-        State <--> DB
-        API --> Agent
-        API -->|"standalone lookup, analysis, risk, evidence"| Weather
-        Agent --> Plan
-        Plan <--> Weather
-        Plan -->|"prepared destinations"| Agent
-        Agent --> Evidence
-        Agent -->|"when synthesis is needed"| Gateway
-        Gateway --> Checks
-        Evidence --> Checks
-        Checks --> Delivery
-        Delivery --> API
-    end
-    subgraph External["External services"]
-        OM["Open-Meteo"]
-        LLM["Groq, Gemini, OpenRouter"]
-    end
-    U --> UI
-    UI <--> API
-    Weather <--> OM
-    Gateway <--> LLM
-```
-
-### 2. End-to-end weather request pipeline
-
-Owned threads supply trusted planner context. The router and planner resolve the requested city and period before preparing data. Clarifications and typed failures can stop processing early. Deterministic answers bypass the model; prepared synthesis follows the separate model-draft validation path.
-
-```mermaid
-flowchart TD
-    A["Submit question in React"] --> B["FastAPI validates payload and thread context when supplied"]
-    B -->|"invalid input, owner, or revision"| X["Typed or HTTP error; no successful thread commit"]
-    B --> C["Parse weather intent, place, period, and components"]
-    C --> D{"Can the planner resolve the request?"}
-    D -->|"needs more information"| L["Clarification or safe limitation"]
-    D -->|"weather provider fails"| X
-    D -->|"resolved"| E["Fetch scoped observations or forecasts"]
-    E --> F["Prepare destination data and evidence"]
-    F --> G{"Can the agent answer deterministically?"}
-    G -->|"yes"| H["Render weather facts and applicable risk findings"]
-    H --> I["Audit response and check coverage"]
-    G -->|"LLM synthesis needed"| J["Build bounded prompt and dispatch through gateway"]
-    J -->|"terminal provider error without safe fallback"| X
-    J --> K["Normalize draft, audit extracted claims, check completeness"]
-    K -->|"required checks fail"| L
-    K --> M["Run final clause-level gate"]
-    M -->|"pass"| N["Audit final text and construct proof"]
-    M -->|"reject"| O{"Eligible prepared current-temperature recovery?"}
-    O -->|"yes"| P["Render limited answer from trusted observation"]
-    P --> Q{"Fresh gate, audit, and metric checks pass?"}
-    Q -->|"yes"| N
-    Q -->|"no"| L
-    O -->|"no"| L
-    I --> N
-    L --> R["Serialize permitted response"]
-    N --> R
-    R --> S["Commit scoped planner revision when applicable"]
-    S --> T["Render final text and available audit metadata in React"]
-```
-
-### 3. Provider selection, fallback, and budgets
-
-Groq is the default. Deployments may pin an enabled provider or opt into sequential fallback. The default order is Groq, Gemini, then OpenRouter. A switch requires an eligible transient failure on the first replay-safe model turn and remaining shared budget.
-
-```mermaid
-flowchart TD
-    A["Agent requires model output"] --> B{"Routing configuration"}
-    B -->|"default or explicit selection"| C["Pin one configured provider"]
-    B -->|"opt-in fallback"| D["Filter configured priority list"]
-    C --> E["Check shared attempts, input estimate, output cap, and deadline"]
-    D --> E
-    E -->|"budget unavailable"| F["Typed budget failure"]
-    E --> G{"Selected adapter"}
-    G --> H["Groq SDK"]
-    G --> I["Gemini REST"]
-    G --> J["OpenRouter REST with free-model and zero-price controls"]
-    H --> K{"Provider outcome"}
-    I --> K
-    J --> K
-    K -->|"success"| L["Normalized text, tool IDs, finish reason, and usage"]
-    K -->|"eligible failure on replay-safe initial turn"| M{"Fallback enabled and another provider available?"}
-    M -->|"yes"| D2["Rebuild from original context and prepared evidence"]
-    D2 --> E
-    M -->|"no"| N["Typed provider failure"]
-    K -->|"terminal error or provider-specific state already exists"| N
-    L --> O["Keep later tool turns and corrections on the same provider"]
-    O --> P["Evidence and completeness checks remain mandatory"]
-```
-
-### 4. Evidence validation and grounded recovery
-
-**Passing the whole-draft audit does not automatically approve delivery.** The first audit checks extracted claims, while completeness checks that those supported claims answer the request. Separately, the final gate examines weather-shaped clauses, including assertions the extractor may have missed.
-
-```mermaid
-flowchart TD
-    W["Trusted evidence items with city, time, units, and source"] --> A["Extract and audit draft claims"]
-    D["Normalized model draft"] --> A
-    A -->|"supported claims"| C{"Required measurements and scope covered?"}
-    A -->|"audit fails"| F["Bounded correction or safe fallback"]
-    F --> C
-    C -->|"no verified complete candidate"| S["Safe limitation"]
-    C -->|"yes"| G{"Final clause-level evidence gate"}
-    W --> G
-    G -->|"location binding, numerical and safety checks pass"| O["Deliver audited response and proof"]
-    G -->|"reject draft"| R{"One verified current-temperature observation for one city?"}
-    R -->|"no"| S
-    R -->|"yes"| N["Render fresh city-explicit observation and explanation limitation"]
-    W --> N
-    N --> V{"Recheck final gate, claim audit, and measurement coverage"}
-    V -->|"pass"| L["Deliver grounded limited answer; explanatory completeness is false"]
-    V -->|"fail"| S
-```
-
-### 5. Conversation ownership and revision flow
-
-The browser keeps the visible transcript. The server keeps owner-scoped structured weather context such as confirmed locations, destination slots, and applicable forecast windows. Revision checks protect against stale writes.
-
-```mermaid
-sequenceDiagram
-    participant UI as React workspace
-    participant API as FastAPI
-    participant DB as SQLite threads
-    participant Agent as Weather agent
-    UI->>API: Send credential, thread ID, revision, and recent messages
-    API->>DB: Load context and verify owner and revision
-    alt Incorrect owner or stale revision
-        API-->>UI: Error or revision conflict
-    else Context accepted
-        API->>Agent: Question and trusted planner state
-        alt Raised provider error
-            Agent-->>API: Typed failure
-            API-->>UI: Error without a thread commit
-        else Deliverable response or safe limitation
-            Agent-->>API: Final text, provenance, and proposed planner state
-            API->>DB: Recheck owner and revision, then save
-            API-->>UI: Final response and new revision on successful commit
-            UI->>UI: Append response to browser transcript
-        end
-    end
-```
-
-## How Sky Reader works
-
-1. **Understand the request.** The router extracts weather intent, location, requested measurements, applicable activity, and period. The shared planner uses verified thread context to continue a task or asks for clarification when the place or comparison is unresolved.
-2. **Retrieve the right data.** Typed geocoding distinguishes resolved, ambiguous, missing, and unavailable outcomes. Resolution considers explicit qualifiers and trustworthy candidate metadata. Weather retrieval uses confirmed coordinates. Forecast periods are scoped in the destination’s local time. Geocoding, current weather, hourly forecasts, and daily forecasts have separate in-memory caches.
-3. **Prepare facts and decide how to answer.** Deterministic branches can render supported observations, forecasts, comparisons, or guidance from the requested measurements and risk evidence. When synthesis is needed, the model sees a compact city- and period-scoped evidence packet. The original weather payload is retained for verification.
-4. **Validate before delivery.** The evidence engine represents observations, forecast points, and derived findings separately. Claims are checked against matching evidence and expose supporting IDs. Completeness considers the requested measurements, city, period, and relevant hazard or advice requirements.
-5. **Protect the final response.** Clause validation requires an explicit evidence city or a narrowly permitted observation anchor. Stage 1.7E recognizes common single-city observation forms and some numeric continuations, including humidity, apparent temperature, and wind. Each inherited claim still undergoes unit, location, time, and numerical checks. Arbitrary skipped prose, mixed observation/forecast evidence, and multiple candidate cities restrict inheritance.
-6. **Recover selectively.** Stage 1.7D can discard a rejected draft and render a limited current-temperature answer using exactly one verified observation for one city. The replacement is revalidated without an extra LLM call. It explicitly states that the detailed explanation was not verified. Compound, multi-city, forecast, and safety requests are outside this recovery path.
-
-## Multi-provider gateway
-
-| Provider | Adapter and controls | Verification status |
-|---|---|---|
-| Groq | Default adapter and default model `openai/gpt-oss-120b`. Existing SDK calls are normalized into bounded assistant messages. | Stage 1.7D passed one approved Lisbon live request through both audit layers and completeness. |
-| Gemini | Google GenerateContent REST adapter. Tool state and supported thought signatures remain request-local and provider-specific. | Mocked adapter and fallback coverage. The approved live model returned HTTP 404; account/model access remains unresolved. |
-| OpenRouter | Chat Completions REST adapter. Explicit free-model allowlist, zero prompt and completion price ceilings, and provider-side fallback disabled. | Mocked adapter and fallback coverage. The approved free model returned HTTP 404; serving-route availability remains unresolved. |
-
-The browser does not select providers. Provider choice is server configuration, or an explicit choice by a backend caller. Fallback is off by default. Eligible failures include throttling, selected service errors, clear connection failures, and timeouts on the first replay-safe model turn. Authentication, malformed output, evidence rejection, and exhausted budgets do not trigger migration. Later tool turns and corrections remain pinned to the responding provider. Normal chat weather retrieval is planner-owned; tool schemas remain available to the injected executor compatibility path.
-
-All model attempts share request-local token reservations, attempt counts, round and correction caps, and a monotonic model deadline. Reported usage reconciles estimates. Omitted usage remains unknown. See the [gateway configuration and limits](backend/llm_gateway/README.md).
-
-## Project structure
-
-```text
-Sky-Reader/
-├── backend/
-│   ├── main.py                  FastAPI endpoints and API contracts
-│   ├── database.py              SQLite schema, account and session operations
-│   ├── conversation_store.py    Thread ownership, revisions and persisted context
-│   ├── agent/                   Routing, planner, state, prompts, budgets and final gate
-│   ├── weather/                 Open-Meteo clients, caches, models, analysis and risk
-│   ├── evidence/                Evidence items, claim extraction, audit and proof
-│   ├── llm_gateway/             Provider configuration, adapters and normalized messages
-│   ├── evaluation/              Historical benchmarks, frozen suite and live harnesses
-│   ├── tests/                   Backend regression tests
-│   └── requirements.txt
-└── frontend/
-    ├── src/
-    │   ├── App.jsx              Workspace composition and API origin
-    │   ├── components/          Chat, city lookup, audit, risk and preferences
-    │   └── utils/               Auth session, chat threads and browser persistence
-    ├── tests/                   Node-based frontend regressions
-    └── package.json
-```
-
-## Local setup
-
-Use Python 3.12 for the verified backend workflow and Node.js 22.12+ in a supported LTS release for the frontend. Run the commands from the repository root. The examples use a POSIX shell. On Windows, activate the virtual environment with `backend\venv\Scripts\activate` using an appropriate shell, and use an ignored backend dotenv file or exported process variables for provider settings.
-
-### Start FastAPI
+### 1. Clone and install backend dependencies
 
 ```bash
+git clone https://github.com/TaruneshM/Sky-Reader.git
+cd Sky-Reader
 python3.12 -m venv backend/venv
 source backend/venv/bin/activate
 python -m pip install -r backend/requirements.txt
+```
+
+On Windows, activate the environment using the script in `backend\venv\Scripts` appropriate to your shell.
+
+### 2. Configure the backend
+
+Open-Meteo and eligible deterministic weather paths require no LLM credentials. For model-assisted synthesis with the default provider, create the ignored `backend/.env` file locally and replace the placeholder with your Groq key.
+
+```dotenv
+GROQ_API_KEY=<your-groq-api-key>
+```
+
+Server process variables also work. Store credentials only in backend configuration. Optional settings include `GROQ_MODEL`, `LLM_PROVIDER`, `LLM_ENABLED_PROVIDERS`, `LLM_FALLBACK_ENABLED`, and `LLM_PROVIDER_ORDER`. Secondary-provider configuration requires explicit model and key settings through `GEMINI_MODEL` and `GEMINI_API_KEY`, or `OPENROUTER_MODEL` and `OPENROUTER_API_KEY`. See the [gateway configuration guide](backend/llm_gateway/README.md).
+
+### 3. Start FastAPI
+
+From the repository root with the virtual environment active:
+
+```bash
 python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Use the ignored `backend/.env` file or server process environment for secrets. There is no required frontend dotenv file. Open-Meteo and eligible deterministic weather paths do not require an LLM key. To use default model-assisted synthesis, set `GROQ_API_KEY`. Optional settings include `GROQ_MODEL`, `LLM_PROVIDER`, `LLM_ENABLED_PROVIDERS`, `LLM_FALLBACK_ENABLED`, and `LLM_PROVIDER_ORDER`. To enable a secondary provider, supply its key and explicit model through `GEMINI_API_KEY` and `GEMINI_MODEL`, or `OPENROUTER_API_KEY` and `OPENROUTER_MODEL`. Keep credentials out of the browser and repository root dotenv file.
+The API provides [interactive docs](http://127.0.0.1:8000/docs) and a [health route](http://127.0.0.1:8000/health).
 
-The API is at [127.0.0.1:8000](http://127.0.0.1:8000), with [interactive API docs](http://127.0.0.1:8000/docs) and a [health route](http://127.0.0.1:8000/health).
+### 4. Start React
 
-### Start React
+In a second terminal from the repository root:
 
 ```bash
 cd frontend
@@ -260,7 +235,7 @@ npm ci
 npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-Open [127.0.0.1:5173](http://127.0.0.1:5173). The checked-in frontend uses `http://127.0.0.1:8000` as its backend origin. FastAPI CORS permits the default local Vite origins on port 5173.
+Open [127.0.0.1:5173](http://127.0.0.1:5173). The frontend uses `http://127.0.0.1:8000` for API requests. FastAPI allows the default local Vite origins on port 5173. See the [frontend guide](frontend/README.md).
 
 ### API surface
 
@@ -292,10 +267,13 @@ npm run lint
 npm run build
 ```
 
-The latest **Stage 1.7E offline verification** recorded **395 backend tests passed** and **79 focused tests passed**. The focused batch overlaps the backend suite.
+The table reports **Stage 1.7E offline verification**. The focused batch overlaps the backend suite.
 
-| Frozen 120-case metric | Stage 1.7E |
-|---|---:|
+| Check | Offline result |
+| --- | ---: |
+| Backend regression | 395 passed |
+| Focused regression | 79 passed |
+| Frozen evaluation size | 120 cases |
 | Answer completeness | 101/120 |
 | Required hazard coverage | 12/12 |
 | Both-city measurement coverage | 7/8 |
@@ -304,23 +282,46 @@ The latest **Stage 1.7E offline verification** recorded **395 backend tests pass
 
 These results describe specific mocked fixtures and scoring denominators. The [frozen evaluation report](backend/evaluation/stage163/REPORT.md) documents the corpus and rubric. The [evaluation subsystem guide](backend/evaluation/README.md) describes the historical benchmark tooling.
 
-## Live validation and limitations
+## Implementation status
 
-The single approved [Stage 1.7D Groq run](backend/evaluation/stage17c/17D-GROQ-LIVE-REPORT.md) used a fixed Lisbon observation. It passed whole-draft grounding, the final evidence gate, and delivered-answer completeness without limited recovery. This verifies one live synthesis sample. The recovery path is covered by offline tests. Gemini and OpenRouter adapters have mocked coverage, and their approved live requests returned 404. See the [multi-provider diagnostic report](backend/evaluation/stage17c/DIAGNOSTIC-RETEST-REPORT.md) and [root-cause investigation](backend/evaluation/stage17c/FIX2-REPORT.md).
+| Area | Milestone and verification |
+| --- | --- |
+| Multi-provider gateway | Implemented. Opt-in sequential fallback is mock-tested. |
+| Groq live synthesis | One approved Stage 1.7D run using a fixed Lisbon observation passed the whole-draft audit, final evidence gate, and delivered-answer completeness without recovery. See the [live report](backend/evaluation/stage17c/17D-GROQ-LIVE-REPORT.md). |
+| Grounded recovery | Stage 1.7D implementation is mock-tested. |
+| Semantic evidence gate | Stage 1.7E observation anchors and continuations are offline verified. |
+| Gemini and OpenRouter | The approved production-adapter requests returned HTTP 404. Live generation remains unresolved. See the [diagnostic retest](backend/evaluation/stage17c/DIAGNOSTIC-RETEST-REPORT.md) and [root-cause investigation](backend/evaluation/stage17c/FIX2-REPORT.md). |
 
-- Natural-language validation is conservative. A draft can contain a correctly supported claim and still be withheld if another clause cannot be grounded.
-- Grounded recovery is deliberately limited to a verified single-city current-temperature observation after final-gate rejection.
-- Forecast windows, geocoding data, provider model availability, and quotas constrain responses. A resolved city or supported adapter does not guarantee a particular forecast or provider route.
-- Broader production reliability, high-severity live weather coverage, and successful live secondary-provider synthesis remain unverified.
+Responses are limited by available forecasts, geocoder coverage, provider model access, and quotas. Conservative clause validation can withhold a draft that contains some supported facts. The live Groq result covers one synthesis sample. Broader production reliability and high-severity live weather coverage remain unverified.
 
-## Development milestones
+## Development roadmap
 
-| Milestone | Implemented work |
-|---|---|
-| Weather and evidence foundations | Forecast retrieval, weather analysis, risk assessment, claim validation, and proof metadata |
-| Stages 1.5–1.6.1 | Shared planning, typed geocoding, owner-scoped SQLite state, and safe provider failure handling |
-| Stages 1.6.2–1.6.5 | Deterministic responses, completeness checks, evidence safety gates, bounded synthesis, and approval-gated live harnesses |
-| Stages 1.7A–1.7C | Provider adapters, optional sequential fallback, and live compatibility diagnostics |
-| Stages 1.7D–1.7E | Evidence-aligned prompts, limited grounded recovery, and safer recognition of natural observation continuations |
+1. Diagnose Gemini model access and OpenRouter free-route availability.
+2. Expand representative end-to-end reliability and live hazard coverage.
+3. Use the regression corpus and approval-gated validation harnesses to verify changes to routing, evidence coverage, and provider integration.
 
-Pending verification includes live secondary-provider readiness and broader end-to-end reliability. The [architecture audit](backend/evaluation/stage17c/ARCHITECTURE-AUDIT.md) records the investigation that led to the Stage 1.7D and 1.7E changes.
+The [architecture audit](backend/evaluation/stage17c/ARCHITECTURE-AUDIT.md) documents the findings behind Stage 1.7D and Stage 1.7E.
+
+## Project structure
+
+```text
+Sky-Reader/
+├── backend/
+│   ├── main.py                  FastAPI endpoints and API contracts
+│   ├── database.py              SQLite schema, account and session operations
+│   ├── conversation_store.py    Thread ownership, revisions and persisted context
+│   ├── agent/                   Routing, planner, state, prompts, budgets and final gate
+│   ├── weather/                 Open-Meteo clients, caches, models, analysis and risk
+│   ├── evidence/                Evidence items, claim extraction, audit and proof
+│   ├── llm_gateway/             Provider configuration, adapters and normalized messages
+│   ├── evaluation/              Historical benchmarks, frozen suite and live harnesses
+│   ├── tests/                   Backend regression tests
+│   └── requirements.txt
+└── frontend/
+    ├── src/
+    │   ├── App.jsx              Workspace composition and API origin
+    │   ├── components/          Chat, city lookup, audit, risk and preferences
+    │   └── utils/               Auth session, chat threads and browser persistence
+    ├── tests/                   Node-based frontend regressions
+    └── package.json
+```
