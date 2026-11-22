@@ -23,6 +23,7 @@ else:
 try:
     from backend.llm_gateway.gateway import Gateway, Request
     from backend.llm_gateway.config import configured, enabled, model_for, provider_order, timeout_for
+    from backend.agent.grounded_recovery import recover_observed_temperature
     from backend.agent.weather_evidence_gate import model_weather_answer_is_grounded
     from backend.agent.answer_completeness import ADVICE_INTENTS, COMPLEX_REQUEST, requirements
     from backend.agent.llm_budget import (LLMBudget, LLMLimits, MAX_TOOL_REPLY_BYTES, UnsafePayload,
@@ -57,6 +58,7 @@ try:
 except ImportError:
     from llm_gateway.gateway import Gateway, Request
     from llm_gateway.config import configured, enabled, model_for, provider_order, timeout_for
+    from agent.grounded_recovery import recover_observed_temperature
     from agent.weather_evidence_gate import model_weather_answer_is_grounded
     from agent.answer_completeness import ADVICE_INTENTS, COMPLEX_REQUEST, requirements
     from agent.llm_budget import (LLMBudget, LLMLimits, MAX_TOOL_REPLY_BYTES, UnsafePayload,
@@ -465,11 +467,19 @@ async def run_agent(
         if model_draft and not model_weather_answer_is_grounded(
             text, evidence, hallucination_controller, weather_request=bool(weather_query),
         ):
-            text = "I couldn’t verify the weather for the requested location and period."
-            audit = None
             active_tracer.answer_complete = False
-            outcome = FailureCategory.FORECAST_WINDOW_UNAVAILABLE
-            evidence = evidence or evidence_engine.generate_evidence()
+            recovery = recover_observed_temperature(
+                request, planned_single, evidence, hallucination_controller, user_message,
+            )
+            if recovery is None:
+                text = "I couldn’t verify the weather for the requested location and period."
+                audit = None
+                outcome = FailureCategory.FORECAST_WINDOW_UNAVAILABLE
+                evidence = evidence or evidence_engine.generate_evidence()
+            else:
+                text, audit = recovery
+                active_tracer.grounded_delivery_recovery = True
+                fallback = True
         active_tracer.deterministic_fallback |= fallback
         if active_tracer.deterministic_selected:
             active_tracer.answer_complete = True

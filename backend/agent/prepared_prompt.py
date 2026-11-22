@@ -56,6 +56,13 @@ def synthesis_message(destinations, risks, components, activity, *, hourly_detai
                 "limitations": risk["data_limitations"],
             }
         packets.append(packet)
+    observation_format = ""
+    if len(destinations) == 1 and destinations[0].requirement == "current":
+        observation_format = (
+            "Use short, complete sentences with one weather fact each. "
+            "Name the city in every factual sentence. Avoid joining factual clauses with conjunctions. "
+            "Report current observations separately from forecasts and omit any forecast without evidence. "
+        )
     return {
         "role": "system",
         "content": (
@@ -63,6 +70,7 @@ def synthesis_message(destinations, risks, components, activity, *, hourly_detai
             "Name the place and local period for each factual claim. Keep cities and periods separate. "
             "Treat absent values as unavailable, forecasts as uncertain, and preserve material hazards. "
             "State limitations. Do not request tools. "
+            + observation_format
             + encode_wire({"requested": list(components), "activity": activity, "weather": packets})[0]
         ),
     }

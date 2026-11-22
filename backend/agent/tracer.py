@@ -30,6 +30,7 @@ class LifecycleTracer:
         self.deterministic_selected = False
         self.suppressed_tools = 0
         self.budget_exhausted = False
+        self.grounded_delivery_recovery = False
         self.answer_complete: bool | None = None
 
     def record_span(self, name: str, duration_ms: float):
@@ -144,6 +145,7 @@ class LifecycleTracer:
             "suppressed_tool_requests": self.suppressed_tools,
             "llm_budget_exhausted": self.budget_exhausted,
             "answer_complete": self.answer_complete,
+            "grounded_delivery_recovery": self.grounded_delivery_recovery,
             "estimated_llm_calls_avoided": 1 if self.deterministic_selected and not self.llm_calls else 0,
             "tool_calls_count": len(self.tool_executions),
             "prompt_tokens": token_total("prompt_tokens"),

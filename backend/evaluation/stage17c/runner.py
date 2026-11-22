@@ -197,7 +197,15 @@ async def evaluate(models, outbound, *, inject=True, targets=PROVIDERS):
                     row.update(pass_=bool(report.get("is_trustworthy") and supported_temperature
                                           and trace["successful_provider"] == target
                                           and trace["answer_complete"] and trace["weather_http_attempts"] == 0),
-                               audited=bool(report.get("is_trustworthy")), complete=trace["answer_complete"])
+                               audited=bool(report.get("is_trustworthy")), complete=trace["answer_complete"],
+                               grounded_delivery_recovery=bool(trace.get("grounded_delivery_recovery")),
+                               limited_answer=bool(trace.get("grounded_delivery_recovery")
+                                                   and not trace["answer_complete"]),
+                               delivered_claim_validation=[
+                                   {"variable": item["claim"]["variable"], "status": item["status"],
+                                    "supporting_evidence_ids": item.get("supporting_evidence_ids", [])[:8]}
+                                   for item in checks[:16]
+                               ])
                 except agent.RequestFailure as error:
                     trace = error.metrics or {}
                     row.update(pass_=False, failure=error.category.value)

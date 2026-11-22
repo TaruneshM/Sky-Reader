@@ -1,0 +1,73 @@
+{
+  "rows": [
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "pass_": true,
+      "audited": true,
+      "complete": true,
+      "grounded_delivery_recovery": false,
+      "limited_answer": false,
+      "delivered_claim_validation": [
+        {
+          "variable": "temperature",
+          "status": "SUPPORTED",
+          "supporting_evidence_ids": [
+            "38.72,-9.14:ev_obs_temp_current"
+          ]
+        }
+      ],
+      "attempts": [
+        {
+          "provider": "groq",
+          "latency_ms": 1121.25,
+          "prompt_tokens": 264,
+          "completion_tokens": 219,
+          "total_tokens": 483,
+          "failure_category": null,
+          "provider_status": null
+        }
+      ],
+      "draft_diagnostics": [
+        {
+          "supporting_fixture_evidence_ids": [
+            "ev_obs_temp_current"
+          ],
+          "claim_validation": [
+            {
+              "variable": "temperature",
+              "status": "SUPPORTED",
+              "supporting_evidence_ids": [
+                "ev_obs_temp_current"
+              ]
+            }
+          ],
+          "final_gate_rejection": null,
+          "draft_audited": true,
+          "draft_passed_model_evidence_gate": true,
+          "missing_requirements": [],
+          "unsupported_claims": [],
+          "named_location_present": true,
+          "temperature_units_present": true,
+          "finish_reason": "stop",
+          "truncated": false,
+          "output_cap": 350,
+          "reported_usage_reached_cap": false
+        }
+      ],
+      "fallback_events": [],
+      "elapsed_ms": 1129.95,
+      "http": [
+        {
+          "case": "groq",
+          "provider": "groq",
+          "source": "live",
+          "http_status": 200,
+          "response_bytes": 1672,
+          "headers_latency_ms": 1073.53
+        }
+      ]
+    }
+  ],
+  "peak_bytes": 42987520
+}
