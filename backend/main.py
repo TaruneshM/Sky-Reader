@@ -1,7 +1,16 @@
+import logging
+import os
+import re
+import time
+from collections import Counter, deque
+from threading import Lock
 from typing import Any, List, Optional
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Request, Response
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, EmailStr, Field
 
 try:
     from weather.service import (
@@ -21,7 +30,8 @@ try:
     from evidence.explanation_engine import ExplanationEngine
     from database import (
         init_db,
-        create_user,
+        register_with_session,
+        RegistrationRejected,
         authenticate_user,
         create_session,
         get_user_by_session_token,
@@ -45,7 +55,8 @@ except ImportError:
     from backend.evidence.explanation_engine import ExplanationEngine
     from backend.database import (
         init_db,
-        create_user,
+        register_with_session,
+        RegistrationRejected,
         authenticate_user,
         create_session,
         get_user_by_session_token,
@@ -66,14 +77,14 @@ def on_startup():
 
 
 class UserRegisterRequest(BaseModel):
-    email: str = Field(..., description="User's email address")
-    password: str = Field(..., min_length=6, description="User's password (min 6 chars)")
-    name: Optional[str] = Field(default="", description="User's full name")
+    email: EmailStr = Field(..., max_length=254, description="User's email address")
+    password: str = Field(..., min_length=6, max_length=256, description="User's password (min 6 chars)")
+    name: Optional[str] = Field(default="", max_length=120, description="User's full name")
 
 
 class UserLoginRequest(BaseModel):
-    email: str = Field(..., description="User's email address")
-    password: str = Field(..., description="User's password")
+    email: str = Field(..., max_length=254, description="User's email address")
+    password: str = Field(..., max_length=256, description="User's password")
 
 
 class UserProfile(BaseModel):
@@ -99,8 +110,16 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_error(request: Request, error: RequestValidationError):
+    if request.url.path.startswith("/api/auth/"):
+        return JSONResponse(status_code=422, content={"detail": "Check your information and try again."},
+                            headers={"Cache-Control": "no-store"})
+    return await request_validation_exception_handler(request, error)
+
+
 class AgentChatRequest(BaseModel):
-    message: str = Field(..., description="The user's weather question or general query.")
+    message: str = Field(..., max_length=4000, description="The user's weather question or general query.")
     conversation_history: Optional[List[dict]] = Field(
         default_factory=list,
         description="Optional list of prior conversation turns [{'role': 'user'|'assistant', 'content': str}]."
@@ -137,51 +156,51 @@ def root():
     }
 
 
+logger = logging.getLogger(__name__)
+
+
+def bearer_token(authorization: Optional[str]) -> str:
+    match = re.fullmatch(r"Bearer ([A-Za-z0-9_-]{43})", authorization or "", re.IGNORECASE)
+    if not match:
+        raise HTTPException(status_code=401, detail="Missing or invalid authentication token.")
+    return match[1]
+
+
 @app.post("/api/auth/register", response_model=AuthResponse)
-async def register_endpoint(request: UserRegisterRequest):
+def register_endpoint(request: UserRegisterRequest, response: Response):
     try:
-        user_data = create_user(request.email, request.password, request.name or "")
-        token = create_session(user_data["id"])
-        return AuthResponse(
-            user=UserProfile(**user_data),
-            token=token,
-            message="User registration successful",
-        )
-    except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+        user_data, token = register_with_session(request.email, request.password, request.name or "")
+    except RegistrationRejected:
+        raise HTTPException(status_code=400, detail="Registration could not be completed.") from None
+    except Exception:
+        logger.exception("Account registration failed")
+        raise HTTPException(status_code=500, detail="Registration could not be completed.") from None
+    response.headers["Cache-Control"] = "no-store"
+    return AuthResponse(user=UserProfile(**user_data), token=token, message="User registration successful")
 
 
 @app.post("/api/auth/login", response_model=AuthResponse)
-async def login_endpoint(request: UserLoginRequest):
+def login_endpoint(request: UserLoginRequest, response: Response):
     user_data = authenticate_user(request.email, request.password)
     if not user_data:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     token = create_session(user_data["id"])
-    return AuthResponse(
-        user=UserProfile(**user_data),
-        token=token,
-        message="Login successful",
-    )
+    response.headers["Cache-Control"] = "no-store"
+    return AuthResponse(user=UserProfile(**user_data), token=token, message="Login successful")
 
 
 @app.get("/api/auth/me", response_model=UserProfile)
-async def get_current_user_endpoint(authorization: Optional[str] = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid authentication token.")
-    token = authorization.split("Bearer ")[1].strip()
-    user = get_user_by_session_token(token)
+def get_current_user_endpoint(response: Response, authorization: Optional[str] = Header(None)):
+    user = get_user_by_session_token(bearer_token(authorization))
     if not user:
         raise HTTPException(status_code=401, detail="Session expired or invalid.")
+    response.headers["Cache-Control"] = "no-store"
     return UserProfile(**user)
 
 
 @app.post("/api/auth/logout")
-async def logout_endpoint(authorization: Optional[str] = Header(None)):
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split("Bearer ")[1].strip()
-        delete_session(token)
+def logout_endpoint(authorization: Optional[str] = Header(None)):
+    delete_session(bearer_token(authorization))
     return {"message": "Logged out successfully"}
 
 
@@ -268,15 +287,49 @@ async def weather_risks(location: str, day_offset: int = 1):
     }
 
 
+class ChatRateLimit:
+    """Bound the number of chat starts per minute in this process."""
+    def __init__(self, per_client: int, total: int):
+        if per_client < 1 or total < 1:
+            raise ValueError("Chat rate limits must be positive.")
+        self.per_client = per_client
+        self.total = total
+        self.requests = deque()
+        self.counts = Counter()
+        self.lock = Lock()
+
+    def check(self, client: str):
+        with self.lock:
+            now = time.monotonic()
+            while self.requests and self.requests[0][0] <= now - 60:
+                _, expired_client = self.requests.popleft()
+                self.counts[expired_client] -= 1
+                if self.counts[expired_client] == 0:
+                    del self.counts[expired_client]
+            if len(self.requests) >= self.total or self.counts[client] >= self.per_client:
+                raise HTTPException(status_code=429, detail="Chat request limit reached. Please try again shortly.",
+                                    headers={"Retry-After": "60"})
+            self.requests.append((now, client))
+            self.counts[client] += 1
+
+
+chat_rate_limit = ChatRateLimit(
+    int(os.getenv("SKYREADER_CHAT_REQUESTS_PER_IP_PER_MINUTE", "12")),
+    int(os.getenv("SKYREADER_CHAT_REQUESTS_PER_MINUTE", "60")),
+)
+
+
 @app.post("/api/agent/chat", response_model=AgentChatResponse)
 @app.post("/agent/chat", response_model=AgentChatResponse, include_in_schema=False)
-async def agent_chat(request: AgentChatRequest):
+async def agent_chat(request: AgentChatRequest, http_request: Request):
     message = request.message.strip()
     if not message:
         raise HTTPException(
             status_code=400,
             detail="The 'message' field cannot be empty."
         )
+
+    chat_rate_limit.check(http_request.client.host if http_request.client else "unknown")
 
     try:
         # Sanitize and cap conversation history (last 6 turns max = 3 exchanges to avoid prompt bloat)
@@ -286,12 +339,11 @@ async def agent_chat(request: AgentChatRequest):
             if isinstance(msg, dict) and "role" in msg and "content" in msg:
                 role = str(msg["role"]).lower()
                 if role in ("user", "assistant"):
-                    trimmed_history.append({"role": role, "content": str(msg["content"])})
+                    trimmed_history.append({"role": role, "content": str(msg["content"])[:4000]})
 
         result = await run_agent(message, conversation_history=trimmed_history)
         token_usage = result.get("token_usage")
         if token_usage:
-            import logging
             logging.getLogger("skyreader.token_metrics").info(
                 "Chat Turn Token Metrics: prompt=%d, comp=%d, total=%d, llm_calls=%d, tools=%d, latency=%.1fms",
                 token_usage.get("prompt_tokens", 0),

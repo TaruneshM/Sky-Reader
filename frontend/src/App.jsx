@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from "react";
 import ChatHeader from "./components/ChatHeader";
 import ChatMessage from "./components/ChatMessage";
 import ThinkingIndicator from "./components/ThinkingIndicator";
@@ -10,36 +10,66 @@ import WeatherAtmosphere from "./components/WeatherAtmosphere";
 import LoginPage from "./components/LoginPage";
 import PreferencesView from "./components/PreferencesView";
 import { detectWeatherScene } from "./utils/weatherAtmosphere";
+import { createAuthSession } from "./utils/authSession";
+import { createConversations } from "./utils/conversations";
 import "./App.css";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 export default function App() {
-  // View mode: 'app' (Main Dashboard) or 'login' (Login Page from Video 2)
-  // New users (no stored token) start on login page
-  const [viewMode, setViewMode] = useState(() => {
-    try {
-      const hasToken = !!localStorage.getItem("skyreader_token");
-      const hasUser = !!localStorage.getItem("skyreader_user");
-      return hasToken && hasUser ? "app" : "login";
-    } catch {
-      return "login";
-    }
-  });
-  const [user, setUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem("skyreader_user");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [session] = useState(() => createAuthSession({ api: API_BASE_URL }));
+  const auth = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
+  useEffect(() => {
+    session.validate();
+    return session.cancel;
+  }, [session]);
 
+  const signedIn = auth.phase === "account" || auth.phase === "guest";
+  const workspaceKey = auth.user ? `account:${auth.user.id}` : signedIn ? "guest" : "signin";
+  return <SkyReader key={workspaceKey} auth={auth} session={session} signedIn={signedIn} />;
+}
+
+async function sendChat(payload, signal) {
+  const response = await fetch(`${API_BASE_URL}/api/agent/chat`, {
+    method: "POST", signal,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data) {
+    throw new Error(typeof data?.detail === "string" ? data.detail : "Sky Reader could not process this request.");
+  }
+  return data;
+}
+
+function chatObservation(message) {
+  if (!message) return null;
+  const rain = message.claims?.find((claim) => claim.variable === "precipitation_probability");
+  const wind = message.claims?.find((claim) => claim.variable === "wind_speed")?.claimed_value ?? 0;
+  const text = message.text.toLowerCase();
+  let condition;
+  if (/thunder|storm/.test(text)) condition = "thunderstorm";
+  else if (/snow|blizzard/.test(text)) condition = "snow";
+  else if (/rain|shower/.test(text) || rain?.claimed_value > 40) condition = "rain";
+  else if (wind > 20) condition = "wind";
+  else if (/sunny|clear/.test(text)) condition = "clear";
+  else if (/cloud|overcast/.test(text)) condition = "cloudy";
+  return condition ? { condition, wind_speed: wind } : null;
+}
+
+function SkyReader({ auth, session, signedIn }) {
+  const user = auth.user;
+  const [conversations] = useState(() => {
+    const controller = createConversations({ send: sendChat });
+    controller.setOwner(user?.id, signedIn);
+    return controller;
+  });
+  const { sessions: chatSessions, messages, loading, error } = useSyncExternalStore(
+    conversations.subscribe, conversations.getSnapshot, conversations.getSnapshot,
+  );
+  useEffect(() => conversations.cancel, [conversations]);
   const [activeTab, setActiveTab] = useState("agent"); // "agent" or "lookup"
-  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Atmospheric simulation scene mode: 'auto' | 'sun' | 'rain' | 'stars' | 'wind' | 'snow' | 'thunder' | 'clouds'
@@ -62,18 +92,6 @@ export default function App() {
     }
   }, [atmosphereMode]);
 
-  // Chat sessions state (stored in localStorage)
-  const [chatSessions, setChatSessions] = useState(() => {
-    try {
-      const saved = localStorage.getItem("skyreader_sessions");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [currentSessionId, setCurrentSessionId] = useState(() => `sess_${Date.now()}`);
-
   // Theme state: dark (default, calming) or light
   const [theme, setTheme] = useState(() => {
     try {
@@ -88,7 +106,7 @@ export default function App() {
   // Apply theme to root document element
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("skyreader_theme", theme);
+    try { localStorage.setItem("skyreader_theme", theme); } catch { /* Keep the current theme. */ }
   }, [theme]);
 
   const toggleTheme = () => {
@@ -105,46 +123,6 @@ export default function App() {
     scrollToBottom();
   }, [messages, loading]);
 
-  // Save current thread into sessions
-  const syncSessionHistory = (newMessages) => {
-    if (newMessages.length === 0) return;
-
-    setChatSessions((prev) => {
-      const firstUserMsg = newMessages.find((m) => m.sender === "user");
-      const title = firstUserMsg
-        ? firstUserMsg.text.length > 36
-          ? `${firstUserMsg.text.slice(0, 36)}...`
-          : firstUserMsg.text
-        : "Weather Consultation";
-
-      const existingIndex = prev.findIndex((s) => s.id === currentSessionId);
-      let updated;
-      if (existingIndex >= 0) {
-        updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          messages: newMessages,
-          updatedAt: Date.now(),
-        };
-      } else {
-        const newSession = {
-          id: currentSessionId,
-          title,
-          messages: newMessages,
-          updatedAt: Date.now(),
-        };
-        updated = [newSession, ...prev];
-      }
-
-      try {
-        localStorage.setItem("skyreader_sessions", JSON.stringify(updated));
-      } catch (e) {
-        console.warn("Could not save sessions:", e);
-      }
-      return updated;
-    });
-  };
-
   // Callback when CityLookup loads weather
   const handleWeatherLoaded = useCallback((weatherData) => {
     if (weatherData && weatherData.current) {
@@ -155,149 +133,41 @@ export default function App() {
       });
     }
   }, []);
-  // Send message to agent with multi-turn conversation history
-  async function handleSendMessage(customText) {
-    const queryText = (customText !== undefined ? customText : input).trim();
-    if (!queryText || loading) return;
-
-    setError("");
+  function handleSendMessage(customText = input) {
+    const query = customText.trim();
+    if (!query || conversations.getSnapshot().loading) return;
     setInput("");
-
-    const timestamp = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    const userMsg = {
-      id: `usr_${Date.now()}`,
-      sender: "user",
-      text: queryText,
-      timestamp,
-    };
-
-    const historyPayload = messages.map((m) => ({
-      role: m.sender === "user" ? "user" : "assistant",
-      content: m.text,
-    }));
-
-    const updatedMessagesWithUser = [...messages, userMsg];
-    setMessages(updatedMessagesWithUser);
-    syncSessionHistory(updatedMessagesWithUser);
-    setLoading(true);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/agent/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: queryText,
-          conversation_history: historyPayload,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Sky Reader agent failed to process request.");
-      }
-
-      // Check if claims or text indicate weather for ambient scene detection
-      const claims = data.claims || [];
-      const rainClaim = claims.find((c) => c.variable === "precipitation_probability");
-      const windClaim = claims.find((c) => c.variable === "wind_speed");
-      if (rainClaim || windClaim || data.response) {
-        const textLower = (data.response || "").toLowerCase();
-        let detectedCond = "";
-        if (textLower.includes("thunder") || textLower.includes("storm")) detectedCond = "thunderstorm";
-        else if (textLower.includes("snow") || textLower.includes("blizzard")) detectedCond = "snow";
-        else if (textLower.includes("rain") || textLower.includes("shower") || (rainClaim && rainClaim.claimed_value > 40)) detectedCond = "rain";
-        else if (windClaim && windClaim.claimed_value > 20) detectedCond = "wind";
-        else if (textLower.includes("sunny") || textLower.includes("clear")) detectedCond = "clear";
-        else if (textLower.includes("cloud") || textLower.includes("overcast")) detectedCond = "cloudy";
-
-        if (detectedCond) {
-          setLiveObservation({
-            condition: detectedCond,
-            wind_speed: windClaim ? windClaim.claimed_value : 0,
-          });
-        }
-      }
-
-      const assistantMsg = {
-        id: `asst_${Date.now()}`,
-        sender: "assistant",
-        text: data.response || "No meteorological response received.",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        toolCalls: data.tool_calls || [],
-        iterations: data.iterations || 1,
-        claims: data.claims || [],
-        validationReport: data.validation_report || null,
-        explanation: data.explanation || null,
-        riskAssessment: data.risk_assessment || null,
-      };
-
-      const finalMessages = [...updatedMessagesWithUser, assistantMsg];
-      setMessages(finalMessages);
-      syncSessionHistory(finalMessages);
-    } catch (err) {
-      setError(err.message || "Failed to communicate with Sky Reader backend.");
-    } finally {
-      setLoading(false);
-    }
+    void conversations.send(query);
   }
 
-  // Reset entire conversation state and context for fresh chat
   function handleNewChat() {
-    setMessages([]);
+    conversations.newChat();
     setInput("");
-    setError("");
-    setLoading(false);
-    setCurrentSessionId(`sess_${Date.now()}`);
+    setActiveTab("agent");
   }
 
-  // Select a past session
-  const handleSelectSession = (sessionId) => {
-    const session = chatSessions.find((s) => s.id === sessionId);
-    if (session) {
-      setCurrentSessionId(session.id);
-      setMessages(session.messages || []);
-      setInput("");
-      setError("");
-      setActiveTab("agent");
-    }
-  };
-
-  // Action from dashboard or sidebar to consult agent
-  const handleConsultAgentFromOther = (promptText) => {
+  function handleSelectSession(sessionId) {
+    conversations.select(sessionId);
+    setInput("");
     setActiveTab("agent");
-    handleSendMessage(promptText);
-  };
+  }
 
-  const handleLoginSuccess = (userData) => {
-    setUser(userData);
-    localStorage.setItem("skyreader_user", JSON.stringify(userData));
-    setViewMode("app");
-  };
+  function handleLogout() {
+    conversations.setOwner(null, false);
+    void session.logout();
+  }
 
-  const handleLogout = () => {
-    localStorage.removeItem("skyreader_token");
-    localStorage.removeItem("skyreader_user");
-    setUser(null);
-    setViewMode("login");
-  };
+  const observation = activeTab === "agent"
+    ? chatObservation(messages.findLast((message) => message.sender === "assistant")) ?? liveObservation
+    : liveObservation;
 
   // Determine active ambient weather scene
   const activeScene =
     atmosphereMode === "auto"
       ? detectWeatherScene({
-          weatherCode: liveObservation?.weather_code,
-          condition: liveObservation?.condition,
-          windSpeed: liveObservation?.wind_speed,
+          weatherCode: observation?.weather_code,
+          condition: observation?.condition,
+          windSpeed: observation?.wind_speed,
           isNight: theme === "dark",
         })
       : atmosphereMode;
@@ -316,10 +186,15 @@ export default function App() {
       </div>
 
       {/* Conditionally Render: Login Page (Video 2) or Floating App Canvas (Video 1) */}
-      {viewMode === "login" ? (
+      {auth.phase === "checking" ? (
+        <div className="floating-app-window-frame" role="status">Checking your session…</div>
+      ) : !signedIn ? (
         <LoginPage
-          onLoginSuccess={handleLoginSuccess}
-          onBackToApp={() => setViewMode("app")}
+          onAuthenticate={session.signIn}
+          onContinueAsGuest={session.continueAsGuest}
+          onRetrySession={auth.phase === "unavailable" ? session.validate : undefined}
+          authError={auth.notice}
+          isSubmitting={auth.phase === "submitting"}
           theme={theme}
           onToggleTheme={toggleTheme}
         />
@@ -389,7 +264,10 @@ export default function App() {
             {activeTab === "lookup" && (
               <main className="city-lookup-wrapper">
                 <CityLookup
-                  onConsultAgent={handleConsultAgentFromOther}
+                  onConsultAgent={(prompt) => {
+                    setActiveTab("agent");
+                    handleSendMessage(prompt);
+                  }}
                   onWeatherLoaded={handleWeatherLoaded}
                 />
               </main>
@@ -405,9 +283,9 @@ export default function App() {
                   onSelectAtmosphereMode={setAtmosphereMode}
                   user={user}
                   onClearHistory={() => {
-                    setChatSessions([]);
-                    localStorage.removeItem("skyreader_sessions");
-                    handleNewChat();
+                    conversations.clear();
+                    setInput("");
+                    setLiveObservation(null);
                   }}
                 />
               </main>

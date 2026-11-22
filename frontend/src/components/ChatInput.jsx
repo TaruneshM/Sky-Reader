@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { Send, Sparkles, AlertCircle, Loader2 } from "lucide-react";
+import { Send, AlertCircle, Loader2 } from "lucide-react";
 
 export default function ChatInput({
   input,

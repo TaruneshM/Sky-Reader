@@ -3,15 +3,27 @@ import os
 import hashlib
 import secrets
 import json
+from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "skyreader.db")
+DEMO_EMAIL = "explorer@skyreader.ai"
+DUMMY_PASSWORD_HASH = "0" * 32 + "$" + "0" * 64
+
+
+class RegistrationRejected(ValueError):
+  pass
+
+
+def demo_enabled() -> bool:
+  return os.getenv("SKYREADER_ENABLE_DEMO", "").strip() == "1"
 
 
 def get_db_connection() -> sqlite3.Connection:
   conn = sqlite3.connect(DB_PATH)
   conn.row_factory = sqlite3.Row
+  conn.execute("PRAGMA foreign_keys = ON")
   return conn
 
 
@@ -62,24 +74,15 @@ def init_db():
     )
     """)
 
-  # Seed a default demo user if table is empty
-  cursor.execute("SELECT COUNT(*) FROM users")
-  if cursor.fetchone()[0] == 0:
-    demo_email = "explorer@skyreader.ai"
-    demo_pwd_hash = hash_password("weather123")
-    now_str = datetime.now(timezone.utc).isoformat()
+  if demo_enabled():
     cursor.execute(
         """
         INSERT INTO users (email, name, hashed_password, created_at, saved_cities)
-        VALUES (?, ?, ?, ?, ?)
+        SELECT ?, ?, ?, ?, ?
+        WHERE NOT EXISTS (SELECT 1 FROM users WHERE LOWER(email) = ?)
         """,
-        (
-            demo_email,
-            "Atmospheric Explorer",
-            demo_pwd_hash,
-            now_str,
-            json.dumps(["Tokyo", "Dehradun", "Paris"]),
-        ),
+        (DEMO_EMAIL, "Atmospheric Explorer", hash_password("weather123"),
+         datetime.now(timezone.utc).isoformat(), json.dumps(["Tokyo", "Dehradun", "Paris"]), DEMO_EMAIL),
     )
 
   conn.commit()
@@ -129,101 +132,85 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
   }
 
 
-def create_user(email: str, password: str, name: str) -> Dict[str, Any]:
+def _insert_user(conn, email: str, password: str, name: str) -> Dict[str, Any]:
   clean_email = email.strip().lower()
-  if get_user_by_email(clean_email):
-    raise ValueError("A user with this email address already exists.")
+  if clean_email == DEMO_EMAIL:
+    raise RegistrationRejected("Registration could not be completed.")
 
-  display_name = name.strip() if name.strip() else clean_email.split("@")[0]
-  pwd_hash = hash_password(password)
+  display_name = name.strip() or clean_email.split("@")[0]
   now_str = datetime.now(timezone.utc).isoformat()
-
-  conn = get_db_connection()
-  cursor = conn.cursor()
-  cursor.execute(
+  cursor = conn.execute(
       """
-        INSERT INTO users (email, name, hashed_password, created_at, saved_cities)
-        VALUES (?, ?, ?, ?, ?)
-    """,
-      (clean_email, display_name, pwd_hash, now_str, json.dumps([])),
+      INSERT INTO users (email, name, hashed_password, created_at, saved_cities)
+      SELECT ?, ?, ?, ?, '[]'
+      WHERE NOT EXISTS (SELECT 1 FROM users WHERE LOWER(email) = ?)
+      """,
+      (clean_email, display_name, hash_password(password), now_str, clean_email),
   )
-  user_id = cursor.lastrowid
-  conn.commit()
-  conn.close()
-
+  if cursor.rowcount == 0:
+    raise RegistrationRejected("Registration could not be completed.")
   return {
-      "id": user_id,
-      "email": clean_email,
-      "name": display_name,
-      "created_at": now_str,
-      "saved_cities": [],
+      "id": cursor.lastrowid, "email": clean_email, "name": display_name,
+      "created_at": now_str, "saved_cities": [],
   }
+
+
+def create_user(email: str, password: str, name: str) -> Dict[str, Any]:
+  with closing(get_db_connection()) as conn, conn:
+    return _insert_user(conn, email, password, name)
+
+
+def register_with_session(email: str, password: str, name: str):
+  with closing(get_db_connection()) as conn, conn:
+    user = _insert_user(conn, email, password, name)
+    return user, _insert_session(conn, user["id"], 14)
 
 
 def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
   user = get_user_by_email(email)
-  if not user:
+  password_matches = verify_password(password, user["hashed_password"] if user else DUMMY_PASSWORD_HASH)
+  if not user or not password_matches or (user["email"].lower() == DEMO_EMAIL and not demo_enabled()):
     return None
-  if not verify_password(password, user["hashed_password"]):
-    return None
-
-  return {
-      "id": user["id"],
-      "email": user["email"],
-      "name": user["name"],
-      "created_at": user["created_at"],
-      "saved_cities": user["saved_cities"],
-  }
+  user.pop("hashed_password")
+  return user
 
 
-def create_session(user_id: int, duration_days: int = 14) -> str:
+def _insert_session(conn, user_id: int, duration_days: int) -> str:
   token = secrets.token_urlsafe(32)
   now = datetime.now(timezone.utc)
   expires = now + timedelta(days=duration_days)
-
-  conn = get_db_connection()
-  cursor = conn.cursor()
-  cursor.execute(
-      """
-        INSERT INTO sessions (token, user_id, created_at, expires_at)
-        VALUES (?, ?, ?, ?)
-    """,
+  conn.execute(
+      "INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)",
       (token, user_id, now.isoformat(), expires.isoformat()),
   )
-  conn.commit()
-  conn.close()
-
   return token
+
+
+def create_session(user_id: int, duration_days: int = 14) -> str:
+  with closing(get_db_connection()) as conn, conn:
+    return _insert_session(conn, user_id, duration_days)
 
 
 def get_user_by_session_token(token: str) -> Optional[Dict[str, Any]]:
   if not token:
     return None
-  conn = get_db_connection()
-  cursor = conn.cursor()
-  cursor.execute(
-      """
+  with closing(get_db_connection()) as conn:
+    row = conn.execute(
+        """
         SELECT u.id, u.email, u.name, u.created_at, u.saved_cities, s.expires_at
-        FROM sessions s
-        JOIN users u ON s.user_id = u.id
-        WHERE s.token = ?
-    """,
-      (token.strip(),),
-  )
-  row = cursor.fetchone()
-  conn.close()
-
-  if not row:
+        FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?
+        """,
+        (token,),
+    ).fetchone()
+  if not row or (row["email"].lower() == DEMO_EMAIL and not demo_enabled()):
     return None
 
-  # Check expiration
   try:
     expires = datetime.fromisoformat(row["expires_at"])
-    if datetime.now(timezone.utc) > expires:
-      delete_session(token)
+    if expires.tzinfo is None or expires <= datetime.now(timezone.utc):
       return None
-  except Exception:
-    pass
+  except (TypeError, ValueError, OverflowError):
+    return None
 
   return {
       "id": row["id"],
@@ -235,9 +222,6 @@ def get_user_by_session_token(token: str) -> Optional[Dict[str, Any]]:
 
 
 def delete_session(token: str) -> bool:
-  conn = get_db_connection()
-  cursor = conn.cursor()
-  cursor.execute("DELETE FROM sessions WHERE token = ?", (token.strip(),))
-  conn.commit()
-  conn.close()
-  return True
+  with closing(get_db_connection()) as conn, conn:
+    cursor = conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
+    return cursor.rowcount > 0

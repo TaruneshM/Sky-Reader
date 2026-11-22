@@ -54,23 +54,13 @@ Integrated centered dropdown pill allowing instant switching between specialized
 
 ---
 
-### 🔐 4. SQLite Authentication & Session Management
-- **Encrypted Local Database (`backend/skyreader.db`)**:
-  - `users` table: id, email, name, salt + PBKDF2-HMAC-SHA256 password hash, creation date, and saved cities JSON.
-  - `sessions` table: cryptographically secure tokens, user ID, expiration timestamp, and cascade deletion.
-- **Restful Auth Endpoints**:
-  - `POST /api/auth/register`: New user onboarding with display name.
-  - `POST /api/auth/login`: Authenticate email/password and issue session token.
-  - `GET /api/auth/me`: Validate session token and return user profile.
-  - `POST /api/auth/logout`: Invalidate session token.
-  - `POST /api/user/saved-cities`: Synchronize saved places watchlist for authenticated users.
-- **Animated Twilight Login Page**:
-  - HTML5 Canvas aurora bands and stardust particles.
-  - Glassmorphic login card with leading field icons (User, Mail, Lock).
-  - Quick demo credentials autofill (`explorer@skyreader.ai` / `weather123`).
-  - Google Social Login integration mock.
-  - Dedicated Theme Toggle button on the authentication screen.
-  - Automatic routing: unauthenticated guests land on the login screen; active sessions enter the app immediately.
+### 🔐 4. Accounts, guest access, and conversation storage
+
+- Email/password authentication uses SQLite with salted PBKDF2 password hashes and 14-day bearer sessions. The browser validates saved tokens through `GET /api/auth/me` before displaying account content. A temporarily unavailable server leaves the account locked and provides a retry.
+- **Stay signed in** stores the token for later browser visits. Turning it off keeps the token in tab session storage, which survives reloads in that tab. Logout immediately removes browser credentials and asks `POST /api/auth/logout` to revoke the token. If revocation fails, the UI reports it while remaining signed out locally.
+- **Continue as guest** grants access to public features without an account. Guest and each authenticated account have separate browser-local conversation histories. History survives refresh and logout and is available again in the same scope. Clearing history removes only the active scope. The old unscoped history is left unused because its owner cannot be identified.
+- Browser history is not server-enforced account storage, encrypted storage, or cross-device sync. People or scripts with access to the same browser profile can read its local data. The frontend exposes Google sign-in and password reset as unavailable.
+- The built-in demo account is disabled by default. Set `SKYREADER_ENABLE_DEMO=1` explicitly for local development to permit it. With the flag off, existing demo rows are preserved and their sessions cannot be used.
 
 ---
 
@@ -310,13 +300,18 @@ npm run dev
 | `POST` | `/api/auth/login` | Authenticate user and issue session token |
 | `GET` | `/api/auth/me` | Retrieve profile of authenticated user |
 | `POST` | `/api/auth/logout` | Terminate and invalidate session token |
-| `POST` | `/api/user/saved-cities` | Synchronize saved watchlist locations |
 | `GET` | `/weather?location={city}` | Phase 1 current weather and 24h/48h hourly forecast |
 | `GET` | `/api/weather/analysis?location={city}&focus={focus}&day_offset={0\|1}` | Phase 3 meteorological intelligence & decision support |
 | `GET` | `/api/weather/risks?location={city}&day_offset={0\|1}` | Phase 6 deterministic weather hazard detection & safety assessment |
 | `POST` | `/api/agent/chat` | Phase 2, 3, 4, 6 & 8 verified conversational agent reasoning endpoint |
 | `POST` | `/api/evidence/validate` | Phase 4 deterministic claim extraction & validation for any text |
 | `GET` | `/api/evidence/summary?location={city}` | Phase 4 complete evidence collection & provenance records |
+
+### Public and authenticated routes
+
+Weather lookup, deterministic weather and evidence routes, and chat are public, including their legacy aliases. Login and registration are public entry points. Profile access and logout require the bearer token from login or registration. The backend stores no account conversation history and exposes no route to retrieve it.
+
+Both chat aliases share rolling process-local limits. Set `SKYREADER_CHAT_REQUESTS_PER_IP_PER_MINUTE` (default `12`) and `SKYREADER_CHAT_REQUESTS_PER_MINUTE` (default `60`) to positive integers. Excess requests receive HTTP 429 with a retry hint before agent execution. Chat messages are limited to 4,000 characters, and only the last six history entries are used, with at most 4,000 characters per entry. These limits apply to guest and signed-in traffic and are independent across processes. Behind a proxy, client addresses depend on the server’s trusted-proxy configuration.
 
 ### Example 1: Multi-Turn Verified Agent Chat Response
 ```bash
@@ -388,6 +383,17 @@ curl "http://127.0.0.1:8000/api/evidence/summary?location=Dehradun"
 ## 🧪 Testing & Verification Suites
 
 Sky Reader includes modular unit tests, integration test suites, and empirical benchmarking tools:
+
+### Offline authentication and conversation checks
+
+```bash
+npm --prefix frontend test
+npm --prefix frontend run lint
+npm --prefix frontend run build
+python -m pytest backend/tests backend/test_analysis.py backend/test_phase4.py
+```
+
+The frontend checks cover request ownership, session transitions, browser storage isolation, and rendered login controls. Backend checks use temporary SQLite databases and mocked weather/provider requests.
 
 ### 1. Phase 6 & Phase 4 Unit Tests (Offline / Zero Network)
 ```bash

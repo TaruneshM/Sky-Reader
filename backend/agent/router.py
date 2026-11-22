@@ -6,8 +6,10 @@ from typing import Any, Dict, Optional
 
 INTENT_PATTERNS = [
     ("coat_clothing", [
-        r"\b(carry|wear|need|take)\b.*\b(coat|jacket|sweater|hoodie|clothing|clothes|layers)\b",
+        r"\b(carry|wear|need|take)\b.*\b(coat|jacket|sweater|hoodie|clothing|clothes|cloths|layers)\b",
         r"\b(should i|do i need to)\b.*\b(coat|jacket|sweater)\b",
+        r"\b(?:clothing|clothes|cloths|layers)\b.*\bwear\b",
+        r"\bwhat (?:should|can) i wear\b",
         r"\bthand hai kya\b",
         r"\bis it cold\b",
     ]),
@@ -62,17 +64,74 @@ class WeatherRequest:
     location: Optional[str]
     safety: bool
     activity: Optional[str]
+    reference_location: Optional[str] = None
+    comparison: bool = False
+    destinations: tuple[str, ...] = ()
+    needs_destinations: bool = False
+
+
+COMPARISON_MARKER = re.compile(r"\b(compare|versus|vs|which city|difference between)\b", re.I)
+COMPARE_PLACES = re.compile(r"^compare\s+(.+?)\s+(?:and|with|versus|vs\.?)\s+(.+)", re.I)
+CHOICE = re.compile(r"\b(?:choose|pick|decide between)\s+(.+?)\s+(?:or|and|versus|vs\.?)\s+(.+)", re.I)
+IMPLICIT_CHOICE = re.compile(
+    r"\bwhich (?:one |destination |place |city )?(?:should i (?:choose|pick)|(?:is|would be) better)\b",
+    re.I,
+)
+ALTERNATIVE = re.compile(
+    r"\b(?:(?:what|how) about|think(?:ing)? (?:about|abt)|maybe|consider(?:ing)?)\s+([^?!;]+)", re.I
+)
+DESTINATION_PREFIX = re.compile(r"^(?:(?:going|go|travel(?:l?ing)?|head(?:ing)?) (?:out )?to|visiting)\s+", re.I)
+PLACE_END = re.compile(
+    r"\s+\b(?:for (?:today|tonight|tomorrow)|please|any thoughts|what do you think|in detail|"
+    r"comprehensively|instead|right now|now|currently|today|tonight|"
+    r"tomorrow|yesterday|this|next|at|from|between|during|with|if|on|after|before|will|would|be)\b",
+    re.I,
+)
+NON_PLACE = re.compile(
+    r"^(?:today|tomorrow|tonight|now|right now|the next|going out|there|here|that|it|"
+    r"(?:the )?(?:morning|afternoon|evening|night|weather|forecast)|"
+    r"(?:an? )?(?:walk|hike|jacket|coat|sweater|umbrella)|"
+    r"detail|outside|this weekend|my area|next week)(?:\s|$)", re.I,
+)
+
+
+def _place_phrase(value: str, conversational: bool = False) -> Optional[str]:
+    value = re.split(r"\.\s+(?=(?:which|what|should|could|is|would)\b)", value, maxsplit=1, flags=re.I)[0]
+    place = value.strip(" .,!?:;\"'“”")
+    if conversational:
+        place = DESTINATION_PREFIX.sub("", place)
+        if place[:4].casefold() == "the " and (place.startswith("the ") or place[4:5].islower()):
+            place = place[4:]
+    place = PLACE_END.split(place, maxsplit=1)[0].strip(" .,\"'“”")
+    if NON_PLACE.match(place) or not re.fullmatch(r"[^\W\d_][^?!;:]*", place):
+        return None
+    return place
+
+
+def comparison_destinations(query: str) -> tuple[str, ...]:
+    match = CHOICE.search(query) or COMPARE_PLACES.match(query.strip())
+    if not match:
+        return ()
+    first, second = match.groups()
+    if re.search(r"\b(weather|temperature|rain|wind)\b", first, re.I):
+        first = explicit_location(first)
+    else:
+        first = _place_phrase(first, conversational=True)
+    second = _place_phrase(second, conversational=True)
+    return (first, second) if first and second else ()
 
 
 def detect_weather_intent(query: str) -> Optional[str]:
     clean = query.casefold()
     if re.search(r"\b(safe|safety|severe|warnings?|danger(?:ous)?|hazards?|hazardous|storms?|thunderstorms?)\b", clean):
         return "weather_risks"
-    if re.search(r"\b(compare|versus|vs|which city|difference between|comprehensive|in detail)\b", clean):
+    if COMPARISON_MARKER.search(clean) or comparison_destinations(clean) or re.search(r"\b(comprehensive|in detail)\b", clean):
         return None
     for intent, patterns in INTENT_PATTERNS:
         if any(re.search(pattern, clean) for pattern in patterns):
             return intent
+    if re.search(r"\b(colder|warmer|hotter|cooler)\b", clean):
+        return "temperature"
     if re.search(r"\b(weather|forecast|temperature)\b", clean):
         return "current_weather"
     return None
@@ -80,26 +139,16 @@ def detect_weather_intent(query: str) -> Optional[str]:
 
 def explicit_location(query: str) -> Optional[str]:
     query = unicodedata.normalize("NFC", query)
+    if alternative := ALTERNATIVE.search(query):
+        if place := _place_phrase(alternative[1], conversational=True):
+            return place
     # A qualifier belongs to the candidate, including region and country after commas.
-    matches = re.finditer(r"(?=\b(?:in|at|near|around|for)\s+([^?!;]+))", query, re.I)
-    for match in matches:
-        candidate = re.split(
-            r"\s+\b(?:please|right now|now|currently|today|tonight|tomorrow|yesterday|"
-            r"this|next|at|from|between|during|with|if|on|after|before|will|would|be)\b",
-            match[1], maxsplit=1, flags=re.I,
-        )[0].strip(" .,")
-        if re.match(r"(?:today|tomorrow|tonight|now|right now|the next)\b", candidate, re.I):
-            continue
-        if re.fullmatch(r"[^\W\d_][^?!;:]*", candidate) and not re.fullmatch(
-            r"(?:the\s+)?(?:a\s+)?(?:tomorrow|today|tonight|now|right now|morning|afternoon|evening|"
-            r"night|detail|a walk|walk|hike|outside|this weekend|my area|next week)", candidate, re.I
-        ):
-            return candidate
-    direct = re.fullmatch(r"(?:weather|forecast|temperature|what about|how about)\s+([^?!;]+)",
-                          query.strip(" .?!"), re.I)
-    if direct and not re.match(r"(?:please|now|today|tonight|tomorrow|this|next|right)\b", direct[1], re.I):
-        return re.split(r"\s+\b(?:today|tonight|tomorrow|please|right now|now|at)\b",
-                        direct[1], maxsplit=1, flags=re.I)[0].strip()
+    for match in re.finditer(r"(?=\b(?:in|at|near|around|for)\s+([^?!;]+))", query, re.I):
+        if place := _place_phrase(match[1]):
+            return place
+    direct = re.fullmatch(r"(?:weather|forecast|temperature)\s+([^?!;]+)", query.strip(" .?!"), re.I)
+    if direct and (place := _place_phrase(direct[1])):
+        return place
     for city in sorted(KNOWN_INDIAN_AND_GLOBAL_CITIES + ["new york city"], key=len, reverse=True):
         match = re.search(r"\b" + re.escape(city) + r"\b(?:,\s*[^?!;]+)?", query, re.I)
         if match:
@@ -108,30 +157,10 @@ def explicit_location(query: str) -> Optional[str]:
 
 
 def extract_location_from_query_or_history(query, conversation_history=None) -> Optional[str]:
-    if location := explicit_location(query):
-        return location
-    for message in reversed(conversation_history or []):
-        if message.get("role") != "user":
-            continue
-        content = message.get("content", "")
-        if re.search(r"\b(compare|versus|vs|which city|difference between)\b", content, re.I):
-            return None
-        if (detect_weather_intent(content) or re.search(
-            r"\b(weather|forecast|temperature|rain|wind|humidity|(?:what|how) about)\b", content, re.I
-        )) and (location := explicit_location(content)):
-            return location
-    return None
+    return parse_weather_request(query, conversation_history).location
 
 
-def parse_weather_request(query: str, history=None) -> WeatherRequest:
-    clean = query.casefold()
-    intent = detect_weather_intent(query)
-    activity_match = re.search(r"\b(driv\w*|travel\w*|hik\w*|walk\w*|jog\w*|cycling|outside|outdoor\w*)\b", clean)
-    activity = activity_match[0] if activity_match else None
-    if not intent and re.match(r"\s*(?:what|how) about\b", clean) and explicit_location(query):
-        prior = next((detect_weather_intent(message.get("content", ""))
-                      for message in reversed(history or []) if message.get("role") == "user"), None)
-        intent = prior or "current_weather"
+def _requested_period(clean: str) -> Optional[str]:
     date_match = re.search(r"\b\d{4}-\d{2}-\d{2}\b", clean)
     relative = re.search(r"\bnext (\d+) hours?\b", clean)
     unsupported = re.search(r"\b(yesterday|day after tomorrow|weekend|next week|next month|"
@@ -143,9 +172,11 @@ def parse_weather_request(query: str, history=None) -> WeatherRequest:
     elif unsupported:
         period = unsupported[0]
     else:
-        period = next((word for word in ("tomorrow", "tonight", "today") if re.search(rf"\b{word}\b", clean)), "current")
-    if period in {"current", "today", "tomorrow", "tonight"} or date_match:
-        base = "today" if period == "current" else period
+        period = next((word for word in ("tomorrow", "tonight", "today") if re.search(rf"\b{word}\b", clean)), None)
+        if period is None and re.search(r"\b(now|currently|current conditions|current weather)\b", clean):
+            period = "current"
+    if period in {None, "current", "today", "tomorrow", "tonight"} or date_match:
+        base = "today" if period in {None, "current"} else period
         span = re.search(r"\b(morning|afternoon|evening)\b", clean)
         clock = re.search(r"\b(?:at|from|between)\s+(\d{1,2})(?::(\d{2}))?(?:\s*(am|pm))?"
                           r"(?:\s+(?:to|and|until)\s+(\d{1,2})(?::(\d{2}))?(?:\s*(am|pm))?)?\b", clean)
@@ -161,8 +192,81 @@ def parse_weather_request(query: str, history=None) -> WeatherRequest:
             period = f"{base}@{start}" + (f"-{end}" if end else "")
         elif span:
             period = f"{base}_{span[0]}"
-    return WeatherRequest(intent, period, extract_location_from_query_or_history(query, history),
-                          intent == "weather_risks", activity)
+    return period
+
+
+def _parse_turn(query: str, prior: Optional[WeatherRequest]) -> WeatherRequest:
+    query = unicodedata.normalize("NFC", query)
+    clean = query.casefold()
+    destinations = comparison_destinations(query)
+    implicit_choice = bool(IMPLICIT_CHOICE.search(query))
+    comparison = bool(destinations or COMPARISON_MARKER.search(query) or implicit_choice)
+    introduced = explicit_location(query) if implicit_choice else None
+    if implicit_choice and not destinations and prior:
+        if introduced and prior.location and introduced.casefold() != prior.location.casefold():
+            destinations = (prior.location, introduced)
+        elif not introduced:
+            destinations = prior.destinations or (
+                (prior.reference_location, prior.location) if prior.reference_location and prior.location else ()
+            )
+    if not comparison and prior and prior.destinations and "," in query:
+        qualified = _place_phrase(query)
+        if qualified:
+            city = qualified.split(",", 1)[0].strip().casefold()
+            matches = [name for name in prior.destinations if name.split(",", 1)[0].strip().casefold() == city]
+            if len(matches) == 1:
+                destinations = tuple(qualified if name == matches[0] else name for name in prior.destinations)
+                comparison = True
+    location = None if comparison else explicit_location(query)
+    intent = detect_weather_intent(query)
+    activity_match = re.search(
+        r"\b(driv\w*|travel\w*|hik\w*|walk\w*|jog\w*|cycling|outside|outdoor\w*|go(?:ing)? out)\b", clean
+    )
+    activity = activity_match[0] if activity_match else None
+    alternative = bool(location and (ALTERNATIVE.search(query) or re.search(r"\binstead\b", clean)))
+    reference = destinations[0] if destinations else None
+    if prior and prior.location and alternative:
+        reference = prior.reference_location if location.casefold() == prior.location.casefold() else prior.location
+    if not location and not comparison and prior:
+        location = prior.location
+        reference = prior.reference_location
+    prior_cities = (
+        {name.split(",", 1)[0].strip().casefold()
+         for name in (*prior.destinations, prior.location or "", prior.reference_location or "")}
+        if prior else set()
+    )
+    pair_related = any(name.split(",", 1)[0].strip().casefold() in prior_cities for name in destinations)
+    follow_up = alternative or pair_related or bool(
+        prior and re.search(r"\b(there|same (?:trip|outing)|any thoughts on that)\b", clean)
+    )
+    if not intent and not comparison and follow_up:
+        intent = (prior.intent if prior else None) or "current_weather"
+    period = _requested_period(clean)
+    if follow_up and prior:
+        period = period or prior.period
+        activity = activity or prior.activity
+    safety = intent == "weather_risks" or bool(comparison and follow_up and prior and prior.safety)
+    return WeatherRequest(
+        intent=intent, period=period or "current", location=location, safety=safety,
+        activity=activity, reference_location=reference, comparison=comparison,
+        destinations=destinations, needs_destinations=implicit_choice and not destinations,
+    )
+
+
+def parse_weather_request(query: str, history=None) -> WeatherRequest:
+    context = None
+    for message in (history or [])[-6:]:
+        if message.get("role") != "user" or not isinstance(message.get("content"), str):
+            continue
+        turn = _parse_turn(message["content"], context)
+        if turn.comparison:
+            if turn.destinations:
+                context = turn
+            elif not turn.needs_destinations:
+                context = None
+        elif turn.location and (turn.intent or explicit_location(message["content"])):
+            context = turn
+    return _parse_turn(query, context)
 
 
 def describe_period(period):
@@ -186,6 +290,8 @@ def weather_facts(intent, current_data=None, hourly_slice=None, risk_data=None):
         "precipitation": ("rain_amounts", "rainfall"),
     }
     selected = {
+        "comparison": ("temperature_2m", "apparent_temperature", "precipitation_probability",
+                       "precipitation", "wind_speed_10m", "wind_gusts_10m"),
         "temperature": ("temperature_2m", "apparent_temperature"),
         "coat_clothing": ("temperature_2m", "apparent_temperature"),
         "umbrella": ("precipitation_probability", "precipitation"),

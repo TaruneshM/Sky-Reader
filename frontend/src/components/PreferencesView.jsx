@@ -395,8 +395,8 @@ export default function PreferencesView({
                     {user ? `${user.name} (${user.email})` : "Guest Explorer"}
                   </span>
                 </div>
-                <span className="pref-status-pill authenticated">
-                  SQLite Verified
+                <span className={`pref-status-pill${user ? " authenticated" : ""}`}>
+                  {user ? "Signed in" : "Guest"}
                 </span>
               </div>
 
@@ -405,7 +405,7 @@ export default function PreferencesView({
                 <div className="pref-setting-info">
                   <span className="pref-setting-label">Clear Consultation Threads</span>
                   <span className="pref-setting-sub">
-                    Delete locally cached conversation histories and reset session state
+                    Delete conversation history for this account or guest in this browser
                   </span>
                 </div>
                 <button

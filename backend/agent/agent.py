@@ -5,6 +5,7 @@ import os
 import re
 import time
 import unicodedata
+from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -31,6 +32,7 @@ try:
     )
     from backend.weather.service import (
         geocode_location,
+        geocoding_log_label,
         get_current_weather,
         get_hourly_forecast,
         get_temporal_forecast_slice,
@@ -53,6 +55,7 @@ except ImportError:
     )
     from weather.service import (
         geocode_location,
+        geocoding_log_label,
         get_current_weather,
         get_hourly_forecast,
         get_temporal_forecast_slice,
@@ -229,12 +232,27 @@ def bind_period(evidence, period, window_hours):
         item.metadata.update(requested_period=period, window_hours=window_hours)
 
 
-def drops_comparison_qualifiers(question: str, lookup: str) -> bool:
-    def normalize(value):
-        value = unicodedata.normalize("NFC", value.casefold())
-        return re.sub(r"\s*,\s*", ", ", " ".join(value.split()))
+def comparison_location_key(value: str) -> str:
+    value = unicodedata.normalize("NFC", value.casefold())
+    return re.sub(r"\s*,\s*", ", ", " ".join(value.split()))
 
-    question, lookup = normalize(question), normalize(lookup)
+
+def matches_resolved_destination(lookup: str, requested: str, place: dict) -> bool:
+    key = comparison_location_key(lookup)
+    requested_key = comparison_location_key(requested)
+    if key == requested_key:
+        return True
+    if "," in requested_key:
+        return False
+    city, *qualifiers = key.split(", ")
+    labels = {comparison_location_key(place.get(field) or "") for field in ("admin1", "country", "country_code")}
+    return city in {requested_key, comparison_location_key(place["name"])} and bool(qualifiers) and all(
+        qualifier and qualifier in labels for qualifier in qualifiers
+    )
+
+
+def drops_comparison_qualifiers(question: str, lookup: str) -> bool:
+    question, lookup = map(comparison_location_key, (question, lookup))
     city, separator, _ = lookup.partition(", ")
     if not city or not re.search(r"(?<!\w)" + re.escape(city) + r", ", question):
         return False
@@ -296,18 +314,24 @@ async def run_agent(
     t_parse_start = time.time()
     request = parse_weather_request(user_message, conversation_history)
     intent = request.intent
-    comparison = bool(re.search(r"\b(compare|versus|vs|which city|difference between)\b", user_message, re.I))
+    comparison = request.comparison
     weather_query = intent or comparison or re.search(
         r"\b(weather|forecast|temperature|rain|wind|humidity)\b", user_message, re.I
     )
     complexity = classify_query_complexity(user_message)
     active_tracer.record_span("parsing_and_routing", (time.time() - t_parse_start) * 1000)
 
+    if request.needs_destinations:
+        return result("Which two destinations should I compare?")
     if request.safety and comparison:
         return result("Which city should I assess first? Weather hazards and activity advice depend on the location.")
 
     # Historical evaluation injects an executor and exercises the tool loop.
-    fast_path = intent and not comparison and (executor_fn is None or request.safety)
+    detailed = re.search(r"\b(comprehensive|in detail|comprehensively)\b", user_message, re.I)
+    fast_path = intent and not comparison and (request.safety or (executor_fn is None and not detailed))
+    logger.debug("Weather routing location=%r reference=%r intent=%s comparison=%s fast_path=%s",
+                 geocoding_log_label(request.location), geocoding_log_label(request.reference_location),
+                 intent, comparison, bool(fast_path))
     executed_tools: List[Dict[str, Any]] = []
 
     async def fetch(name, function, **arguments):
@@ -324,7 +348,10 @@ async def run_agent(
     if fast_path or (executor_fn is None and weather_query and request.location and not comparison):
         if not request.location:
             return result("Which city and region should I check?")
-        place = await fetch("geocode_location", geocode_location, location=request.location)
+        lookup_arguments = {"location": request.location}
+        if request.reference_location and executor_fn is None:
+            lookup_arguments["reference_location"] = request.reference_location
+        place = await fetch("geocode_location", geocode_location, **lookup_arguments)
         if not isinstance(place, dict) or not {"latitude", "longitude", "name"} <= place.keys():
             return result(clarify(request.location), executed_tools)
 
@@ -415,6 +442,96 @@ async def run_agent(
             logger.warning("Fast-path synthesis unavailable: %s", error)
         return result(fallback, executed_tools, evidence=evidence)
 
+    comparison_data = {}
+    comparison_places = {}
+    comparison_evidence = None
+    comparison_text = None
+    comparison_high_risk = False
+    comparison_incomplete = False
+    if request.destinations and executor_fn is None:
+        anchor = None
+        resolved = []
+        for name in request.destinations:
+            lookup = partial(geocode_location, reference_place=anchor) if anchor and "," not in name else geocode_location
+            resolved_place = await fetch("geocode_location", lookup, location=name)
+            if not isinstance(resolved_place, dict) or not {"latitude", "longitude", "name"} <= resolved_place.keys():
+                return result(clarify(name), executed_tools)
+            coordinates = (resolved_place["latitude"], resolved_place["longitude"])
+            if coordinates in comparison_places:
+                return result("Both names resolve to the same place. Which other destination should I compare?", executed_tools)
+            comparison_places[coordinates] = resolved_place
+            resolved.append((name, coordinates, resolved_place))
+            anchor = anchor or resolved_place
+
+        comparison_evidence = evidence_engine.generate_evidence()
+        lines = []
+        scope = request.period if request.period != "current" else "next_1h"
+        label = describe_period(scope)
+        names_repeat = len({place["name"].casefold() for _, _, place in resolved}) < len(resolved)
+        for name, coordinates, resolved_place in resolved:
+            location = name if names_repeat else resolved_place["name"]
+            latitude, longitude = coordinates
+            try:
+                hourly = await fetch("get_hourly_forecast", get_hourly_forecast, latitude=latitude, longitude=longitude)
+            except httpx.HTTPError:
+                hourly = {}
+            hourly = hourly or {}
+            forecast = {**hourly, "timezone": hourly.get("timezone") or resolved_place.get("timezone")}
+            scoped = scope_hourly_forecast(forecast, scope)
+            window = get_temporal_forecast_slice(forecast, scope)
+            facts = weather_facts("comparison", hourly_slice=window)
+            if not window["available"] or not facts:
+                comparison_incomplete = True
+                lines.append(f"Weather for {location} is unavailable for {label}.")
+                comparison_data[coordinates] = {"location": location, "status": "unavailable"}
+                continue
+
+            risk = WeatherRiskEngine().assess_risks(
+                scoped, location_name=location, forecast_period=scope
+            ).model_dump(mode="json")
+            risk_level = risk["overall_risk_level"]
+            incomplete = bool(risk["data_limitations"]) or any(
+                metric not in facts for metric in ("temperature", "rain probability", "wind speed")
+            )
+            comparison_incomplete |= incomplete
+            comparison_high_risk |= risk_level in {"HIGH", "SEVERE"}
+            show_risk = not incomplete or bool(risk["detected_risks"])
+            analysis = {"day_analyzed": scope, "risk_assessment": risk} if show_risk else None
+            source = evidence_engine.generate_evidence(
+                hourly_data=scoped, location_meta={**resolved_place, "name": location}, analysis_results=analysis
+            )
+            bind_period(source, scope, len(window["times"]))
+            for item in source.items:
+                item.id = f"{latitude},{longitude}:{item.id}"
+                comparison_evidence.add(item)
+
+            lines.append(synthesize_deterministic_weather_buddy_response(
+                "comparison", location, hourly_slice=window, period=label,
+            ))
+            if show_risk:
+                lines.append(f"Modeled weather risk in {location} for {label} is {risk_level}.")
+                if risk["detected_risks"]:
+                    hazards = ", ".join(item["condition"] for item in risk["detected_risks"])
+                    lines.append(f"Detected hazards in {location}: {hazards}.")
+                    if risk["safety_recommendations"]:
+                        lines.append(f"For {location}: {risk['safety_recommendations'][0]}")
+            comparison_data[coordinates] = {
+                "location": location, "timezone": forecast.get("timezone"), "period": label,
+                "hours": [window["times"][0], window["times"][-1]],
+                "measurements": facts, "risk": risk if show_risk else None,
+            }
+
+        if comparison_incomplete:
+            lines.append("Forecast coverage is incomplete. I can’t recommend one destination over the other.")
+        comparison_text = "\n".join(lines)
+        if any(data.get("status") == "unavailable" for data in comparison_data.values()):
+            return result(comparison_text, executed_tools, evidence=comparison_evidence)
+        if active_client is None:
+            try:
+                active_client = get_groq_client(api_key=api_key)
+            except ValueError:
+                return result(comparison_text, executed_tools, evidence=comparison_evidence)
+
     active_client = active_client or get_groq_client(api_key=api_key)
     messages: List[Dict[str, Any]] = [
         {"role": "system", "content": WEATHER_BUDDY_SYSTEM_PROMPT}
@@ -434,7 +551,7 @@ async def run_agent(
             "If the tool reports the window unavailable, state that limitation."
         )})
     confirmed_place = place
-    places = {}
+    places = dict(comparison_places)
     if confirmed_place:
         coordinates = (confirmed_place["latitude"], confirmed_place["longitude"])
         places[coordinates] = confirmed_place
@@ -447,7 +564,19 @@ async def run_agent(
             "Geocode each requested place before fetching weather. Submit the full place name with "
             "any qualifiers the user gave. If a place is unresolved, ask the user to clarify."
         )})
-    messages.append({"role": "user", "content": user_message})
+    question = user_message
+    if request.destinations:
+        question += "\nCompare these destinations: " + json.dumps(request.destinations, ensure_ascii=False)
+    if comparison_data:
+        question += "\nVerified local forecast windows and measurements: " + json.dumps(
+            list(comparison_data.values()), ensure_ascii=False
+        )
+    if request.activity:
+        question += f"\nActivity under discussion: {request.activity}."
+    if intent:
+        question += f"\nWeather topic under discussion: {intent}."
+    messages.append({"role": "user", "content": question})
+    destinations = {comparison_location_key(name) for name in request.destinations}
     sources = {}
     risk_results = None
 
@@ -485,6 +614,8 @@ async def run_agent(
         except RateLimitError as rle:
             err_text = str(rle).lower()
             logger.warning("Groq RateLimitError hit: %s", rle)
+            if comparison_text is not None:
+                return result(comparison_text, executed_tools, iteration + 1, comparison_evidence)
             # Check for daily token exhaustion
             is_daily = any(w in err_text for w in ["daily", "tokens per day", "tpd", "200000", "quota"])
             if is_daily:
@@ -523,6 +654,8 @@ async def run_agent(
             }
         except GroqError as ge:
             logger.error("Groq API error: %s", ge)
+            if comparison_text is not None:
+                return result(comparison_text, executed_tools, iteration + 1, comparison_evidence)
             raise
 
         choice = response.choices[0]
@@ -534,7 +667,7 @@ async def run_agent(
             candidate_response = assistant_message.content or ""
 
             if executed_tools:
-                evidence = evidence_engine.generate_evidence()
+                evidence = comparison_evidence or evidence_engine.generate_evidence()
                 evidence_ids = set()
                 for (latitude, longitude), records in sources.items():
                     place = places.get((latitude, longitude))
@@ -597,6 +730,19 @@ async def run_agent(
                 )
                 active_tracer.record_span("hallucination_correction", (time.time() - t_audit) * 1000)
 
+                if comparison_text is not None:
+                    # Only use model wording when it covers the audited measurements for both places.
+                    _, baseline_audit = hallucination_controller.audit(comparison_text, evidence)
+                    def coverage(audit):
+                        return {
+                            (entry.claim.variable, evidence.get_by_id(evidence_id).location)
+                            for entry in audit.validation_results
+                            for evidence_id in entry.supporting_evidence_ids
+                            if evidence.get_by_id(evidence_id) is not None
+                        }
+                    if (not report.is_trustworthy or comparison_incomplete or comparison_high_risk
+                            or not coverage(baseline_audit) <= coverage(report)):
+                        final_text = comparison_text
                 return result(final_text, executed_tools, iteration + 1, evidence,
                               risk_results if len(sources) == 1 else None)
 
@@ -634,6 +780,28 @@ async def run_agent(
                 })
                 continue
 
+            if comparison_data and isinstance(parsed_args, dict):
+                cached_result = None
+                if fn_name == "geocode_location" and isinstance(parsed_args.get("location"), str):
+                    cached_result = next(
+                        (resolved_place for name, _, resolved_place in resolved
+                         if matches_resolved_destination(parsed_args["location"], name, resolved_place)),
+                        None,
+                    )
+                elif fn_name == "get_hourly_forecast":
+                    lat, lon = parsed_args.get("latitude"), parsed_args.get("longitude")
+                    if isinstance(lat, (int, float)) and isinstance(lon, (int, float)):
+                        cached_result = comparison_data.get((lat, lon))
+                if cached_result is not None:
+                    messages.append({"role": "tool", "tool_call_id": tool_call.id, "name": fn_name,
+                                     "content": json.dumps(cached_result, ensure_ascii=False)})
+                    continue
+                if fn_name != "geocode_location":
+                    messages.append({"role": "tool", "tool_call_id": tool_call.id, "name": fn_name,
+                                     "content": json.dumps({"status": "unavailable",
+                                         "message": "Use the scoped comparison forecasts and resolved coordinates."})})
+                    continue
+
             # 2. Execute tool using existing executor
             t_exec = time.time()
             try:
@@ -644,6 +812,9 @@ async def run_agent(
                     lookup = parsed_args.get("location", "") if isinstance(parsed_args, dict) else ""
                     if isinstance(lookup, str) and drops_comparison_qualifiers(user_message, lookup):
                         raise ValueError("Geocode the place with the comma-separated qualifiers supplied by the user.")
+                    if destinations and (not isinstance(lookup, str)
+                                         or comparison_location_key(lookup) not in destinations):
+                        raise ValueError("Geocode one of the two destinations exactly as supplied by the user.")
                     execution_result = await active_executor(fn_name, parsed_args)
                 elif (executor_fn is None and isinstance(parsed_args, dict)
                       and {"latitude", "longitude"} <= parsed_args.keys()
@@ -688,7 +859,8 @@ async def run_agent(
             compact_payload = create_compact_tool_payload(fn_name, tool_result) if fn_name == "get_current_weather" else tool_result
             if isinstance(parsed_args, dict) and isinstance(tool_result, dict) and not tool_result.get("error"):
                 if fn_name == "geocode_location" and {"latitude", "longitude", "name"} <= tool_result.keys():
-                    places[(tool_result["latitude"], tool_result["longitude"])] = tool_result
+                    coords = (tool_result["latitude"], tool_result["longitude"])
+                    places[coords] = tool_result
                 elif {"latitude", "longitude"} <= parsed_args.keys():
                     coords = (parsed_args["latitude"], parsed_args["longitude"])
                     records = sources.setdefault(coords, [])
@@ -726,6 +898,8 @@ async def run_agent(
                 "content": json.dumps(compact_payload, default=str),
             })
 
+    if comparison_text is not None:
+        return result(comparison_text, executed_tools, max_iterations, comparison_evidence)
     summary = active_tracer.get_summary()
     return {
         "response": (

@@ -1,10 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  Eye, EyeOff, Sparkles, Check, AlertCircle,
+  Eye, EyeOff, Sparkles, AlertCircle,
   Sun, Moon, ArrowRight, User, Mail, Lock,
 } from "lucide-react";
-
-const API_BASE_URL = "http://127.0.0.1:8000";
 
 /* ─────────────────────────────────────────────────────────────────
    Animated Canvas Background — aurora / particle field
@@ -148,77 +146,24 @@ function LoginCanvas({ theme }) {
 /* ─────────────────────────────────────────────────────────────────
    Main Login Page
    ───────────────────────────────────────────────────────────────── */
-export default function LoginPage({ onLoginSuccess, onBackToApp, theme = "dark", onToggleTheme }) {
+export default function LoginPage({
+  onAuthenticate, onContinueAsGuest, onRetrySession, authError = "",
+  isSubmitting = false, theme = "dark", onToggleTheme,
+}) {
   const [email,        setEmail]        = useState("");
   const [password,     setPassword]     = useState("");
   const [name,         setName]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [staySignedIn, setStaySignedIn] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess,    setIsSuccess]    = useState(false);
-  const [authError,    setAuthError]    = useState("");
   const [mode,         setMode]         = useState("signin"); // "signin" | "signup"
 
   const isLight = theme === "light";
 
-  const handleFillDemo = () => {
-    setEmail("explorer@skyreader.ai");
-    setPassword("weather123");
-    setMode("signin");
-    setAuthError("");
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setAuthError("");
-    setIsSubmitting(true);
-
-    const endpoint =
-      mode === "signin"
-        ? `${API_BASE_URL}/api/auth/login`
-        : `${API_BASE_URL}/api/auth/register`;
-
-    const payload =
-      mode === "signin"
-        ? { email, password }
-        : { email, password, name: name.trim() || email.split("@")[0] };
-
-    try {
-      const res  = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Authentication request failed.");
-
-      if (staySignedIn && data.token) {
-        localStorage.setItem("skyreader_token", data.token);
-      }
-      setIsSuccess(true);
-      setTimeout(() => onLoginSuccess(data.user), 700);
-    } catch (err) {
-      setAuthError(err.message || "Failed to communicate with authentication server.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleGoogleLogin = () => {
-    setIsSubmitting(true);
-    setAuthError("");
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSuccess(true);
-      setTimeout(() =>
-        onLoginSuccess({
-          id:         999,
-          email:      "google.user@skyreader.ai",
-          name:       "Meteorology Pro",
-          created_at: new Date().toISOString(),
-          saved_cities: ["Tokyo", "Zurich"],
-        }), 600);
-    }, 500);
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (isSubmitting) return;
+    const credentials = mode === "signin" ? { email, password } : { email, password, name: name.trim() };
+    void onAuthenticate(mode, credentials, staySignedIn);
   };
 
   /* ── Inline styles so the login page works independently of App.css theming ── */
@@ -438,10 +383,8 @@ export default function LoginPage({ onLoginSuccess, onBackToApp, theme = "dark",
       padding:        "13px 20px",
       borderRadius:   999,
       border:         "none",
-      cursor:         isSubmitting || isSuccess ? "not-allowed" : "pointer",
-      background:     isSuccess
-        ? "linear-gradient(135deg,#34d399 0%,#059669 100%)"
-        : "linear-gradient(135deg,#f59e0b 0%,#ea580c 100%)",
+      cursor:         isSubmitting ? "not-allowed" : "pointer",
+      background:     "linear-gradient(135deg,#f59e0b 0%,#ea580c 100%)",
       color:          "#ffffff",
       fontSize:       14,
       fontWeight:     700,
@@ -491,30 +434,6 @@ export default function LoginPage({ onLoginSuccess, onBackToApp, theme = "dark",
       background: isLight ? "rgba(175,155,120,0.3)" : "rgba(255,255,255,0.1)",
     },
 
-    // Demo pill
-    demoPill: {
-      display:        "flex",
-      alignItems:     "center",
-      justifyContent: "center",
-      marginTop:      6,
-    },
-    demoBtn: {
-      display:        "inline-flex",
-      alignItems:     "center",
-      gap:            8,
-      padding:        "5px 14px",
-      borderRadius:   999,
-      border:         isLight
-        ? "1px dashed rgba(175,155,120,0.5)"
-        : "1px dashed rgba(192,132,252,0.4)",
-      background:     "transparent",
-      color:          isLight ? "#7a6e62" : "rgba(220,195,255,0.75)",
-      fontSize:       11.5,
-      cursor:         "pointer",
-      fontFamily:     "inherit",
-      transition:     "all 0.18s ease",
-    },
-
     // Footer
     footer: {
       marginTop:      18,
@@ -554,10 +473,10 @@ export default function LoginPage({ onLoginSuccess, onBackToApp, theme = "dark",
 
       {/* Top bar: back button + theme toggle */}
       <div style={styles.topBar}>
-        {onBackToApp ? (
-          <button type="button" style={styles.backBtn} onClick={onBackToApp}>
+        {onContinueAsGuest ? (
+          <button type="button" style={styles.backBtn} onClick={onContinueAsGuest}>
             <ArrowRight size={14} style={{ transform: "rotate(180deg)" }} />
-            Back to App
+            Continue as guest
           </button>
         ) : <div />}
 
@@ -593,6 +512,12 @@ export default function LoginPage({ onLoginSuccess, onBackToApp, theme = "dark",
             <AlertCircle size={14} />
             <span>{authError}</span>
           </div>
+        )}
+
+        {onRetrySession && (
+          <button type="button" onClick={onRetrySession} style={styles.footerAction}>
+            Retry session verification
+          </button>
         )}
 
         {/* Form */}
@@ -679,18 +604,16 @@ export default function LoginPage({ onLoginSuccess, onBackToApp, theme = "dark",
               <button
                 type="button"
                 style={styles.forgotBtn}
-                onClick={() => alert("Password reset link will be sent to your email.")}
+                disabled
               >
-                Forgot password?
+                Password reset unavailable
               </button>
             )}
           </div>
 
           {/* Submit */}
-          <button type="submit" style={styles.submitBtn} disabled={isSubmitting || isSuccess}>
-            {isSuccess ? (
-              <><Check size={16} /> Authenticated! Entering...</>
-            ) : isSubmitting ? (
+          <button type="submit" style={styles.submitBtn} disabled={isSubmitting}>
+            {isSubmitting ? (
               <span>{mode === "signin" ? "Signing in…" : "Creating account…"}</span>
             ) : (
               <span>{mode === "signin" ? "Sign In" : "Sign Up"}</span>
@@ -708,8 +631,7 @@ export default function LoginPage({ onLoginSuccess, onBackToApp, theme = "dark",
           <button
             type="button"
             style={styles.googleBtn}
-            onClick={handleGoogleLogin}
-            disabled={isSubmitting || isSuccess}
+            disabled
           >
             <svg viewBox="0 0 24 24" width="16" height="16">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -717,17 +639,9 @@ export default function LoginPage({ onLoginSuccess, onBackToApp, theme = "dark",
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
             </svg>
-            Continue with Google
+            Google sign-in unavailable
           </button>
         </form>
-
-        {/* Demo pill */}
-        <div style={styles.demoPill}>
-          <button type="button" style={styles.demoBtn} onClick={handleFillDemo}>
-            <Sparkles size={12} />
-            Quick Demo — Click to fill credentials
-          </button>
-        </div>
 
         {/* Footer switch */}
         <div style={styles.footer}>
@@ -735,7 +649,8 @@ export default function LoginPage({ onLoginSuccess, onBackToApp, theme = "dark",
           <button
             type="button"
             style={styles.footerAction}
-            onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setAuthError(""); }}
+            disabled={isSubmitting}
+            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
           >
             {mode === "signin" ? "Join Now" : "Sign In"}
           </button>
@@ -744,7 +659,7 @@ export default function LoginPage({ onLoginSuccess, onBackToApp, theme = "dark",
         {/* Security tag */}
         <div style={styles.secTag}>
           <Sparkles size={10} color={isLight ? "#c17a2a" : "#f59e0b"} />
-          <span>Encrypted SQLite • Zero-hallucination AI Sessions</span>
+          <span>Chat history stays in this browser</span>
         </div>
       </div>
 

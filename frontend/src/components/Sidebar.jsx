@@ -152,24 +152,22 @@ export default function Sidebar({
 
         {/* Sidebar Footer with Log Out Action */}
         <div className="sidebar-footer">
-          {user && (
-            <div className="sidebar-user-preview">
-              <div className="user-avatar-dot" />
-              <div className="user-text-info">
-                <span className="user-display-name">{user.name}</span>
-                <span className="user-email-sub">{user.email}</span>
-              </div>
+          <div className="sidebar-user-preview">
+            <div className="user-avatar-dot" />
+            <div className="user-text-info">
+              <span className="user-display-name">{user?.name || "Guest session"}</span>
+              <span className="user-email-sub">{user?.email || "History stays in this browser"}</span>
             </div>
-          )}
+          </div>
 
           <button
             type="button"
             className="sidebar-logout-btn"
             onClick={onOpenLogin}
-            title="Switch account or Log Out"
+            title={user ? "Log out" : "Sign in"}
           >
             <LogOut size={16} className="logout-icon" />
-            <span>{user ? "Log Out" : "Sign In / Switch"}</span>
+            <span>{user ? "Log Out" : "Sign In"}</span>
           </button>
         </div>
       </aside>

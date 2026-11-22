@@ -177,7 +177,10 @@ def test_agentic_comparison_uses_shared_ranking_and_stops_on_ambiguity(open_mete
 
 
 @pytest.mark.parametrize("incomplete", ["Paris", "Paris, Texas"])
-def test_agentic_comparison_cannot_silently_drop_user_qualifier(open_meteo, incomplete):
+def test_agentic_comparison_cannot_silently_drop_user_qualifier(open_meteo, incomplete, monkeypatch):
+    forecast = {"current": {"time": "2026-11-21T16:00"},
+                "hourly": {"time": ["2026-11-21T16:00"], "temperature_2m": [20]}}
+    monkeypatch.setattr(agent, "get_hourly_forecast", AsyncMock(return_value=forecast))
     complete = AsyncMock(side_effect=[
         completion(calls=[tool_call("geocode_location", 1, location=incomplete)]),
         completion(calls=[
@@ -188,9 +191,10 @@ def test_agentic_comparison_cannot_silently_drop_user_qualifier(open_meteo, inco
     ])
     client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=complete)))
     output = asyncio.run(agent.run_agent("Compare Paris, Texas, USA and Tokyo.", client=client))
-    assert "comma-separated qualifiers" in output["tool_calls"][0]["result"]["error"]
-    assert output["tool_calls"][1]["result"]["admin1"] == "Texas"
-    assert output["tool_calls"][2]["result"]["country"] == "Japan"
+    errors = [call["result"]["error"] for call in output["tool_calls"] if call["result"] and "error" in call["result"]]
+    assert any("comma-separated qualifiers" in error for error in errors)
+    assert output["tool_calls"][0]["result"]["admin1"] == "Texas"
+    assert output["tool_calls"][1]["result"]["country"] == "Japan"
     assert open_meteo[1].await_count == 2
 
 
@@ -215,3 +219,50 @@ def test_tomorrow_fast_path_uses_ranked_tokyo_and_local_timezone(open_meteo, mon
         "Japan", "Tokyo", "Asia/Tokyo", "tomorrow",
     )
     assert output["validation_report"]["is_trustworthy"]
+
+
+def scoped_comparison_fixture(temperature, risk=False):
+    from datetime import datetime, timedelta
+
+    start = datetime(2026, 11, 21)
+    return {
+        "current": {"time": "2026-11-21T20:00+00:00"},
+        "hourly": {
+            "time": [(start + timedelta(hours=hour)).isoformat(timespec="minutes") for hour in range(48)],
+            "temperature_2m": [temperature] * 24 + [temperature + 3] * 24,
+            "precipitation_probability": [60 if risk else 5] * 48,
+            "precipitation": [1 if risk else 0] * 48,
+            "wind_speed_10m": [65 if risk else 10] * 48,
+            "weather_code": [95 if risk else 0] * 48,
+        },
+    }
+
+
+def test_different_countries_compare_each_local_night_and_preserve_hazards(open_meteo, monkeypatch):
+    async def forecast(latitude, longitude):
+        if (latitude, longitude) == (TOKYO["latitude"], TOKYO["longitude"]):
+            return scoped_comparison_fixture(9, risk=True)
+        assert (latitude, longitude) == (PARIS_FR["latitude"], PARIS_FR["longitude"])
+        return scoped_comparison_fixture(18)
+
+    monkeypatch.setattr(agent, "get_hourly_forecast", AsyncMock(side_effect=forecast))
+    output = asyncio.run(agent.run_agent("Compare Tokyo and Paris, France tonight.", api_key=""))
+    assert "Tokyo for tonight: temperature 12 °C" in output["response"]
+    assert "Paris for tonight: temperature 18 °C" in output["response"]
+    assert "Thunderstorm" in output["response"]
+    assert "peak rain probability 60%" in output["response"] and "wind speed 65 km/h" in output["response"]
+    assert output["validation_report"]["is_trustworthy"]
+    forecast_citations = output["explanation"]["supporting_evidence"]
+    assert any(row["location"] == "Tokyo" and row["time_period"].startswith("2026-11-22T18") for row in forecast_citations)
+    assert any(row["location"] == "Paris" and row["time_period"].startswith("2026-11-21T21") for row in forecast_citations)
+
+
+def test_qualified_same_name_destinations_have_distinct_evidence(open_meteo, monkeypatch):
+    results = iter((scoped_comparison_fixture(8), scoped_comparison_fixture(22)))
+    monkeypatch.setattr(agent, "get_hourly_forecast", AsyncMock(side_effect=lambda **_: next(results)))
+    output = asyncio.run(agent.run_agent("Compare Paris, France and Paris, Texas tonight.", api_key=""))
+    assert "Paris, France for tonight: temperature 8 °C" in output["response"]
+    assert "Paris, Texas for tonight: temperature 22 °C" in output["response"]
+    assert output["validation_report"]["is_trustworthy"]
+    locations = {row["location"] for row in output["explanation"]["supporting_evidence"]}
+    assert locations == {"Paris, France", "Paris, Texas"}

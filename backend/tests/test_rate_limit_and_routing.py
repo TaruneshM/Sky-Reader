@@ -88,7 +88,7 @@ class TestRateLimitAndRouting(unittest.TestCase):
         # Run query with mock client
         res = asyncio.run(
             run_agent(
-                "Compare Delhi and Dehradun.",
+                "Explain the weather forecast in detail.",
                 client=mock_client
             )
         )

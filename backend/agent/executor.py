@@ -65,5 +65,8 @@ async def execute_tool(tool_name: str, arguments: dict):
     if not isinstance(arguments, dict):
         raise ValueError("Tool arguments must be a dictionary")
 
+    if tool_name == "geocode_location" and set(arguments) != {"location"}:
+        raise ValueError("The geocoding tool accepts a location name only.")
+
     result = await function(**arguments)
     return result
