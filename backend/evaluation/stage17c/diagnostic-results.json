@@ -1,0 +1,197 @@
+{
+  "rows": [
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "pass_": false,
+      "audited": false,
+      "complete": false,
+      "attempts": [
+        {
+          "provider": "groq",
+          "latency_ms": 1264.34,
+          "prompt_tokens": 224,
+          "completion_tokens": 296,
+          "total_tokens": 520,
+          "failure_category": null,
+          "provider_status": null
+        }
+      ],
+      "draft_diagnostics": [
+        {
+          "draft_audited": true,
+          "draft_passed_model_evidence_gate": false,
+          "missing_requirements": [],
+          "unsupported_claims": [],
+          "named_location_present": true,
+          "temperature_units_present": true,
+          "finish_reason": "stop",
+          "truncated": false,
+          "output_cap": 350,
+          "reported_usage_reached_cap": false
+        }
+      ],
+      "fallback_events": [],
+      "elapsed_ms": 1272.27,
+      "http": [
+        {
+          "case": "groq",
+          "provider": "groq",
+          "source": "live",
+          "http_status": 200,
+          "response_bytes": 2050,
+          "headers_latency_ms": 1218.52
+        }
+      ]
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "pass_": false,
+      "failure": "llm_provider_service_failure",
+      "attempts": [
+        {
+          "provider": "groq",
+          "latency_ms": 2.03,
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null,
+          "failure_category": "groq_temporary_throttling",
+          "provider_status": 429
+        },
+        {
+          "provider": "gemini",
+          "latency_ms": 494.5,
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null,
+          "failure_category": "llm_provider_service_failure",
+          "provider_status": 404
+        }
+      ],
+      "draft_diagnostics": [],
+      "fallback_events": [
+        {
+          "from": "groq",
+          "to": "gemini",
+          "reason": "groq_temporary_throttling"
+        }
+      ],
+      "elapsed_ms": 498.76,
+      "http": [
+        {
+          "case": "gemini",
+          "provider": "groq",
+          "source": "fault_injection",
+          "http_status": 429,
+          "response_bytes": 40,
+          "headers_latency_ms": 0.12
+        },
+        {
+          "case": "gemini",
+          "provider": "gemini",
+          "source": "live",
+          "http_status": 404,
+          "response_bytes": 344,
+          "error_diagnostic": {
+            "provider": "gemini",
+            "model": "gemini-2.5-flash",
+            "endpoint_id": "gemini_generate_content",
+            "http_status": 404,
+            "provider_code": "NOT_FOUND",
+            "sanitized_message": "The provider reported a missing resource or endpoint.",
+            "retryable": false,
+            "fallback_allowed": false
+          },
+          "headers_latency_ms": 493.79
+        }
+      ]
+    },
+    {
+      "provider": "openrouter",
+      "model": "qwen/qwen3-coder:free",
+      "pass_": false,
+      "failure": "llm_provider_service_failure",
+      "attempts": [
+        {
+          "provider": "groq",
+          "latency_ms": 1.96,
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null,
+          "failure_category": "groq_temporary_throttling",
+          "provider_status": 429
+        },
+        {
+          "provider": "gemini",
+          "latency_ms": 0.45,
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null,
+          "failure_category": "llm_provider_service_failure",
+          "provider_status": 503
+        },
+        {
+          "provider": "openrouter",
+          "latency_ms": 608.31,
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null,
+          "failure_category": "llm_provider_service_failure",
+          "provider_status": 404
+        }
+      ],
+      "draft_diagnostics": [],
+      "fallback_events": [
+        {
+          "from": "groq",
+          "to": "gemini",
+          "reason": "groq_temporary_throttling"
+        },
+        {
+          "from": "gemini",
+          "to": "openrouter",
+          "reason": "llm_provider_service_failure"
+        }
+      ],
+      "elapsed_ms": 613.37,
+      "http": [
+        {
+          "case": "openrouter",
+          "provider": "groq",
+          "source": "fault_injection",
+          "http_status": 429,
+          "response_bytes": 40,
+          "headers_latency_ms": 0.05
+        },
+        {
+          "case": "openrouter",
+          "provider": "gemini",
+          "source": "fault_injection",
+          "http_status": 503,
+          "response_bytes": 40,
+          "headers_latency_ms": 0.05
+        },
+        {
+          "case": "openrouter",
+          "provider": "openrouter",
+          "source": "live",
+          "http_status": 404,
+          "response_bytes": 191,
+          "error_diagnostic": {
+            "provider": "openrouter",
+            "model": "qwen/qwen3-coder:free",
+            "endpoint_id": "openrouter_chat_completions",
+            "http_status": 404,
+            "provider_code": 404,
+            "sanitized_message": "The provider reported a missing resource or endpoint.",
+            "retryable": false,
+            "fallback_allowed": false
+          },
+          "headers_latency_ms": 607.8
+        }
+      ]
+    }
+  ],
+  "peak_bytes": 43479040
+}

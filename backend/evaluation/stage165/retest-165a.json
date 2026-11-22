@@ -1,0 +1,88 @@
+{
+  "rows": [
+    {
+      "case": "synthesis",
+      "checks": {
+        "pass": true,
+        "evidence_trustworthy": true,
+        "agent_answer_complete": true,
+        "measurement_coverage": {
+          "Lisbon": [
+            "humidity",
+            "wind_gust",
+            "wind_speed"
+          ]
+        },
+        "period_mentioned": true,
+        "follow_up_anchor_ok": true,
+        "material_hazards_detected": 0,
+        "material_hazards_covered": null,
+        "unsupported_numeric_claims": 0,
+        "unaudited_numeric_answer": false
+      },
+      "failure": null,
+      "elapsed_ms": 4873.46,
+      "weather_http_attempts": 2,
+      "groq": [
+        {
+          "prompt_tokens": 349,
+          "completion_tokens": 466,
+          "status": "completed"
+        },
+        {
+          "prompt_tokens": 1037,
+          "completion_tokens": 674,
+          "status": "completed"
+        }
+      ],
+      "estimated_prompt_tokens": 1646
+    },
+    {
+      "case": "unsupported",
+      "checks": {
+        "pass": true,
+        "evidence_trustworthy": false,
+        "agent_answer_complete": false,
+        "measurement_coverage": {
+          "Tokyo": []
+        },
+        "period_mentioned": true,
+        "follow_up_anchor_ok": true,
+        "material_hazards_detected": 0,
+        "material_hazards_covered": null,
+        "unsupported_numeric_claims": 0,
+        "unaudited_numeric_answer": false
+      },
+      "failure": "forecast_window_unavailable",
+      "elapsed_ms": 1316.35,
+      "weather_http_attempts": 2,
+      "groq": [],
+      "estimated_prompt_tokens": 0
+    }
+  ],
+  "summary": {
+    "cases": 2,
+    "passed": 2,
+    "groq_attempts": 2,
+    "groq_completed": 2,
+    "weather_http_attempts": 4,
+    "median_case_ms": 3094.9,
+    "usage": {
+      "prompt_tokens": {
+        "known_total": 1386,
+        "missing_calls": 0
+      },
+      "completion_tokens": {
+        "known_total": 1140,
+        "missing_calls": 0
+      }
+    }
+  },
+  "exit_status": 0,
+  "outbound_attempts": {
+    "weather": 4,
+    "groq": 2
+  },
+  "stop_reason": null,
+  "cgroup_memory_peak_bytes": 46309376
+}

@@ -1,0 +1,89 @@
+{
+  "rows": [
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "pass_": false,
+      "audited": false,
+      "complete": false,
+      "attempts": [
+        {
+          "provider": "groq",
+          "latency_ms": 1228.46,
+          "prompt_tokens": 224,
+          "completion_tokens": 257,
+          "total_tokens": 481,
+          "failure_category": null,
+          "provider_status": null
+        }
+      ],
+      "draft_diagnostics": [
+        {
+          "supporting_fixture_evidence_ids": [
+            "ev_obs_temp_current"
+          ],
+          "claim_validation": [
+            {
+              "variable": "temperature",
+              "status": "SUPPORTED",
+              "supporting_evidence_ids": [
+                "ev_obs_temp_current"
+              ]
+            },
+            {
+              "variable": "temperature",
+              "status": "SUPPORTED",
+              "supporting_evidence_ids": [
+                "ev_obs_temp_current"
+              ]
+            }
+          ],
+          "final_gate_rejection": {
+            "clause_index": 3,
+            "reason": "missing_clause_location",
+            "claim_checks": [],
+            "numeric_mentions": null,
+            "audited_numeric_claims": null,
+            "location_decision": {
+              "explicit_evidence_location_detected": false,
+              "explicit_location_match_count": 0,
+              "candidate_location_count": 1,
+              "previous_clause_validated": false,
+              "previous_clause_location_established": false,
+              "previous_anchor_status": "previous_clause_not_audited",
+              "evidence_scope": "observation",
+              "forecast_wording_detected": false,
+              "numeric_continuation_eligible": false,
+              "location_inheritance_attempted": true,
+              "location_inherited": false,
+              "failed_prerequisite": "previous_location_anchor_required"
+            }
+          },
+          "draft_audited": true,
+          "draft_passed_model_evidence_gate": false,
+          "missing_requirements": [],
+          "unsupported_claims": [],
+          "named_location_present": true,
+          "temperature_units_present": true,
+          "finish_reason": "stop",
+          "truncated": false,
+          "output_cap": 350,
+          "reported_usage_reached_cap": false
+        }
+      ],
+      "fallback_events": [],
+      "elapsed_ms": 1237.11,
+      "http": [
+        {
+          "case": "groq",
+          "provider": "groq",
+          "source": "live",
+          "http_status": 200,
+          "response_bytes": 1871,
+          "headers_latency_ms": 1180.31
+        }
+      ]
+    }
+  ],
+  "peak_bytes": 43245568
+}

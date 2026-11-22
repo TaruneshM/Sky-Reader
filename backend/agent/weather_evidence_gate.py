@@ -40,9 +40,83 @@ CONDITION_ASSERTION = re.compile(
 CLAUSES = re.compile(r"(?<=[.!?])\s+|\n+|;|,\s*(?=(?:and|but|while)\b)|\s+(?:and|but|while)\s+", re.I)
 
 
+# A diagnostic wording marker only. Forecast eligibility still comes from the existing audit.
+FORECAST_WORDING = re.compile(r"\b(?:forecast|tomorrow|tonight|overnight|will|expected|predicted)\b", re.I)
+
+# Only simple numeric continuations can inherit the immediately preceding observed location.
+# Full matching excludes new places, forecast qualifiers, and incidental factual assertions.
+OBSERVED_CONTINUATION = re.compile(
+    r"^(?:and\s+)?(?:the\s+)?"
+    r"(?:temperature|humidity|wind speed|wind gusts?|it)(?: there)?\s+(?:is|are)\s+"
+    r"[−-]?\d+(?:\.\d+)?\s*(?:°\s*C|%|km\s*/\s*h)(?: there)?[.!]?$",
+    re.I,
+)
+
+
 def model_weather_answer_is_grounded(text, evidence, auditor, *, weather_request=False):
     """Unknown model weather claims are withheld. Trusted deterministic rendering is audited separately."""
-    for clause in CLAUSES.split(text):
+    return first_weather_gate_rejection(text, evidence, auditor, weather_request=weather_request) is None
+
+
+def first_weather_gate_rejection(text, evidence, auditor, *, weather_request=False):
+    """Return bounded structured information about the first rejecting branch."""
+    locations = {item.location for item in evidence.items if item.location} if evidence is not None else set()
+    source_types = {item.source_type.value for item in evidence.items} if evidence is not None else set()
+    observation_only = source_types == {"observed"}
+    evidence_scope = {
+        frozenset({"observed"}): "observation",
+        frozenset({"forecast"}): "forecast",
+    }.get(frozenset(source_types), "mixed_or_derived" if source_types else "none")
+    anchor = None
+    previous_validated = False
+    previous_anchor_status = "no_previous_clause"
+
+    def rejected(index, reason, checks=(), numbers=None, audited_numbers=None):
+        failed = {
+            "missing_evidence": "evidence_required",
+            "unsupported_unit": "supported_unit_required",
+            "unsafe_certainty": "safe_qualification_required",
+            "no_extractable_clause_claim": "extractable_claim_required",
+            "clause_claim_audit_failed": "grounded_claims_required",
+            "unaudited_number": "all_numbers_must_be_audited",
+            "unaudited_condition": "grounded_condition_required",
+        }.get(reason)
+        if reason == "missing_clause_location":
+            if not locations:
+                failed = "no_evidence_location"
+            elif len(locations) != 1:
+                failed = "multiple_evidence_locations"
+            elif not observation_only:
+                failed = "observation_only_evidence_required"
+            elif not anchor:
+                failed = "previous_location_anchor_required"
+            else:
+                failed = "numeric_continuation_required"
+        return {
+            "clause_index": index, "reason": reason, "claim_checks": list(checks),
+            "numeric_mentions": numbers, "audited_numeric_claims": audited_numbers,
+            "location_decision": {
+                "explicit_evidence_location_detected": bool(mentioned),
+                "explicit_location_match_count": len(mentioned),
+                "candidate_location_count": len(locations),
+                "previous_clause_validated": previous_validated,
+                "previous_clause_location_established": bool(anchor),
+                "previous_anchor_status": previous_anchor_status,
+                "evidence_scope": evidence_scope,
+                "forecast_wording_detected": bool(FORECAST_WORDING.search(clause)),
+                "numeric_continuation_eligible": numeric_continuation,
+                "location_inheritance_attempted": inheritance_attempted,
+                "location_inherited": bool(inherited),
+                "failed_prerequisite": failed,
+            },
+        }
+
+    for index, clause in enumerate(CLAUSES.split(text), start=1):
+        mentioned = {location for location in locations if re.search(
+            r"(?<!\w)" + re.escape(location) + r"(?!\w)", clause, re.I
+        )}
+        numeric_continuation = bool(OBSERVED_CONTINUATION.fullmatch(clause.strip()))
+        inheritance_attempted = inherited = False
         terms = WEATHER_TERMS.search(clause)
         quantities = MEASUREMENT.search(clause)
         numbers = NUMBER.findall(clause)
@@ -55,23 +129,49 @@ def model_weather_answer_is_grounded(text, evidence, auditor, *, weather_request
         if not assertive and not (weather_request and numbers):
             # A standalone weather condition still conveys a factual assertion.
             if not (terms and re.fullmatch(r"[\w -]+[.!]?", clause.strip()) and len(clause.split()) <= 4):
+                if clause.strip():
+                    anchor = None
+                    previous_validated = False
+                    previous_anchor_status = "previous_clause_not_audited"
                 continue
-        if evidence is None or UNSUPPORTED_UNIT.search(clause) or UNSAFE_CERTAINTY.search(clause):
-            return False
-        if not any(item.location and re.search(
-            r"(?<!\w)" + re.escape(item.location) + r"(?!\w)", clause, re.I
-        ) for item in evidence.items):
-            return False
-        claims, report = auditor.audit(clause, evidence)
+        if evidence is None:
+            return rejected(index, "missing_evidence")
+        if UNSUPPORTED_UNIT.search(clause):
+            return rejected(index, "unsupported_unit")
+        if UNSAFE_CERTAINTY.search(clause):
+            return rejected(index, "unsafe_certainty")
+        audit_clause = clause
+        inheritance_attempted = not mentioned
+        inherited = inheritance_attempted and bool(anchor) and numeric_continuation
+        if inherited:
+            continuation = re.sub(r"\bthere\b\s*", "", clause.strip(), flags=re.I)
+            audit_clause = f"Currently in {anchor}, {continuation}"
+        elif not mentioned:
+            return rejected(index, "missing_clause_location")
+        claims, report = auditor.audit(audit_clause, evidence)
         if not report.is_trustworthy:
-            return False
+            checks = ({"variable": row.claim.variable.value, "status": row.status.value}
+                      for row in report.validation_results[:8])
+            return rejected(index, "clause_claim_audit_failed" if claims else "no_extractable_clause_claim", checks)
         numeric_claims = sum(isinstance(claim.claimed_value, (int, float)) and not isinstance(claim.claimed_value, bool)
                              for claim in claims)
         if len(numbers) > numeric_claims:
-            return False
+            return rejected(index, "unaudited_number", numbers=len(numbers), audited_numbers=numeric_claims)
         if (categorical or CONDITION_ASSERTION.search(clause)) and not any(
             claim.variable.value in {"weather_condition", "precipitation_amount", "precipitation_probability"}
             for claim in claims
         ):
-            return False
-    return True
+            return rejected(index, "unaudited_condition")
+        previous_validated = True
+        if observation_only and len(locations) == 1 and len(mentioned) == 1:
+            location = next(iter(mentioned))
+            prefix = r"^(?:currently\s+)?in\s+" + re.escape(location) + r"(?:,\s*|\s+)"
+            metric = re.sub(prefix, "", clause.strip(), count=1, flags=re.I)
+            anchor = location if metric != clause.strip() and OBSERVED_CONTINUATION.fullmatch(metric) else None
+            previous_anchor_status = "explicit_observation_anchor" if anchor else "anchor_grammar_mismatch"
+        elif inherited:
+            previous_anchor_status = "inherited_observation_anchor"
+        else:
+            anchor = None
+            previous_anchor_status = "evidence_scope_ineligible"
+    return None

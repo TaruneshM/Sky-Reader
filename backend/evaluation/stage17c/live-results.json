@@ -1,0 +1,161 @@
+{
+  "rows": [
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "pass_": false,
+      "audited": false,
+      "complete": false,
+      "attempts": [
+        {
+          "provider": "groq",
+          "latency_ms": 1063.03,
+          "prompt_tokens": 224,
+          "completion_tokens": 191,
+          "total_tokens": 415,
+          "failure_category": null,
+          "provider_status": null
+        }
+      ],
+      "fallback_events": [],
+      "elapsed_ms": 1074.32,
+      "http": [
+        {
+          "case": "groq",
+          "provider": "groq",
+          "source": "live",
+          "http_status": 200,
+          "response_bytes": 1521,
+          "headers_latency_ms": 1025.37
+        }
+      ]
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "pass_": false,
+      "failure": "llm_provider_service_failure",
+      "attempts": [
+        {
+          "provider": "groq",
+          "latency_ms": 2.11,
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null,
+          "failure_category": "groq_temporary_throttling",
+          "provider_status": 429
+        },
+        {
+          "provider": "gemini",
+          "latency_ms": 454.86,
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null,
+          "failure_category": "llm_provider_service_failure",
+          "provider_status": 404
+        }
+      ],
+      "fallback_events": [
+        {
+          "from": "groq",
+          "to": "gemini",
+          "reason": "groq_temporary_throttling"
+        }
+      ],
+      "elapsed_ms": 459.37,
+      "http": [
+        {
+          "case": "gemini",
+          "provider": "groq",
+          "source": "fault_injection",
+          "http_status": 429,
+          "response_bytes": 40,
+          "headers_latency_ms": 0.1
+        },
+        {
+          "case": "gemini",
+          "provider": "gemini",
+          "source": "live",
+          "http_status": 404,
+          "response_bytes": 0,
+          "headers_latency_ms": 453.3
+        }
+      ]
+    },
+    {
+      "provider": "openrouter",
+      "model": "qwen/qwen3-coder:free",
+      "pass_": false,
+      "failure": "llm_provider_service_failure",
+      "attempts": [
+        {
+          "provider": "groq",
+          "latency_ms": 3.22,
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null,
+          "failure_category": "groq_temporary_throttling",
+          "provider_status": 429
+        },
+        {
+          "provider": "gemini",
+          "latency_ms": 0.62,
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null,
+          "failure_category": "llm_provider_service_failure",
+          "provider_status": 503
+        },
+        {
+          "provider": "openrouter",
+          "latency_ms": 583.82,
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null,
+          "failure_category": "llm_provider_service_failure",
+          "provider_status": 404
+        }
+      ],
+      "fallback_events": [
+        {
+          "from": "groq",
+          "to": "gemini",
+          "reason": "groq_temporary_throttling"
+        },
+        {
+          "from": "gemini",
+          "to": "openrouter",
+          "reason": "llm_provider_service_failure"
+        }
+      ],
+      "elapsed_ms": 590.84,
+      "http": [
+        {
+          "case": "openrouter",
+          "provider": "groq",
+          "source": "fault_injection",
+          "http_status": 429,
+          "response_bytes": 40,
+          "headers_latency_ms": 0.14
+        },
+        {
+          "case": "openrouter",
+          "provider": "gemini",
+          "source": "fault_injection",
+          "http_status": 503,
+          "response_bytes": 40,
+          "headers_latency_ms": 0.05
+        },
+        {
+          "case": "openrouter",
+          "provider": "openrouter",
+          "source": "live",
+          "http_status": 404,
+          "response_bytes": 0,
+          "headers_latency_ms": 582.54
+        }
+      ]
+    }
+  ],
+  "peak_bytes": 44187648
+}

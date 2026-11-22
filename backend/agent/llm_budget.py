@@ -1,7 +1,7 @@
 """Request-local limits shared by synthesis, tool turns and correction."""
 from dataclasses import dataclass, field
 import json
-from math import ceil
+from math import ceil, isfinite
 
 
 MAX_PROMPT_BYTES = 192 * 1024
@@ -109,9 +109,12 @@ class LLMLimits:
     corrections: int = 1
     input_tokens: int = 16_000
     output_tokens: int = 3_600
+    deadline_seconds: float = 60
 
     def __post_init__(self):
-        if min(self.attempts, self.tool_rounds, self.input_tokens, self.output_tokens) < 1 or self.corrections < 0:
+        if (min(self.attempts, self.tool_rounds, self.input_tokens, self.output_tokens) < 1
+                or self.corrections < 0 or not isfinite(self.deadline_seconds)
+                or not 0 < self.deadline_seconds <= 300):
             raise ValueError("Invalid LLM budget limits.")
 
 

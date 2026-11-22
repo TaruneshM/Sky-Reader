@@ -20,6 +20,9 @@ class LifecycleTracer:
         self.weather_http_attempts = 0
         self.weather_provider_latency_ms = 0.0
         self.spans: Dict[str, float] = {}
+        self.initial_provider: str | None = None
+        self.successful_provider: str | None = None
+        self.fallback_events: list[dict] = []
         self.llm_calls: List[Dict[str, Any]] = []
         self.tool_executions: List[Dict[str, Any]] = []
         self.failure_category: str | None = None
@@ -46,12 +49,24 @@ class LifecycleTracer:
         prompt_bytes: int | None = None,
         schema_bytes: int | None = None,
         estimated_prompt_tokens: int | None = None,
+        provider: str = "groq",
+        provider_status: int | None = None,
+        retry_after: int | None = None,
+        transient: bool = False,
+        dispatched: bool | None = None,
+        replay_safe: bool = False,
     ):
         """Records detailed metrics for an individual Groq LLM API invocation."""
         self.llm_calls.append({
             "call_index": len(self.llm_calls) + 1,
             "purpose": call_purpose,
             "model": model,
+            "provider": provider,
+            "provider_status": provider_status,
+            "retry_after": retry_after,
+            "transient": transient,
+            "dispatched": dispatched,
+            "replay_safe": replay_safe,
             "latency_ms": round(latency_ms, 2),
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
@@ -92,6 +107,22 @@ class LifecycleTracer:
             values = [call[key] for call in self.llm_calls]
             return sum(values) if all(value is not None for value in values) else None
 
+        usage_by_provider = {}
+        for call in self.llm_calls:
+            group = usage_by_provider.setdefault(call["provider"], [])
+            group.append(call)
+        provider_usage = {
+            name: {
+                "attempts": len(calls),
+                **{key: {
+                    "known_total": sum(call[key] for call in calls if call[key] is not None)
+                    if any(call[key] is not None for call in calls) else None,
+                    "unknown_attempts": sum(call[key] is None for call in calls),
+                } for key in ("prompt_tokens", "completion_tokens")},
+            }
+            for name, calls in usage_by_provider.items()
+        }
+
         total_llm_latency_ms = sum(c["latency_ms"] for c in self.llm_calls)
         total_tool_latency_ms = sum(t["latency_ms"] for t in self.tool_executions)
 
@@ -119,6 +150,11 @@ class LifecycleTracer:
             "completion_tokens": token_total("completion_tokens"),
             "total_tokens": token_total("total_tokens"),
             "spans": self.spans,
+            "initial_provider": self.initial_provider,
+            "successful_provider": self.successful_provider,
+            "attempted_providers": [call["provider"] for call in self.llm_calls],
+            "fallback_events": self.fallback_events,
+            "provider_usage": provider_usage,
             "llm_calls": self.llm_calls,
             "tool_executions": self.tool_executions,
         }

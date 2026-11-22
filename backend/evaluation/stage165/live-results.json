@@ -1,0 +1,207 @@
+{
+  "rows": [
+    {
+      "case": "current",
+      "checks": {
+        "pass": true,
+        "evidence_trustworthy": true,
+        "agent_answer_complete": true,
+        "measurement_coverage": {
+          "Tokyo": [
+            "temperature",
+            "weather_condition"
+          ]
+        },
+        "period_mentioned": true,
+        "follow_up_anchor_ok": true,
+        "material_hazards_detected": 0,
+        "material_hazards_covered": null,
+        "unsupported_numeric_claims": 0,
+        "unaudited_numeric_answer": false
+      },
+      "failure": null,
+      "elapsed_ms": 1415.52,
+      "weather_http_attempts": 2,
+      "groq": [],
+      "estimated_prompt_tokens": 0
+    },
+    {
+      "case": "tomorrow",
+      "checks": {
+        "pass": true,
+        "evidence_trustworthy": true,
+        "agent_answer_complete": true,
+        "measurement_coverage": {
+          "Lisbon": [
+            "precipitation_amount",
+            "precipitation_probability",
+            "temperature",
+            "wind_speed"
+          ]
+        },
+        "period_mentioned": true,
+        "follow_up_anchor_ok": true,
+        "material_hazards_detected": 0,
+        "material_hazards_covered": null,
+        "unsupported_numeric_claims": 0,
+        "unaudited_numeric_answer": false
+      },
+      "failure": null,
+      "elapsed_ms": 1590.82,
+      "weather_http_attempts": 2,
+      "groq": [],
+      "estimated_prompt_tokens": 0
+    },
+    {
+      "case": "umbrella",
+      "checks": {
+        "pass": true,
+        "evidence_trustworthy": true,
+        "agent_answer_complete": true,
+        "measurement_coverage": {
+          "Singapore": [
+            "precipitation_amount",
+            "precipitation_probability",
+            "travel_suitability"
+          ]
+        },
+        "period_mentioned": true,
+        "follow_up_anchor_ok": true,
+        "material_hazards_detected": 0,
+        "material_hazards_covered": null,
+        "unsupported_numeric_claims": 0,
+        "unaudited_numeric_answer": false
+      },
+      "failure": null,
+      "elapsed_ms": 1317.64,
+      "weather_http_attempts": 2,
+      "groq": [],
+      "estimated_prompt_tokens": 0
+    },
+    {
+      "case": "safety",
+      "checks": {
+        "pass": true,
+        "evidence_trustworthy": true,
+        "agent_answer_complete": true,
+        "measurement_coverage": {
+          "Mumbai": [
+            "travel_suitability"
+          ]
+        },
+        "period_mentioned": true,
+        "follow_up_anchor_ok": true,
+        "material_hazards_detected": 0,
+        "material_hazards_covered": null,
+        "unsupported_numeric_claims": 0,
+        "unaudited_numeric_answer": false
+      },
+      "failure": null,
+      "elapsed_ms": 1282.71,
+      "weather_http_attempts": 2,
+      "groq": [],
+      "estimated_prompt_tokens": 0
+    },
+    {
+      "case": "comparison",
+      "checks": {
+        "pass": true,
+        "evidence_trustworthy": true,
+        "agent_answer_complete": true,
+        "measurement_coverage": {
+          "Paris": [
+            "precipitation_amount",
+            "precipitation_probability",
+            "temperature",
+            "travel_suitability",
+            "wind_speed"
+          ],
+          "Berlin": [
+            "precipitation_amount",
+            "precipitation_probability",
+            "temperature",
+            "travel_suitability",
+            "wind_speed"
+          ]
+        },
+        "period_mentioned": true,
+        "follow_up_anchor_ok": true,
+        "material_hazards_detected": 0,
+        "material_hazards_covered": null,
+        "unsupported_numeric_claims": 0,
+        "unaudited_numeric_answer": false
+      },
+      "failure": null,
+      "elapsed_ms": 7924.96,
+      "weather_http_attempts": 4,
+      "groq": [],
+      "estimated_prompt_tokens": 0
+    },
+    {
+      "case": "follow_up",
+      "checks": {
+        "pass": true,
+        "evidence_trustworthy": true,
+        "agent_answer_complete": true,
+        "measurement_coverage": {
+          "Tokyo": [
+            "wind_speed"
+          ]
+        },
+        "period_mentioned": true,
+        "follow_up_anchor_ok": true,
+        "material_hazards_detected": 0,
+        "material_hazards_covered": null,
+        "unsupported_numeric_claims": 0,
+        "unaudited_numeric_answer": false
+      },
+      "failure": null,
+      "elapsed_ms": 545.34,
+      "weather_http_attempts": 1,
+      "groq": [],
+      "estimated_prompt_tokens": 0
+    },
+    {
+      "case": "synthesis",
+      "checks": {
+        "pass": false
+      },
+      "failure": "groq_service_failure",
+      "elapsed_ms": 8.29,
+      "weather_http_attempts": 0,
+      "groq": [
+        {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "status": "failed"
+        }
+      ],
+      "estimated_prompt_tokens": 443
+    }
+  ],
+  "summary": {
+    "cases": 7,
+    "passed": 6,
+    "groq_attempts": 1,
+    "groq_completed": 0,
+    "weather_http_attempts": 13,
+    "median_case_ms": 1317.64,
+    "usage": {
+      "prompt_tokens": {
+        "known_total": null,
+        "missing_calls": 1
+      },
+      "completion_tokens": {
+        "known_total": null,
+        "missing_calls": 1
+      }
+    }
+  },
+  "exit_status": 1,
+  "outbound_attempts": {
+    "weather": 13,
+    "groq": 0
+  },
+  "stop_reason": "outbound_request_blocked",
+  "cgroup_memory_peak_bytes": 50651136
+}

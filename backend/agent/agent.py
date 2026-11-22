@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -20,15 +21,17 @@ else:
     load_dotenv()
 
 try:
+    from backend.llm_gateway.gateway import Gateway, Request
+    from backend.llm_gateway.config import configured, enabled, model_for, provider_order, timeout_for
     from backend.agent.weather_evidence_gate import model_weather_answer_is_grounded
     from backend.agent.answer_completeness import ADVICE_INTENTS, COMPLEX_REQUEST, requirements
     from backend.agent.llm_budget import (LLMBudget, LLMLimits, MAX_TOOL_REPLY_BYTES, UnsafePayload,
-                                          assistant_fields, encode_wire, wire_size)
+                                          encode_wire, wire_size)
     from backend.agent.prepared_prompt import synthesis_message
     from backend.agent.tools import tools
     from backend.agent.executor import execute_tool
     from backend.agent.tracer import LifecycleTracer
-    from backend.agent.failures import FailureCategory, RequestFailure, classify_groq_failure
+    from backend.agent.failures import FailureCategory, RequestFailure
     from backend.agent.conversation_state import ConversationScope, ConversationWeatherContext
     from backend.agent.request_planner import plan_weather_request
     from backend.agent.router import (
@@ -52,15 +55,17 @@ try:
     from backend.evidence.hallucination_controller import HallucinationController
     from backend.evidence.explanation_engine import ExplanationEngine
 except ImportError:
+    from llm_gateway.gateway import Gateway, Request
+    from llm_gateway.config import configured, enabled, model_for, provider_order, timeout_for
     from agent.weather_evidence_gate import model_weather_answer_is_grounded
     from agent.answer_completeness import ADVICE_INTENTS, COMPLEX_REQUEST, requirements
     from agent.llm_budget import (LLMBudget, LLMLimits, MAX_TOOL_REPLY_BYTES, UnsafePayload,
-                                          assistant_fields, encode_wire, wire_size)
+                                          encode_wire, wire_size)
     from agent.prepared_prompt import synthesis_message
     from agent.tools import tools
     from agent.executor import execute_tool
     from agent.tracer import LifecycleTracer
-    from agent.failures import FailureCategory, RequestFailure, classify_groq_failure
+    from agent.failures import FailureCategory, RequestFailure
     from agent.conversation_state import ConversationScope, ConversationWeatherContext
     from agent.request_planner import plan_weather_request
     from agent.router import (
@@ -288,7 +293,9 @@ def get_groq_client(api_key: Optional[str] = None) -> AsyncGroq:
         raise ValueError(
             "Groq API key is missing. Please set GROQ_API_KEY in backend/.env"
         )
-    return AsyncGroq(api_key=key.strip(), max_retries=0)
+    timeout = os.getenv("GROQ_TIMEOUT_SECONDS")
+    options = {"timeout": timeout_for("groq")} if timeout is not None else {}
+    return AsyncGroq(api_key=key.strip(), max_retries=0, **options)
 
 
 def weather_advice(topic, components, facts, material):
@@ -329,15 +336,25 @@ async def run_agent(
     request_scope: ConversationScope | None = None,
     trusted_state: ConversationWeatherContext | None = None,
     llm_limits: LLMLimits | None = None,
+    provider: str | None = None,
+    fallback: bool | None = None,
+    provider_priority: tuple[str, ...] | None = None,
 ) -> Dict[str, Any]:
     """
     Runs the agentic reasoning and deterministic fast-path routing pipeline.
     Optimized for sub-second latency, bounded token usage, and robust rate-limit handling.
     """
     active_tracer = tracer or LifecycleTracer()
-    active_model = model or os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL)
-    active_client = client
+    selected_provider = provider or ("groq" if client is not None else os.getenv("LLM_PROVIDER", "groq"))
+    allow_fallback = provider is None and client is None and (
+        fallback if fallback is not None else os.getenv("LLM_FALLBACK_ENABLED", "false").lower() == "true"
+    )
+    active_model = None
+    gateway = None
+    providers = None
+    provider_index = 0
     budget = LLMBudget(llm_limits or LLMLimits())
+    deadline = time.monotonic() + budget.limits.deadline_seconds
     active_executor = executor_fn or execute_tool
     evidence_engine = EvidenceEngine()
     hallucination_controller = HallucinationController()
@@ -358,52 +375,91 @@ async def run_agent(
             raise failure(RequestFailure(FailureCategory.GROQ_AUTHENTICATION)) from None
 
     async def complete(purpose, **kwargs):
-        nonlocal active_client
-        try:
-            dimensions = {
-                "prompt_bytes": wire_size({"model": active_model, **kwargs}),
-                "schema_bytes": wire_size(kwargs["tools"]) if kwargs.get("tools") else 0,
-            }
-        except UnsafePayload:
-            active_tracer.budget_exhausted = True
-            raise failure(RequestFailure(FailureCategory.LLM_BUDGET_EXHAUSTED)) from None
-        reservation = budget.reserve(purpose, dimensions["prompt_bytes"], kwargs["max_tokens"])
-        if reservation is None:
-            active_tracer.budget_exhausted = True
-            raise failure(RequestFailure(FailureCategory.LLM_BUDGET_EXHAUSTED))
-        active_client = active_client or require_client()
-        estimated_input, allowed_output = reservation
-        kwargs["max_tokens"] = allowed_output
-        dimensions["estimated_prompt_tokens"] = estimated_input
-        started = time.perf_counter()
-        try:
-            response = await active_client.chat.completions.create(model=active_model, **kwargs)
-            choices = getattr(response, "choices", None)
-            if type(choices) not in (list, tuple) or not choices:
-                raise RequestFailure(FailureCategory.GROQ_SERVICE)
-            message = assistant_fields(getattr(choices[0], "message", None))
-        except Exception as error:
-            classified = (RequestFailure(FailureCategory.GROQ_SERVICE) if isinstance(error, UnsafePayload)
-                          else error if isinstance(error, RequestFailure) else classify_groq_failure(error))
+        nonlocal gateway, providers, provider_index, active_model
+        if providers is None:
+            try:
+                order = provider_order(selected_provider, allow_fallback=allow_fallback, override=provider_priority)
+            except ValueError:
+                raise failure(RequestFailure(FailureCategory.LLM_UNAVAILABLE)) from None
+            active_tracer.initial_provider = order[0]
+            providers = []
+            for name in order:
+                candidate_model = model_for(name, model if name == order[0] else None)
+                if not allow_fallback or configured(name, candidate_model, api_key):
+                    providers.append((name, candidate_model))
+        if not providers:
+            raise failure(RequestFailure(FailureCategory.LLM_UNAVAILABLE, dispatched=False))
+
+        # Only the first model turn can migrate: its prompt contains trusted planner evidence
+        # and user/history text, with no provider-specific assistant or tool state.
+        replay_safe = purpose == "agent_turn_1" and not any(
+            message["role"] == "tool" or message.get("tool_calls") for message in kwargs["messages"]
+        )
+        while True:
+            name, active_model = providers[provider_index]
+            if time.monotonic() >= deadline:
+                active_tracer.budget_exhausted = True
+                raise failure(RequestFailure(FailureCategory.LLM_BUDGET_EXHAUSTED, dispatched=False))
+            try:
+                dimensions = {
+                    "prompt_bytes": wire_size({"model": active_model, **kwargs}),
+                    "schema_bytes": wire_size(kwargs["tools"]) if kwargs.get("tools") else 0,
+                }
+            except UnsafePayload:
+                active_tracer.budget_exhausted = True
+                raise failure(RequestFailure(FailureCategory.LLM_BUDGET_EXHAUSTED, dispatched=False)) from None
+            reservation = budget.reserve(purpose, dimensions["prompt_bytes"], kwargs["max_tokens"])
+            if reservation is None:
+                active_tracer.budget_exhausted = True
+                raise failure(RequestFailure(FailureCategory.LLM_BUDGET_EXHAUSTED, dispatched=False))
+            if gateway is None:
+                try:
+                    if (not active_model or (client is not None and name != "groq")
+                            or (client is None and not enabled(name))):
+                        raise RequestFailure(FailureCategory.LLM_UNAVAILABLE, dispatched=False)
+                    gateway = Gateway(name, groq_client=(client or require_client()) if name == "groq" else None)
+                except RequestFailure as error:
+                    error.provider = name
+                    error.dispatched = False
+                    raise failure(error) from None
+
+            estimated_input, allowed_output = reservation
+            dimensions["estimated_prompt_tokens"] = estimated_input
+            started = time.perf_counter()
+            try:
+                async with asyncio.timeout(max(0, deadline - time.monotonic())):
+                    response = await gateway.complete(Request(model=active_model, **{**kwargs, "max_tokens": allowed_output}))
+            except TimeoutError:
+                active_tracer.budget_exhausted = True
+                error = RequestFailure(FailureCategory.LLM_BUDGET_EXHAUSTED)
+            except RequestFailure as caught:
+                error = caught
+            else:
+                usage = response.usage
+                budget.observe(estimated_input, allowed_output, usage)
+                active_tracer.successful_provider = response.provider
+                active_tracer.record_llm_call(
+                    response.model, (time.perf_counter() - started) * 1000, usage.prompt_tokens,
+                    usage.completion_tokens, usage.total_tokens, finish_reason=response.finish_reason,
+                    call_purpose=purpose, provider=response.provider, **dimensions,
+                )
+                return response.message
+
+            error.provider = name
+            error.replay_safe = replay_safe
             active_tracer.record_llm_call(
                 active_model, (time.perf_counter() - started) * 1000, None, None, None,
-                call_purpose=purpose, failure_category=classified.category.value, **dimensions,
+                call_purpose=purpose, failure_category=error.category.value, provider=name,
+                provider_status=error.provider_status, retry_after=error.retry_after,
+                transient=error.transient, dispatched=error.dispatched, replay_safe=replay_safe, **dimensions,
             )
-            raise failure(classified) from None
-        usage = getattr(response, "usage", None)
-        def usage_count(name):
-            value = getattr(usage, name, None)
-            return value if type(value) is int and value >= 0 else None
-
-        budget.observe(estimated_input, allowed_output, usage)
-        active_tracer.record_llm_call(
-            active_model, (time.perf_counter() - started) * 1000, usage_count("prompt_tokens"),
-            usage_count("completion_tokens"), usage_count("total_tokens"),
-            finish_reason=getattr(choices[0], "finish_reason", None)
-            if type(getattr(choices[0], "finish_reason", None)) is str else None,
-            call_purpose=purpose, **dimensions,
-        )
-        return message
+            if not (allow_fallback and replay_safe and error.transient and provider_index + 1 < len(providers)):
+                raise failure(error) from None
+            provider_index += 1
+            active_tracer.fallback_events.append({
+                "from": name, "to": providers[provider_index][0], "reason": error.category.value,
+            })
+            gateway = None
 
     def result(text, executed=(), iterations=1, evidence=None, risk=None, *, fallback=False, outcome=None, audit=None, model_draft=False):
         if model_draft and not model_weather_answer_is_grounded(

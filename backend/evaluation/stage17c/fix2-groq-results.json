@@ -1,0 +1,59 @@
+{
+  "rows": [
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-120b",
+      "pass_": false,
+      "audited": false,
+      "complete": false,
+      "attempts": [
+        {
+          "provider": "groq",
+          "latency_ms": 1427.03,
+          "prompt_tokens": 224,
+          "completion_tokens": 350,
+          "total_tokens": 574,
+          "failure_category": null,
+          "provider_status": null
+        }
+      ],
+      "draft_diagnostics": [
+        {
+          "supporting_fixture_evidence_ids": [
+            "ev_obs_temp_current"
+          ],
+          "final_gate_rejection": {
+            "clause_index": 2,
+            "reason": "missing_clause_location",
+            "claim_checks": [],
+            "numeric_mentions": null,
+            "audited_numeric_claims": null
+          },
+          "draft_audited": true,
+          "draft_passed_model_evidence_gate": false,
+          "missing_requirements": [],
+          "unsupported_claims": [],
+          "named_location_present": true,
+          "temperature_units_present": true,
+          "finish_reason": "length",
+          "truncated": true,
+          "output_cap": 350,
+          "reported_usage_reached_cap": true
+        }
+      ],
+      "fallback_events": [],
+      "elapsed_ms": 1435.03,
+      "http": [
+        {
+          "case": "groq",
+          "provider": "groq",
+          "source": "live",
+          "http_status": 200,
+          "response_bytes": 2315,
+          "headers_latency_ms": 1385.02
+        }
+      ]
+    }
+  ],
+  "peak_bytes": 43642880
+}
