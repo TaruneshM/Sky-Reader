@@ -3,6 +3,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from backend.evaluation.config import EvaluationConfig
@@ -192,16 +193,14 @@ class TestEvaluationRunner(unittest.TestCase):
 
     def test_sky_reader_system_execution(self):
         """Verifies SkyReaderAdapter executes production agent path, calls injected fixture tools, and generates claims/reports."""
-        class MockToolCall:
-            def __init__(self):
-                self.id = "call_sky_1"
-                self.function = MagicMock()
-                self.function.name = "get_current_weather"
-                self.function.arguments = '{"latitude": 30.3165, "longitude": 78.0322}'
-
+        tool_call = SimpleNamespace(id="call_sky_1", function=SimpleNamespace(
+            name="get_current_weather", arguments='{"latitude": 30.3165, "longitude": 78.0322}',
+        ))
         mock_client = make_mock_client([
-            MockResponse(tool_calls=[MockToolCall()]),
-            MockResponse(content="The current temperature in Dehradun is 21.8 °C."),
+            SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=None, tool_calls=[tool_call]))]),
+            SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+                content="The current temperature in Dehradun is 21.8 °C.", tool_calls=None,
+            ))]),
         ])
         adapter = SkyReaderAdapter(self.config, client=mock_client)
 

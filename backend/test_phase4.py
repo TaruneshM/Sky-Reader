@@ -388,8 +388,12 @@ async def check_agent_phase4_end_to_end():
     client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(
         create=AsyncMock(return_value=completion)
     )))
+    from backend.weather.location_models import ConfirmedLocation, Resolved, ResolutionProvenance
+    resolved = Resolved(query="Dehradun", location=ConfirmedLocation(
+        **place, provenance=ResolutionProvenance(method="standalone")
+    ))
     with patch.dict(run_agent.__globals__, {
-        "geocode_location": AsyncMock(return_value=place),
+        "resolve_location": AsyncMock(return_value=resolved),
         "get_current_weather": AsyncMock(return_value=current),
     }):
         result = await run_agent(query, client=client)

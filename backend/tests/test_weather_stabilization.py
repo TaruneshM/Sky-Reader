@@ -139,10 +139,18 @@ def test_fallback_preserves_actual_weather_and_risk():
 
 @pytest.fixture
 def weather_tools(monkeypatch):
-    geo = AsyncMock(return_value={"name": "Tokyo", "latitude": 35, "longitude": 139, "timezone": "Asia/Tokyo"})
+    from backend.weather.location_models import ConfirmedLocation, Resolved, ResolutionProvenance
+
+    async def resolve(location, **kwargs):
+        return Resolved(query=location, location=ConfirmedLocation(
+            name="Tokyo", latitude=35, longitude=139, timezone="Asia/Tokyo",
+            provenance=ResolutionProvenance(method="standalone"),
+        ))
+
+    geo = AsyncMock(side_effect=resolve)
     hourly = AsyncMock(return_value=forecast())
     current = AsyncMock(return_value={"current": {"time": "2026-11-21T16:15", "temperature_2m": 20}})
-    monkeypatch.setattr(agent, "geocode_location", geo)
+    monkeypatch.setattr(agent, "resolve_location", geo)
     monkeypatch.setattr(agent, "get_hourly_forecast", hourly)
     monkeypatch.setattr(agent, "get_current_weather", current)
     return geo, hourly, current
@@ -150,7 +158,10 @@ def weather_tools(monkeypatch):
 
 def test_unresolved_new_city_does_not_use_old_city(weather_tools):
     geocode, _, current = weather_tools
-    geocode.return_value = None
+    from backend.weather.location_models import NotFound
+
+    geocode.side_effect = None
+    geocode.return_value = NotFound(query="São Paulo", reason="no_candidates")
     output = asyncio.run(agent.run_agent(
         "Weather in São Paulo?", [{"role": "user", "content": "Weather in Tokyo?"}], api_key=""
     ))
@@ -177,19 +188,17 @@ def test_future_weather_never_uses_observation_when_forecast_unavailable(weather
     assert "unavailable" in output["response"]
 
 
-def test_synthesis_context_and_replacement_are_in_sync(weather_tools):
+def test_deterministic_wind_and_evidence_are_in_sync(weather_tools):
     _, _, current = weather_tools
     client = client_with(completion("Tomorrow in Tokyo the wind speed will be 999 km/h."))
     output = asyncio.run(agent.run_agent("How windy will it be tomorrow in Tokyo?", client=client))
-    prompt = json.loads(client.chat.completions.create.call_args.kwargs["messages"][1]["content"])
-    assert prompt["period"] == "tomorrow"
-    assert prompt["timezone"] == "Asia/Tokyo"
-    assert prompt["verified_facts"]["wind speed"] == [50, 50]
-    assert "temperature" not in prompt["verified_facts"]
+    client.chat.completions.create.assert_not_called()
+    assert "50 km/h" in output["response"]
+    assert "temperature" not in output["response"]
     assert "999" not in output["response"]
     assert output["claims"]
     assert output["claims"] == [row["claim"] for row in output["validation_report"]["validation_results"]]
-    assert output["explanation"]["conclusion"] == output["response"]
+    assert output["response"].startswith(output["explanation"]["conclusion"].removesuffix("..."))
     current.assert_not_called()
 
 
@@ -324,6 +333,7 @@ def test_wrong_peak_does_not_pass_by_matching_a_single_hour(weather_tools):
 
 
 def test_weather_draft_without_tool_evidence_does_not_look_verified(weather_tools):
+    weather_tools[2].return_value = {}
     client = client_with(completion("It will be 25 °C in Tokyo."))
     output = asyncio.run(agent.run_agent("Give a comprehensive weather briefing for Tokyo.", client=client))
     assert "25 °C" not in output["response"]

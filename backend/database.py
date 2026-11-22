@@ -74,6 +74,30 @@ def init_db():
     )
     """)
 
+  cursor.execute("""
+    CREATE TABLE IF NOT EXISTS guest_sessions (
+      id TEXT PRIMARY KEY,
+      credential_hash TEXT UNIQUE NOT NULL,
+      expires_at INTEGER NOT NULL
+    )
+  """)
+  cursor.execute("""
+    CREATE TABLE IF NOT EXISTS conversation_threads (
+      id TEXT PRIMARY KEY,
+      account_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      guest_id TEXT REFERENCES guest_sessions(id) ON DELETE CASCADE,
+      schema_version INTEGER NOT NULL,
+      revision INTEGER NOT NULL,
+      state_json TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL,
+      CHECK ((account_id IS NULL) <> (guest_id IS NULL))
+    )
+  """)
+  cursor.execute("CREATE INDEX IF NOT EXISTS conversation_threads_account ON conversation_threads(account_id)")
+  cursor.execute("CREATE INDEX IF NOT EXISTS conversation_threads_guest ON conversation_threads(guest_id)")
+
   if demo_enabled():
     cursor.execute(
         """
@@ -191,17 +215,19 @@ def create_session(user_id: int, duration_days: int = 14) -> str:
     return _insert_session(conn, user_id, duration_days)
 
 
-def get_user_by_session_token(token: str) -> Optional[Dict[str, Any]]:
+def get_user_by_session_token(token: str, *, connection=None) -> Optional[Dict[str, Any]]:
   if not token:
     return None
-  with closing(get_db_connection()) as conn:
-    row = conn.execute(
-        """
-        SELECT u.id, u.email, u.name, u.created_at, u.saved_cities, s.expires_at
-        FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?
-        """,
-        (token,),
-    ).fetchone()
+  if connection is None:
+    with closing(get_db_connection()) as conn:
+      return get_user_by_session_token(token, connection=conn)
+  row = connection.execute(
+      """
+      SELECT u.id, u.email, u.name, u.created_at, u.saved_cities, s.expires_at
+      FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.token = ?
+      """,
+      (token,),
+  ).fetchone()
   if not row or (row["email"].lower() == DEMO_EMAIL and not demo_enabled()):
     return None
 

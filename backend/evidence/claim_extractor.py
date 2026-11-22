@@ -314,6 +314,15 @@ class ClaimExtractor:
                 ))
                 claim_counter += 1
 
+            condition = re.search(r"\bobserved conditions\s+in\s+[^:]+:\s*(.+?)[.!?]*$", line_str, re.I)
+            if condition:
+                claims.append(FactualClaim(
+                    claim_id=f"claim_{claim_counter}", statement=line_str,
+                    variable=WeatherVariable.WEATHER_CONDITION, claimed_value=condition[1],
+                    unit="condition", time_period="current", location=location, claim_type=ClaimType.CONDITION,
+                ))
+                claim_counter += 1
+
             risk = re.search(r"\bweather risk\b[^.!?]*?\b(?:is|level)\s+(low|moderate|high|severe)\b",
                              line_str, re.I)
             if risk:
@@ -341,6 +350,8 @@ class ClaimExtractor:
 
         if "for current" in text_lower:
             return "current"
+        if scoped_day := re.search(r"\b(today|tomorrow) (morning|afternoon|evening)\b", text_lower):
+            return f"{scoped_day[1]}_{scoped_day[2]}"
         if "tomorrow" in text_lower:
             return "tomorrow"
         if "today" in text_lower:

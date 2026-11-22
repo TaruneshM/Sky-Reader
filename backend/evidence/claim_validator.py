@@ -303,7 +303,8 @@ class ClaimValidator:
 
         for it in items:
             ev_str = str(it.value).lower()
-            if claimed_str in ev_str or ev_str in claimed_str:
+            exact = claim.variable == WeatherVariable.WEATHER_CONDITION or claim.unit == "risk_level"
+            if claimed_str == ev_str or (not exact and (claimed_str in ev_str or ev_str in claimed_str)):
                 return ClaimValidationResult(
                     claim=claim,
                     status=ValidationStatus.SUPPORTED,

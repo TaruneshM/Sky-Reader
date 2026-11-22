@@ -17,6 +17,7 @@ class RiskType(str, Enum):
     STRONG_WIND = "strong_wind"
     EXTREME_HEAT = "extreme_heat"
     EXTREME_COLD = "extreme_cold"
+    FOG = "fog"
 
 
 class RiskThresholds(BaseModel):

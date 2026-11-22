@@ -58,8 +58,9 @@ Integrated centered dropdown pill allowing instant switching between specialized
 
 - Email/password authentication uses SQLite with salted PBKDF2 password hashes and 14-day bearer sessions. The browser validates saved tokens through `GET /api/auth/me` before displaying account content. A temporarily unavailable server leaves the account locked and provides a retry.
 - **Stay signed in** stores the token for later browser visits. Turning it off keeps the token in tab session storage, which survives reloads in that tab. Logout immediately removes browser credentials and asks `POST /api/auth/logout` to revoke the token. If revocation fails, the UI reports it while remaining signed out locally.
-- **Continue as guest** grants access to public features without an account. Guest and each authenticated account have separate browser-local conversation histories. History survives refresh and logout and is available again in the same scope. Clearing history removes only the active scope. The old unscoped history is left unused because its owner cannot be identified.
-- Browser history is not server-enforced account storage, encrypted storage, or cross-device sync. People or scripts with access to the same browser profile can read its local data. The frontend exposes Google sign-in and password reset as unavailable.
+- **Continue as guest** establishes a separate server-issued credential. The browser keeps guest credentials and transcripts in tab session storage. They survive a reload in the same tab. Leaving guest mode clears the tab's guest data and requests server revocation.
+- Signed-in transcripts remain in browser storage scoped to the account and are available again after signing in. The browser remembers the selected thread and its server association. Clear History removes local transcripts and requests deletion of server context for the active owner. The app reports a failed server clear separately.
+- The server persists only the versioned weather planner state for each thread, including confirmed locations, pending clarification, and forecast scope. Transcripts remain in the browser and are not synchronized across devices. People or scripts with access to the same browser profile can read its browser-local data. The frontend exposes Google sign-in and password reset as unavailable.
 - The built-in demo account is disabled by default. Set `SKYREADER_ENABLE_DEMO=1` explicitly for local development to permit it. With the flag off, existing demo rows are preserved and their sessions cannot be used.
 
 ---
@@ -309,9 +310,18 @@ npm run dev
 
 ### Public and authenticated routes
 
-Weather lookup, deterministic weather and evidence routes, and chat are public, including their legacy aliases. Login and registration are public entry points. Profile access and logout require the bearer token from login or registration. The backend stores no account conversation history and exposes no route to retrieve it.
+Weather lookup, deterministic weather and evidence routes, and legacy chat are public. Login and registration are public entry points. Profile access, logout, and account thread operations require the bearer token from login or registration. Guest thread operations require a server-issued guest credential. The backend exposes no endpoint for reading raw planner state or synchronizing conversation transcripts.
 
 Both chat aliases share rolling process-local limits. Set `SKYREADER_CHAT_REQUESTS_PER_IP_PER_MINUTE` (default `12`) and `SKYREADER_CHAT_REQUESTS_PER_MINUTE` (default `60`) to positive integers. Excess requests receive HTTP 429 with a retry hint before agent execution. Chat messages are limited to 4,000 characters, and only the last six history entries are used, with at most 4,000 characters per entry. These limits apply to guest and signed-in traffic and are independent across processes. Behind a proxy, client addresses depend on the server’s trusted-proxy configuration.
+
+### Thread-scoped planner state
+
+- Create a guest session with `POST /api/guest/session` if the browser is in guest mode. Pass its credential in `X-Guest-Session`. It expires after seven days and can be revoked with `DELETE /api/guest/session`, which deletes its threads. SQLite keeps a credential hash and a separate owner ID. Account clients send `Authorization: Bearer …`. Each request supplies one credential.
+- Create a thread with `POST /api/chat/threads`. The response contains an opaque `thread_id` and initial `thread_revision`. Include both in subsequent chat requests. Responses for committed turns provide the next revision in `X-Thread-Revision`. A chat request without either field still uses the stateless transcript path.
+- A thread update revalidates the session and compares the revision in a SQLite write transaction. A conflict returns HTTP 409 and the current revision for the authorized caller. The browser updates its revision and waits for a new submission. Repeating a request with its old revision cannot apply the transition twice. Fatal errors and detected disconnects before commit leave the prior state intact. Structured clarification and handled provider failures can advance the revision while retaining confirmed context.
+- `DELETE /api/chat/threads` clears planner state for the active owner. `DELETE /api/chat/threads/{thread_id}` deletes a single owned thread. Both are idempotent and reveal no foreign-thread information. A pending turn cannot recreate a deleted thread. Account logout revokes the active bearer session and retains the account's threads for future sign-in.
+- Threads expire after 30 days without a committed update. A guest thread also becomes inaccessible when its guest credential expires. New guest sessions and threads trigger cleanup of expired rows. Lifecycle routes have their own process-local limits of 30 requests per IP and 180 total per minute.
+- Keep the SQLite file on persistent local storage across restarts and use HTTPS for credential transport in hosted deployments. Workers must use the same database file for consistent authorization and revisions. A disconnected turn that already committed can still advance its revision. Requests can continue running upstream after browser cancellation.
 
 ### Example 1: Multi-Turn Verified Agent Chat Response
 ```bash

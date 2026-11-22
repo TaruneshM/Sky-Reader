@@ -1,4 +1,5 @@
 import re
+from math import isfinite
 import unicodedata
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
@@ -24,13 +25,15 @@ INTENT_PATTERNS = [
         r"\bexpecting rain\b",
         r"\brain today\b",
         r"\brain tomorrow\b",
+        r"\b(?:rain|precipitation) (?:probability|odds|chance)\b",
     ]),
+    ("temperature", [r"\b(temperature|how (?:hot|cold))\b"]),
     ("morning_walk", [
         r"\b(morning walk|evening walk|go for a walk|stroll|jogging|run|outdoor)\b",
-        r"\bcan i go for a walk\b",
+        r"\b(?:should i|can i|good (?:weather|time) (?:to|for))\b.*\b(?:walk\w*|hik\w*|travel\w*|driv\w*|cycl\w*|exercis\w*|run\w*)\b",
     ]),
     ("wind_humidity", [
-        r"\b(humidity|wind speed|windy|wind gusts?)\b",
+        r"\b(humidity|humid|wind speed|wind forecast|windy|wind gusts?|how strong (?:is|are|will) (?:the )?winds?)\b",
     ]),
     ("tomorrow_forecast", [
         r"\bwhat about tomorrow\b",
@@ -68,10 +71,29 @@ class WeatherRequest:
     comparison: bool = False
     destinations: tuple[str, ...] = ()
     needs_destinations: bool = False
+    needs_location: bool = False
+    relative_baseline: Optional[str] = None
+    components: tuple[str, ...] = ()
+
+
+COMPONENT_PATTERNS = {
+    "temperature": r"\b(?:temperature|warmer|colder|cooler|hotter|warm|cold)\b",
+    "rain": r"\b(?:rain(?:y|fall)?|precipitation|showers?)\b",
+    "wind speed": r"\b(?:windy|winds?|wind speed)\b(?!\s+gusts?)",
+    "wind gusts": r"\bgusts?\b",
+    "humidity": r"\bhumid(?:ity)?\b",
+    "forecast": r"\b(?:weather|forecast)\s+(?:and|&)\b|\bhourly\s+(?:breakdown|outlook)\b",
+    "clothing": r"\b(?:jacket|coat|sweater|hoodie|clothes|clothing|layers|what (?:should|can) i wear)\b",
+    "umbrella": r"\bumbrella\b",
+    "safety": r"\b(?:safe|safety|warnings?|hazards?|postpone)\b",
+}
 
 
 COMPARISON_MARKER = re.compile(r"\b(compare|versus|vs|which city|difference between)\b", re.I)
 COMPARE_PLACES = re.compile(r"^compare\s+(.+?)\s+(?:and|with|versus|vs\.?)\s+(.+)", re.I)
+BARE_PAIR = re.compile(r"^(.+?)\s+(?:vs\.?|versus|or)\s+(.+)$", re.I)
+WOULD_CHOOSE = re.compile(r"^would\s+(.+?)\s+or\s+(.+?)\s+be\s+better\b", re.I)
+DESTINATION_SWITCH = re.compile(r"\b(?:switch|change|head) to\s+([^?!;]+)", re.I)
 CHOICE = re.compile(r"\b(?:choose|pick|decide between)\s+(.+?)\s+(?:or|and|versus|vs\.?)\s+(.+)", re.I)
 IMPLICIT_CHOICE = re.compile(
     r"\bwhich (?:one |destination |place |city )?(?:should i (?:choose|pick)|(?:is|would be) better)\b",
@@ -82,13 +104,13 @@ ALTERNATIVE = re.compile(
 )
 DESTINATION_PREFIX = re.compile(r"^(?:(?:going|go|travel(?:l?ing)?|head(?:ing)?) (?:out )?to|visiting)\s+", re.I)
 PLACE_END = re.compile(
-    r"\s+\b(?:for (?:today|tonight|tomorrow)|please|any thoughts|what do you think|in detail|"
+    r"\s+\b(?:for (?:today|tonight|tomorrow|cycling|hiking|walking|travel|a walk|an? (?:evening|morning) walk)|please|pls|thx|real quick|and (?:how|what|will|should)|any thoughts|what do you think|in detail|"
     r"comprehensively|instead|right now|now|currently|today|tonight|"
     r"tomorrow|yesterday|this|next|at|from|between|during|with|if|on|after|before|will|would|be)\b",
     re.I,
 )
 NON_PLACE = re.compile(
-    r"^(?:today|tomorrow|tonight|now|right now|the next|going out|there|here|that|it|"
+    r"^(?:today|tomorrow|tonight|now|right(?: now)?|the next|going out|there|here|that|it|this (?:morning|afternoon|evening)|hiking|walking|cycling|"
     r"(?:the )?(?:morning|afternoon|evening|night|weather|forecast)|"
     r"(?:an? )?(?:walk|hike|jacket|coat|sweater|umbrella)|"
     r"detail|outside|this weekend|my area|next week)(?:\s|$)", re.I,
@@ -109,11 +131,23 @@ def _place_phrase(value: str, conversational: bool = False) -> Optional[str]:
 
 
 def comparison_destinations(query: str) -> tuple[str, ...]:
-    match = CHOICE.search(query) or COMPARE_PLACES.match(query.strip())
+    topic = re.match(
+        r"^compare\s+(?:(?:the\s+)?(?:temperature|rain(?:fall)?|wind(?: speed| gusts)?|humidity|"
+        r"weather|conditions|risk|safety)(?:\s*(?:,|and|&)\s*|\s+))+in\s+",
+        query.strip(), re.I,
+    )
+    comparison_text = "Compare " + query.strip()[topic.end():] if topic else query
+    match = (CHOICE.search(comparison_text) or COMPARE_PLACES.match(comparison_text.strip())
+             or WOULD_CHOOSE.match(comparison_text.strip()))
+    if not match and not re.match(
+        r"\s*(?:is|are|was|were|do|does|did|will|would|can|could|should|where|what|when|how|why|which|whether)\b",
+        query, re.I,
+    ):
+        match = BARE_PAIR.match(query.strip())
     if not match:
         return ()
     first, second = match.groups()
-    if re.search(r"\b(weather|temperature|rain|wind)\b", first, re.I):
+    if re.search(r"\b(weather|temperature|rain|wind|humidity|safety|risk|conditions)\b", first, re.I):
         first = explicit_location(first)
     else:
         first = _place_phrase(first, conversational=True)
@@ -121,24 +155,70 @@ def comparison_destinations(query: str) -> tuple[str, ...]:
     return (first, second) if first and second else ()
 
 
+CHECK_LOCATION = re.compile(
+    r"^(?:(?:ok(?:ay)?|so+|please|hey)[, .]+)*(?:(?:can|could|would) you )?"
+    r"(?:check(?: out)?|look up)\s+(.+)$", re.I,
+)
+WEATHER_LOCATION = re.compile(r"\b(?:weather|forecast)\s+(?:about|in|for)\s+(.+)$", re.I)
+LIKE_LOCATION = re.compile(r"\bwhat(?:['’]s| is) it like (?:in|at)\s+(.+)$", re.I)
+NEW_DESTINATION = re.compile(r"\b(?:another|a different|a new) (?:city|destination|location|place)\b", re.I)
+RELATIVE_TIME = re.compile(r"\b(?:colder|warmer|hotter|cooler)\b.*?\bthan\s+(.+)", re.I)
+NON_LOCATION_CHECK = re.compile(
+    r"^(?:(?:a|the|my|this|these|those|your) )?(?:grammar|spelling|math|code|account|email|answer|password|numbers?|"
+    r"weather|forecast|message|work|history|settings)\b", re.I,
+)
+
+
+def location_reply(query: str) -> Optional[str]:
+    """Parse a terse place reply only when the caller has a weather context."""
+    query = unicodedata.normalize("NFC", query).strip(" .?!")
+    if not re.fullmatch(r"[^\W\d_][\w .,‘’'&-]{0,79}", query, re.UNICODE):
+        return None
+    if len(query.split()) > 8 or query.casefold() in {
+        "thanks", "thank you", "ok", "okay", "yes", "no", "please", "hello", "hi", "hey", "there",
+    }:
+        return None
+    if NON_LOCATION_CHECK.match(query) or re.match(
+        r"^(?:i|you|we|can|could|would|should|tell|give|show|explain|find|how|what|where|why|it|is)\b", query, re.I
+    ):
+        return None
+    return ", ".join(re.split(r"\s+in\s+", query, maxsplit=1, flags=re.I))
+
+
+def _weather_command_location(query: str) -> Optional[str]:
+    for pattern in (WEATHER_LOCATION, LIKE_LOCATION, CHECK_LOCATION):
+        match = pattern.search(query.strip())
+        if match and not NEW_DESTINATION.search(match[1]):
+            candidate = _place_phrase(match[1], conversational=True)
+            if candidate and (pattern != CHECK_LOCATION or not NON_LOCATION_CHECK.match(candidate)):
+                return location_reply(candidate)
+    return None
+
+
 def detect_weather_intent(query: str) -> Optional[str]:
     clean = query.casefold()
     if re.search(r"\b(safe|safety|severe|warnings?|danger(?:ous)?|hazards?|hazardous|storms?|thunderstorms?)\b", clean):
         return "weather_risks"
-    if COMPARISON_MARKER.search(clean) or comparison_destinations(clean) or re.search(r"\b(comprehensive|in detail)\b", clean):
+    if COMPARISON_MARKER.search(clean) or comparison_destinations(clean):
         return None
     for intent, patterns in INTENT_PATTERNS:
         if any(re.search(pattern, clean) for pattern in patterns):
             return intent
     if re.search(r"\b(colder|warmer|hotter|cooler)\b", clean):
         return "temperature"
-    if re.search(r"\b(weather|forecast|temperature)\b", clean):
+    if _weather_command_location(query) or (CHECK_LOCATION.match(query.strip()) and NEW_DESTINATION.search(query)):
+        return "current_weather"
+    if re.search(r"\b(weather|forecast|temperature)\b", clean) and not re.search(
+        r"\b(comprehensive|in detail)\b", clean
+    ):
         return "current_weather"
     return None
 
 
 def explicit_location(query: str) -> Optional[str]:
     query = unicodedata.normalize("NFC", query)
+    if destination := _weather_command_location(query):
+        return destination
     if alternative := ALTERNATIVE.search(query):
         if place := _place_phrase(alternative[1], conversational=True):
             return place
@@ -202,6 +282,8 @@ def _parse_turn(query: str, prior: Optional[WeatherRequest]) -> WeatherRequest:
     implicit_choice = bool(IMPLICIT_CHOICE.search(query))
     comparison = bool(destinations or COMPARISON_MARKER.search(query) or implicit_choice)
     introduced = explicit_location(query) if implicit_choice else None
+    if implicit_choice and not introduced and (switch := DESTINATION_SWITCH.search(query)):
+        introduced = _place_phrase(switch[1], conversational=True)
     if implicit_choice and not destinations and prior:
         if introduced and prior.location and introduced.casefold() != prior.location.casefold():
             destinations = (prior.location, introduced)
@@ -227,7 +309,8 @@ def _parse_turn(query: str, prior: Optional[WeatherRequest]) -> WeatherRequest:
     reference = destinations[0] if destinations else None
     if prior and prior.location and alternative:
         reference = prior.reference_location if location.casefold() == prior.location.casefold() else prior.location
-    if not location and not comparison and prior:
+    needs_location = bool(intent and NEW_DESTINATION.search(query))
+    if not location and not comparison and prior and not needs_location:
         location = prior.location
         reference = prior.reference_location
     prior_cities = (
@@ -239,10 +322,17 @@ def _parse_turn(query: str, prior: Optional[WeatherRequest]) -> WeatherRequest:
     follow_up = alternative or pair_related or bool(
         prior and re.search(r"\b(there|same (?:trip|outing)|any thoughts on that)\b", clean)
     )
+    if comparison and not destinations and prior and prior.destinations and re.search(
+        r"\b(?:which city|both (?:cities|places|destinations)|(?:these|the) two (?:cities|places|destinations))\b", clean
+    ):
+        destinations = prior.destinations
+        follow_up = True
     if not intent and not comparison and follow_up:
         intent = (prior.intent if prior else None) or "current_weather"
-    period = _requested_period(clean)
-    if follow_up and prior:
+    relative = RELATIVE_TIME.search(query) if intent != "weather_risks" else None
+    baseline = _requested_period(relative[1].casefold()) if relative else None
+    period = _requested_period(clean[:relative.start(1)] if relative else clean)
+    if follow_up and prior and not relative:
         period = period or prior.period
         activity = activity or prior.activity
     safety = intent == "weather_risks" or bool(comparison and follow_up and prior and prior.safety)
@@ -250,6 +340,8 @@ def _parse_turn(query: str, prior: Optional[WeatherRequest]) -> WeatherRequest:
         intent=intent, period=period or "current", location=location, safety=safety,
         activity=activity, reference_location=reference, comparison=comparison,
         destinations=destinations, needs_destinations=implicit_choice and not destinations,
+        needs_location=needs_location, relative_baseline=baseline,
+        components=tuple(name for name, pattern in COMPONENT_PATTERNS.items() if re.search(pattern, clean)),
     )
 
 
@@ -293,10 +385,10 @@ def weather_facts(intent, current_data=None, hourly_slice=None, risk_data=None):
         "comparison": ("temperature_2m", "apparent_temperature", "precipitation_probability",
                        "precipitation", "wind_speed_10m", "wind_gusts_10m"),
         "temperature": ("temperature_2m", "apparent_temperature"),
-        "coat_clothing": ("temperature_2m", "apparent_temperature"),
+        "coat_clothing": ("temperature_2m", "apparent_temperature", "precipitation_probability", "precipitation", "wind_speed_10m"),
         "umbrella": ("precipitation_probability", "precipitation"),
         "rain_check": ("precipitation_probability", "precipitation"),
-        "morning_walk": ("temperature_2m", "wind_speed_10m", "wind_gusts_10m", "precipitation_probability"),
+        "morning_walk": ("temperature_2m", "wind_speed_10m", "precipitation_probability", "precipitation"),
         "wind_humidity": ("wind_speed_10m", "wind_gusts_10m", "relative_humidity_2m"),
         "tomorrow_forecast": ("temperature_2m", "precipitation_probability", "wind_speed_10m"),
     }.get(intent, tuple(fields))
@@ -304,9 +396,11 @@ def weather_facts(intent, current_data=None, hourly_slice=None, risk_data=None):
         key, label = fields[field]
         if hourly_slice is not None:
             values = series.get(key, [])
-            if values and all(isinstance(value, (int, float)) for value in values):
+            if values and len(values) == len(series.get("times", values)) and all(
+                type(value) in (int, float) and isfinite(value) for value in values
+            ):
                 facts[label] = (min(values), max(values))
-        elif isinstance(current.get(field), (int, float)):
+        elif type(current.get(field)) in (int, float) and isfinite(current[field]):
             facts[label] = (current[field], current[field])
     if risk_data:
         facts["risk assessment"] = risk_data
@@ -322,6 +416,7 @@ def synthesize_deterministic_weather_buddy_response(
     recommendations_data: Optional[Dict[str, Any]] = None,
     period: Optional[str] = None,
     activity: Optional[str] = None,
+    metrics: Optional[set[str]] = None,
 ) -> str:
     scope = f"in {location_name}" + (f" for {period}" if period else "")
     if intent == "weather_risks":
@@ -339,6 +434,8 @@ def synthesize_deterministic_weather_buddy_response(
                 + f"{limitation} This assessment cannot establish safety{action}. Check local alerts and conditions.")
 
     facts = weather_facts(intent, current_data, hourly_slice)
+    if metrics is not None:
+        facts = {key: value for key, value in facts.items() if key in metrics}
     if not facts:
         return f"I don’t have enough weather data to answer that {scope}."
     units = {"temperature": " °C", "feels like": " °C", "humidity": "%",
@@ -348,11 +445,13 @@ def synthesize_deterministic_weather_buddy_response(
         unit = units[label]
         if label in {"rain probability", "rainfall", "wind gusts"} and hourly_slice is not None:
             statements.append(f"peak {label} {high:g}{unit}")
+        elif low != high and label == "humidity":
+            statements.append(f"humidity {low:g}{unit} to humidity {high:g}{unit}")
         elif low != high:
             statements.append(f"{label} {low:g}{unit} to {high:g}{unit}")
         else:
             statements.append(f"{label} {high:g}{unit}")
-    summary = f"Weather {scope}: " + ", ".join(statements) + "."
+    summary = f"{'Forecast' if hourly_slice is not None else 'Current weather'} {scope}: " + ", ".join(statements) + "."
     rain = facts.get("rain probability")
     if intent in {"rain_check", "umbrella"} and rain is None:
         summary += " Rain probability is unavailable for that window."

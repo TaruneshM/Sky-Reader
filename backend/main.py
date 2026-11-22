@@ -4,12 +4,13 @@ import re
 import time
 from collections import Counter, deque
 from threading import Lock
-from typing import Any, List, Optional
-from fastapi import FastAPI, HTTPException, Header, Request, Response
+from typing import Annotated, Any, List, Optional
+from fastapi import FastAPI, HTTPException, Header, Path, Request, Response
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, EmailStr, Field
 
 try:
@@ -23,6 +24,7 @@ try:
     from weather.models import WeatherResponse
     from weather.analysis import analyze_weather_data, get_weather_decision_support
     from agent.agent import run_agent
+    from agent.failures import FailureCategory, RequestFailure
     from evidence.evidence_engine import EvidenceEngine
     from evidence.claim_extractor import ClaimExtractor
     from evidence.claim_validator import ClaimValidator
@@ -48,6 +50,7 @@ except ImportError:
     from backend.weather.models import WeatherResponse
     from backend.weather.analysis import analyze_weather_data, get_weather_decision_support
     from backend.agent.agent import run_agent
+    from backend.agent.failures import FailureCategory, RequestFailure
     from backend.evidence.evidence_engine import EvidenceEngine
     from backend.evidence.claim_extractor import ClaimExtractor
     from backend.evidence.claim_validator import ClaimValidator
@@ -62,6 +65,12 @@ except ImportError:
         get_user_by_session_token,
         delete_session,
     )
+
+
+if __package__ == "backend":
+    from . import conversation_store as thread_store
+else:
+    import conversation_store as thread_store
 
 
 app = FastAPI(
@@ -107,6 +116,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Thread-Revision"],
 )
 
 
@@ -118,7 +128,13 @@ async def validation_error(request: Request, error: RequestValidationError):
     return await request_validation_exception_handler(request, error)
 
 
+THREAD_ID_PATTERN = r"^[A-Za-z0-9_-]{32}$"
+ThreadId = Annotated[str, Path(pattern=THREAD_ID_PATTERN)]
+
+
 class AgentChatRequest(BaseModel):
+    thread_id: str | None = Field(default=None, pattern=THREAD_ID_PATTERN)
+    thread_revision: int | None = Field(default=None, ge=0, le=2**53 - 1, strict=True)
     message: str = Field(..., max_length=4000, description="The user's weather question or general query.")
     conversation_history: Optional[List[dict]] = Field(
         default_factory=list,
@@ -173,7 +189,7 @@ def register_endpoint(request: UserRegisterRequest, response: Response):
     except RegistrationRejected:
         raise HTTPException(status_code=400, detail="Registration could not be completed.") from None
     except Exception:
-        logger.exception("Account registration failed")
+        logger.error("Account registration failed category=internal_application_error")
         raise HTTPException(status_code=500, detail="Registration could not be completed.") from None
     response.headers["Cache-Control"] = "no-store"
     return AuthResponse(user=UserProfile(**user_data), token=token, message="User registration successful")
@@ -319,9 +335,94 @@ chat_rate_limit = ChatRateLimit(
 )
 
 
+lifecycle_rate_limit = ChatRateLimit(30, 180)
+
+
+def thread_credentials(request: Request, *, guest_only: bool = False):
+    authorization = request.headers.get("Authorization")
+    guest = request.headers.get("X-Guest-Session")
+    if authorization is not None:
+        if guest is not None or guest_only:
+            raise HTTPException(status_code=401, detail="Provide one valid conversation credential.")
+        return thread_store.Credentials(bearer=bearer_token(authorization))
+    if not guest or not re.fullmatch(r"[A-Za-z0-9_-]{43}", guest):
+        raise HTTPException(status_code=401, detail="A valid conversation credential is required.")
+    return thread_store.Credentials(guest=guest)
+
+
+def thread_operation(operation, *args):
+    try:
+        return operation(*args)
+    except thread_store.InvalidOwner:
+        raise HTTPException(status_code=401, detail="The conversation session has ended.") from None
+    except thread_store.ThreadNotFound:
+        raise HTTPException(status_code=404, detail="Conversation thread not found.") from None
+    except thread_store.ThreadConflict as error:
+        raise HTTPException(
+            status_code=409, detail="The conversation changed. Send your next message again.",
+            headers={"X-Thread-Revision": str(error.revision), "Cache-Control": "no-store"},
+        ) from None
+    except thread_store.IncompatibleState:
+        raise HTTPException(status_code=409, detail="This conversation state is unavailable. Start a new chat.") from None
+
+
+def check_lifecycle_limit(request: Request):
+    lifecycle_rate_limit.check(request.client.host if request.client else "unknown")
+
+
+@app.post("/api/guest/session", status_code=201)
+def create_guest_session(request: Request, response: Response):
+    check_lifecycle_limit(request)
+    response.headers["Cache-Control"] = "no-store"
+    return {"credential": thread_store.create_guest()}
+
+
+@app.delete("/api/guest/session", status_code=204)
+def revoke_guest_session(request: Request):
+    check_lifecycle_limit(request)
+    thread_store.revoke_guest(thread_credentials(request, guest_only=True))
+
+
+@app.post("/api/chat/threads", status_code=201)
+def create_chat_thread(request: Request, response: Response):
+    check_lifecycle_limit(request)
+    thread_id = thread_operation(thread_store.create_thread, thread_credentials(request))
+    response.headers["Cache-Control"] = "no-store"
+    return {"thread_id": thread_id, "thread_revision": 0}
+
+
+@app.delete("/api/chat/threads", status_code=204)
+def clear_chat_threads(request: Request):
+    check_lifecycle_limit(request)
+    thread_operation(thread_store.clear_threads, thread_credentials(request))
+
+
+@app.delete("/api/chat/threads/{thread_id}", status_code=204)
+def delete_chat_thread(thread_id: ThreadId, request: Request):
+    check_lifecycle_limit(request)
+    thread_operation(thread_store.clear_threads, thread_credentials(request), thread_id)
+
+
+def log_chat_metrics(usage: dict, started: float, *, failure: FailureCategory | None = None):
+    usage["request_total_latency_ms"] = round((time.perf_counter() - started) * 1000, 2)
+    if failure:
+        usage["failure_category"] = failure.value
+    logging.getLogger("skyreader.token_metrics").info(
+        "Chat metrics prompt=%s completion=%s attempted=%s completed=%s tools=%s planner_ms=%s "
+        "llm_ms=%s weather_ms=%s weather_attempts=%s total_ms=%s failure=%s deterministic_fallback=%s "
+        "deterministic_selected=%s answer_complete=%s estimated_llm_calls_avoided=%s",
+        usage.get("prompt_tokens"), usage.get("completion_tokens"), usage.get("llm_calls_attempted"),
+        usage.get("llm_calls_completed"), usage.get("tool_calls_count"), usage.get("planner_latency_ms"),
+        usage.get("llm_latency_ms"), usage.get("weather_provider_latency_ms"), usage.get("weather_http_attempts"),
+        usage["request_total_latency_ms"], usage.get("failure_category"), usage.get("deterministic_fallback"),
+        usage.get("deterministic_selected"), usage.get("answer_complete"), usage.get("estimated_llm_calls_avoided"),
+    )
+
+
 @app.post("/api/agent/chat", response_model=AgentChatResponse)
 @app.post("/agent/chat", response_model=AgentChatResponse, include_in_schema=False)
-async def agent_chat(request: AgentChatRequest, http_request: Request):
+async def agent_chat(request: AgentChatRequest, http_request: Request, response: Response):
+    started = time.perf_counter()
     message = request.message.strip()
     if not message:
         raise HTTPException(
@@ -330,6 +431,17 @@ async def agent_chat(request: AgentChatRequest, http_request: Request):
         )
 
     chat_rate_limit.check(http_request.client.host if http_request.client else "unknown")
+
+    credentials = state = None
+    if request.thread_id is not None:
+        if request.thread_revision is None:
+            raise HTTPException(status_code=422, detail="A thread revision is required.")
+        credentials = thread_credentials(http_request)
+        state = await run_in_threadpool(
+            thread_operation, thread_store.load_thread, credentials, request.thread_id, request.thread_revision,
+        )
+    elif request.thread_revision is not None:
+        raise HTTPException(status_code=422, detail="A thread ID is required with a thread revision.")
 
     try:
         # Sanitize and cap conversation history (last 6 turns max = 3 exchanges to avoid prompt bloat)
@@ -341,20 +453,10 @@ async def agent_chat(request: AgentChatRequest, http_request: Request):
                 if role in ("user", "assistant"):
                     trimmed_history.append({"role": role, "content": str(msg["content"])[:4000]})
 
-        result = await run_agent(message, conversation_history=trimmed_history)
+        planner_options = {"trusted_state": state, "request_scope": state.scope} if state is not None else {}
+        result = await run_agent(message, conversation_history=trimmed_history, **planner_options)
         token_usage = result.get("token_usage")
-        if token_usage:
-            logging.getLogger("skyreader.token_metrics").info(
-                "Chat Turn Token Metrics: prompt=%d, comp=%d, total=%d, llm_calls=%d, tools=%d, latency=%.1fms",
-                token_usage.get("prompt_tokens", 0),
-                token_usage.get("completion_tokens", 0),
-                token_usage.get("total_tokens", 0),
-                token_usage.get("llm_calls", 0),
-                token_usage.get("tool_calls", 0),
-                token_usage.get("latency_ms", 0.0),
-            )
-
-        return AgentChatResponse(
+        answer = AgentChatResponse(
             response=result["response"],
             tool_calls=result.get("tool_calls", []),
             iterations=result.get("iterations", 1),
@@ -364,28 +466,39 @@ async def agent_chat(request: AgentChatRequest, http_request: Request):
             risk_assessment=result.get("risk_assessment"),
             token_usage=token_usage,
         )
-    except ValueError as ve:
-        raise HTTPException(
-            status_code=400,
-            detail=str(ve)
-        )
-    except Exception as e:
-        err_str = str(e).lower()
-        if "429" in err_str or "rate limit" in err_str or "quota" in err_str:
-            return AgentChatResponse(
-                response="Sky Reader has reached its AI usage limit for now 🌤️ Please try again later.",
-                tool_calls=[],
-                iterations=1,
-                claims=[],
-                validation_report=None,
-                explanation=None,
-                risk_assessment=None,
-                token_usage={"error": "rate_limit_exceeded"},
+        if state is not None:
+            if await http_request.is_disconnected():
+                raise HTTPException(status_code=409, detail="The conversation request was cancelled.")
+            revision = await run_in_threadpool(
+                thread_operation, thread_store.save_thread, credentials, request.thread_id, request.thread_revision,
+                result.get("conversation_state") or state,
             )
-        raise HTTPException(
-            status_code=500,
-            detail="Sky Reader encountered an unexpected issue while processing your weather request."
+            response.headers["X-Thread-Revision"] = str(revision)
+            response.headers["Cache-Control"] = "no-store"
+        if token_usage is not None:
+            log_chat_metrics(token_usage, started)
+            answer.token_usage = token_usage
+        return answer
+    except HTTPException:
+        raise
+    except RequestFailure as error:
+        metrics = error.metrics or {}
+        log_chat_metrics(metrics, started, failure=error.category)
+        headers = {"Cache-Control": "no-store"}
+        if error.retry_after is not None:
+            headers["Retry-After"] = str(error.retry_after)
+        return JSONResponse(
+            status_code=error.status_code,
+            content={"detail": error.detail, "error": {"category": error.category.value}, "token_usage": metrics},
+            headers=headers,
         )
+    except Exception:
+        error = RequestFailure(FailureCategory.INTERNAL)
+        metrics = {}
+        log_chat_metrics(metrics, started, failure=error.category)
+        return JSONResponse(status_code=error.status_code, content={
+            "detail": error.detail, "error": {"category": error.category.value}, "token_usage": metrics,
+        }, headers={"Cache-Control": "no-store"})
 
 
 @app.post("/api/evidence/validate")

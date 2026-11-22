@@ -12,6 +12,8 @@ import PreferencesView from "./components/PreferencesView";
 import { detectWeatherScene } from "./utils/weatherAtmosphere";
 import { createAuthSession } from "./utils/authSession";
 import { createConversations } from "./utils/conversations";
+import { createChatThreads } from "./utils/chatThreads";
+import { local, session as tabStorage } from "./utils/browserStorage";
 import "./App.css";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -27,19 +29,6 @@ export default function App() {
   const signedIn = auth.phase === "account" || auth.phase === "guest";
   const workspaceKey = auth.user ? `account:${auth.user.id}` : signedIn ? "guest" : "signin";
   return <SkyReader key={workspaceKey} auth={auth} session={session} signedIn={signedIn} />;
-}
-
-async function sendChat(payload, signal) {
-  const response = await fetch(`${API_BASE_URL}/api/agent/chat`, {
-    method: "POST", signal,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await response.json().catch(() => null);
-  if (!response.ok || !data) {
-    throw new Error(typeof data?.detail === "string" ? data.detail : "Sky Reader could not process this request.");
-  }
-  return data;
 }
 
 function chatObservation(message) {
@@ -59,12 +48,15 @@ function chatObservation(message) {
 
 function SkyReader({ auth, session, signedIn }) {
   const user = auth.user;
+  const [chatThreads] = useState(() => createChatThreads({
+    api: API_BASE_URL, authorization: () => session.authorization(user?.id), guest: !user,
+  }));
   const [conversations] = useState(() => {
-    const controller = createConversations({ send: sendChat });
+    const controller = createConversations({ threads: chatThreads, storage: user ? local : tabStorage });
     controller.setOwner(user?.id, signedIn);
     return controller;
   });
-  const { sessions: chatSessions, messages, loading, error } = useSyncExternalStore(
+  const { sessions: chatSessions, messages, loading, error, notice } = useSyncExternalStore(
     conversations.subscribe, conversations.getSnapshot, conversations.getSnapshot,
   );
   useEffect(() => conversations.cancel, [conversations]);
@@ -153,6 +145,10 @@ function SkyReader({ auth, session, signedIn }) {
   }
 
   function handleLogout() {
+    if (!user) {
+      conversations.clear({ server: false });
+      void chatThreads.revokeGuest().catch(session.showGuestRevocationFailure);
+    }
     conversations.setOwner(null, false);
     void session.logout();
   }
@@ -272,6 +268,8 @@ function SkyReader({ auth, session, signedIn }) {
                 />
               </main>
             )}
+
+            {notice && <p role="alert">{notice}</p>}
 
             {/* Content Body: Preferences & Settings Tab */}
             {activeTab === "preferences" && (

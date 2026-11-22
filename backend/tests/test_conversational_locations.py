@@ -54,6 +54,10 @@ def provider(monkeypatch):
             "hourly": {
                 "time": [(start + timedelta(hours=hour)).isoformat(timespec="minutes") for hour in range(48)],
                 "temperature_2m": [temperature] * 48,
+                "precipitation_probability": [12] * 48,
+                "precipitation": [0] * 48,
+                "wind_speed_10m": [8] * 48,
+                "weather_code": [0] * 48,
             },
         }
 
@@ -124,7 +128,8 @@ def test_missing_place_never_reuses_previous_weather(provider, caplog):
     with caplog.at_level(logging.DEBUG, logger=agent.__name__):
         reply = asyncio.run(agent.run_agent("maybe Missingville instead?", HISTORY, api_key=""))
     assert "Missingville" in reply["response"] and "specify" in reply["response"]
-    assert "location='Missingville'" in caplog.text
+    assert "decision=NOT_FOUND" in caplog.text
+    assert "Missingville" not in caplog.text
     assert OUTING not in caplog.text
     search.assert_awaited_once()
     forecast.assert_not_called()
@@ -158,7 +163,7 @@ def test_agentic_followup_uses_same_contextual_geocoder(provider):
         completion(calls=[call("get_hourly_forecast", 1, latitude=TANAKPUR[0], longitude=TANAKPUR[1])]),
         completion("Tonight in Tanakpur the temperature will be 26 °C."),
     )
-    output = asyncio.run(agent.run_agent("What about Tanakpur in detail?", HISTORY, client=client))
+    output = asyncio.run(agent.run_agent("What about Tanakpur tonight? Give the temperature in detail.", HISTORY, client=client))
     assert output["tool_calls"][0]["result"]["admin1"] == "Uttarakhand"
     assert output["iterations"] == 2
     assert output["validation_report"]["is_trustworthy"]
@@ -180,11 +185,11 @@ def test_explicit_choice_keeps_city_evidence_separate(question, provider):
     output = asyncio.run(agent.run_agent(question, HISTORY, client=client))
     assert "Bhimtal for tonight: temperature 12 °C" in output["response"]
     assert "Tanakpur for tonight: temperature 26 °C" in output["response"]
-    assert client.chat.completions.create.await_count == 3
+    client.chat.completions.create.assert_not_called()
     assert output["validation_report"]["is_trustworthy"]
     citation_ids = [row["supporting_evidence_ids"][0] for row in output["validation_report"]["validation_results"]]
     assert citation_ids[0].startswith("29.35,79.5667:")
-    assert citation_ids[1].startswith("29.074,80.11139:")
+    assert any(value.startswith("29.074,80.11139:") for value in citation_ids)
 
 
 def test_implicit_comparison_uses_two_recent_destinations_or_asks(provider):
@@ -231,7 +236,7 @@ def test_standalone_explicit_pair_resolves_second_from_first(provider):
     assert asyncio.run(service.geocode_location("Tanakpur")) is None
 
 
-def test_groq_comparison_serves_duplicate_qualified_alias_from_prepared_scope(provider):
+def test_groq_comparison_reuses_one_prepared_packet_per_city(provider):
     _, search, forecast = provider
     tools = [
         call("geocode_location", 1, location="Tanakpur"),
@@ -242,13 +247,18 @@ def test_groq_comparison_serves_duplicate_qualified_alias_from_prepared_scope(pr
     ]
     client = client_for(completion(calls=tools),
                         completion("Tonight in Bhimtal it will be 12 °C. Tonight in Tanakpur it will be 26 °C."))
-    output = asyncio.run(agent.run_agent(EXACT_COMPARISON, [{"role": "user", "content": EXACT_OUTING}], client=client))
-    messages = client.chat.completions.create.call_args.kwargs["messages"]
-    tool_replies = [json.loads(message["content"]) for message in messages if isinstance(message, dict)
-                    and message["role"] == "tool"]
-    assert [reply["name"] for reply in tool_replies[:3]] == ["Tanakpur", "Bhimtal", "Bhimtal"]
-    assert tool_replies[3]["hours"][0] == "2026-11-21T18:00"
-    assert tool_replies[3] == tool_replies[4]
+    output = asyncio.run(agent.run_agent(EXACT_COMPARISON + " Explain in detail.", [{"role": "user", "content": EXACT_OUTING}], client=client))
+    for call_args in client.chat.completions.create.call_args_list:
+        assert "tools" not in call_args.kwargs
+        messages = call_args.kwargs["messages"]
+        packets = [message["content"] for message in messages
+                   if message["content"].startswith("Verified planned weather data.")]
+        assert len(packets) == 1
+        payload = json.loads(packets[0][packets[0].index("{"):])
+        assert [item["place"][0] for item in payload["weather"]] == ["Bhimtal", "Tanakpur"]
+        assert payload["weather"][1]["local_window"][0] == "2026-11-21T18:00"
+        assert all(message["role"] != "tool" for message in messages)
+    assert output["token_usage"]["suppressed_tool_requests"] == 5
     assert len(output["tool_calls"]) == 4
     assert forecast.await_count == search.await_count == 2
 

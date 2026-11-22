@@ -85,17 +85,14 @@ class TestRateLimitAndRouting(unittest.TestCase):
         )
         mock_client.chat.completions.create = AsyncMock(side_effect=rle)
 
-        # Run query with mock client
-        res = asyncio.run(
-            run_agent(
-                "Explain the weather forecast in detail.",
-                client=mock_client
-            )
-        )
-        self.assertEqual(
-            res["response"],
-            "Sky Reader has reached its AI usage limit for now 🌤️ Please try again later."
-        )
+        from backend.agent.failures import FailureCategory, RequestFailure
+
+        with self.assertRaises(RequestFailure) as captured:
+            asyncio.run(run_agent("Explain the weather forecast in detail.", client=mock_client))
+        self.assertEqual(captured.exception.category, FailureCategory.GROQ_QUOTA_EXHAUSTED)
+        self.assertEqual(captured.exception.metrics["llm_calls_attempted"], 1)
+        self.assertEqual(captured.exception.metrics["llm_calls_completed"], 0)
+        self.assertIsNone(captured.exception.metrics["prompt_tokens"])
 
 
 if __name__ == "__main__":

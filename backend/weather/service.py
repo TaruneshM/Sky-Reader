@@ -1,9 +1,13 @@
 import asyncio
 import time
 import logging
+from collections.abc import Callable
+from contextvars import ContextVar
+from json import JSONDecodeError
 from math import asin, cos, radians, sin, sqrt
 from typing import Dict, Any, Optional, Tuple
 import httpx
+from pydantic import ValidationError
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import re
@@ -11,11 +15,20 @@ import unicodedata
 from .weather_codes import get_weather_description
 
 
+from .location_models import (
+    Ambiguous, CandidateSummary, ConfirmedLocation, LocationResolution,
+    NotFound, ProviderUnavailable, Resolved, ResolutionProvenance,
+)
+
+
 logger = logging.getLogger(__name__)
+weather_http_observer: ContextVar[Callable[[float], None] | None] = ContextVar(
+    "weather_http_observer", default=None
+)
 
 
 # In-memory TTL Cache store
-_GEOCODE_CACHE: Dict[str, Tuple[float, Any]] = {}
+_GEOCODE_CACHE: Dict[str, Tuple[float, ConfirmedLocation]] = {}
 _CURRENT_WEATHER_CACHE: Dict[Tuple[float, float], Tuple[float, Any]] = {}
 _HOURLY_CACHE: Dict[Tuple[float, float], Tuple[float, Any]] = {}
 _DAILY_CACHE: Dict[Tuple[float, float, int], Tuple[float, Any]] = {}
@@ -39,7 +52,12 @@ async def _fetch_with_retry(url: str, params: dict, retries: int = 2) -> dict:
     for attempt in range(retries):
         try:
             async with httpx.AsyncClient(timeout=25.0) as client:
-                response = await client.get(url, params=params)
+                started = time.perf_counter()
+                try:
+                    response = await client.get(url, params=params)
+                finally:
+                    if observer := weather_http_observer.get():
+                        observer((time.perf_counter() - started) * 1000)
                 response.raise_for_status()
                 return response.json()
         except (httpx.ConnectTimeout, httpx.ReadTimeout, httpx.ConnectError):
@@ -100,18 +118,17 @@ def _nearby_candidate(candidates, reference):
     runner_up = nearby[1][0] if len(nearby) > 1 else float("inf")
     if distance <= 150 and runner_up >= max(2 * distance, distance + 50):
         logger.debug("Geocoding decision=nearby_same_country candidate_id=%s distance_km=%.0f "
-                     "same_country_runner_up_km=%.0f", candidate.get("id"), distance, runner_up)
+                     "same_country_runner_up_km=%.0f", candidate.get("id") if isinstance(candidate.get("id"), int) else None, distance, runner_up)
         return candidate
     logger.debug("Geocoding decision=ambiguous_proximity nearest_km=%.0f same_country_runner_up_km=%.0f",
                  distance, runner_up)
     return None
 
 
-def _rank_geocoding_candidates(name, qualifiers, results, reference=None):
+def _rank_geocoding_candidates(name, qualifiers, results, reference=None, *, tied=None):
     candidates = {}
     for item in results:
-        metadata = (item.get("id"), item.get("name"), item.get("feature_code"), item.get("country_code"),
-                    item.get("admin1"), item.get("population"))
+        metadata = item.get("id") if isinstance(item.get("id"), int) else None
         latitude, longitude = item.get("latitude"), item.get("longitude")
         if not (isinstance(latitude, (int, float)) and -90 <= latitude <= 90
                 and isinstance(longitude, (int, float)) and -180 <= longitude <= 180):
@@ -149,7 +166,7 @@ def _rank_geocoding_candidates(name, qualifiers, results, reference=None):
     best_rank, best = ranked[0]
     peers = [item for rank, item in ranked[1:] if rank == best_rank]
     if not peers:
-        logger.debug("Geocoding decision=unique_top_rank candidate_id=%s", best.get("id"))
+        logger.debug("Geocoding decision=unique_top_rank candidate_id=%s", best.get("id") if isinstance(best.get("id"), int) else None)
         return best
 
     population = _population(best)
@@ -160,14 +177,18 @@ def _rank_geocoding_candidates(name, qualifiers, results, reference=None):
     if missing_population and not (_is_administrative_seat(best) and population >= 100_000):
         reason = "missing_population"
     elif population >= 3 * runner_up and population - runner_up >= 50_000:
-        logger.debug("Geocoding decision=population_lead candidate_id=%s", best.get("id"))
+        logger.debug("Geocoding decision=population_lead candidate_id=%s", best.get("id") if isinstance(best.get("id"), int) else None)
         return best
     else:
         reason = "insufficient_population_lead"
     logger.debug("Geocoding decision=ambiguous reason=%s top_population=%s runner_up_population=%s",
                  reason, population, runner_up)
     if reference and not qualifiers:
-        return _nearby_candidate([best, *peers], reference)
+        nearby = _nearby_candidate([best, *peers], reference)
+        if nearby:
+            return nearby
+    if tied is not None:
+        tied.extend([best, *peers])
     return None
 
 
@@ -181,34 +202,91 @@ def _candidate_sort_key(entry):
             tuple(str(item.get(key) or "") for key in ("name", "country", "country_code", "admin1", "timezone")))
 
 
-async def geocode_location(
-    location: str, *, reference_location: Optional[str] = None, reference_place: Optional[dict] = None
-):
+class InvalidGeocodingResponse(ValueError):
+    pass
+
+
+def _one_edit(left: str, right: str) -> bool:
+    if min(len(left), len(right)) < 5 or left[:1] != right[:1] or abs(len(left) - len(right)) > 1:
+        return False
+    if len(left) == len(right):
+        return sum(a != b for a, b in zip(left, right)) == 1
+    short, long = sorted((left, right), key=len)
+    return any(long[:index] + long[index + 1:] == short
+               for index in range(1, len(long)))
+
+
+def _validated_spelling(name, qualifiers, results):
+    """Use one nearby spelling only among already-returned, explicitly qualified provider candidates."""
+    if not qualifiers:
+        return None
+    possible = set()
+    for item in results:
+        candidate = _normalized_place_name(item.get("name"))
+        if _one_edit(_accent_insensitive(name), _accent_insensitive(candidate)):
+            possible.add((candidate, tuple(qualifiers)))
+        elif _place_match(name, candidate):
+            for index, qualifier in enumerate(qualifiers):
+                for field in ("admin1", "admin2", "admin3", "admin4", "country"):
+                    label = _normalized_place_name(item.get(field))
+                    if _one_edit(_accent_insensitive(qualifier), _accent_insensitive(label)):
+                        corrected = (*qualifiers[:index], label, *qualifiers[index + 1:])
+                        possible.add((candidate, corrected))
+    if len(possible) != 1:
+        return None
+    corrected_name, corrected_qualifiers = next(iter(possible))
+    # The confirmed candidate must be unique after verifying the corrected spelling and qualifiers.
+    candidates = {}
+    for item in results:
+        labels = tuple(item.get(field) for field in ("admin1", "admin2", "admin3", "admin4", "country", "country_code"))
+        if _place_match(corrected_name, item.get("name")) and all(
+            any(_place_match(qualifier, label) for label in labels) for qualifier in corrected_qualifiers
+        ):
+            lat, lon = item.get("latitude"), item.get("longitude")
+            if isinstance(lat, (int, float)) and isinstance(lon, (int, float)) and -90 <= lat <= 90 and -180 <= lon <= 180:
+                candidates[(lat, lon)] = item
+    return next(iter(candidates.values())) if len(candidates) == 1 else None
+
+
+async def _lookup_location(
+    location: str, *, reference_location: Optional[str] = None, reference_place: Optional[dict] = None,
+    allow_spelling_match: bool = False,
+) -> LocationResolution:
     name, *qualifiers = [" ".join(part.split()) for part in location.split(",")]
     if not name or any(not qualifier for qualifier in qualifiers):
-        return None
+        return NotFound(query=location, reason="invalid_query")
     name = unicodedata.normalize("NFC", name)
     norm_key = ", ".join(map(_normalized_place_name, (name, *qualifiers)))
     now = time.time()
     cached = _GEOCODE_CACHE.get(norm_key)
     if cached and now - cached[0] < GEOCODE_TTL:
-        logger.debug("Geocoding lookup=%r decision=cache_hit", geocoding_log_label(location))
-        return cached[1]
+        logger.debug("Geocoding decision=cache_hit")
+        return Resolved(query=location, location=cached[1].model_copy(update={"qualifiers": tuple(qualifiers)}))
 
     if _normalized_place_name(name) == "new york city":
         name = "New York"
-    logger.debug("Geocoding lookup=%r has_reference=%s", geocoding_log_label(location), bool(reference_place or reference_location))
+    logger.debug("Geocoding has_reference=%s", bool(reference_place or reference_location))
     data = await _fetch_with_retry(
         "https://geocoding-api.open-meteo.com/v1/search",
         {"name": name, "count": 20, "language": "en", "format": "json"},
     )
+    if not isinstance(data, dict) or (data.get("results") is not None and not isinstance(data["results"], list)):
+        raise InvalidGeocodingResponse("Invalid geocoding provider response.")
     results = data.get("results") or []
+    if any(not isinstance(item, dict) for item in results):
+        raise InvalidGeocodingResponse("Invalid geocoding candidate response.")
     normalized = _normalized_place_name(name)
     normalized_qualifiers = list(map(_normalized_place_name, qualifiers))
-    result = _rank_geocoding_candidates(normalized, normalized_qualifiers, results)
+    tied = []
+    result = _rank_geocoding_candidates(normalized, normalized_qualifiers, results, tied=tied)
+    spelling_match = False
+    if result is None and not tied and allow_spelling_match:
+        result = _validated_spelling(normalized, normalized_qualifiers, results)
+        spelling_match = result is not None
     use_context = result is None and not qualifiers and (reference_place or reference_location) and any(
         _place_match(normalized, item.get("name")) for item in results
     ) and _normalized_place_name(reference_location) != normalized
+    reference = None
     if use_context:
         reference = reference_place or await geocode_location(reference_location)
         if reference:
@@ -216,13 +294,53 @@ async def geocode_location(
         else:
             logger.debug("Geocoding decision=reference_unresolved")
     if result is None:
-        return None
+        if tied:
+            return Ambiguous(query=location, candidates=tuple(
+                CandidateSummary(provider_id=item.get("id"), name=item["name"],
+                                 country=item.get("country"), region=item.get("admin1"), district=item.get("admin2"))
+                for item in tied
+            ), missing_qualifiers=("district or more specific locality",) if qualifiers else ("region", "country"))
+        return NotFound(query=location, reason="no_matching_candidates" if results else "no_candidates")
 
-    geo_data = {key: result.get(key) for key in
-                ("name", "latitude", "longitude", "country", "country_code", "admin1", "timezone")}
-    if not use_context:
-        _GEOCODE_CACHE[norm_key] = (now, geo_data)
-    return geo_data
+    place = ConfirmedLocation(
+        name=result["name"], latitude=result["latitude"], longitude=result["longitude"],
+        country=result.get("country"), country_code=result.get("country_code"), region=result.get("admin1"),
+        timezone=result.get("timezone"), provider_id=result.get("id"), qualifiers=tuple(qualifiers),
+        provenance=ResolutionProvenance(
+            method="geographic_hint" if use_context else "provider_spelling_match" if spelling_match else "standalone",
+            reference_name=(reference.get("name") or reference_location or location) if use_context else None,
+        ),
+    )
+    if not use_context and not spelling_match:
+        _GEOCODE_CACHE[norm_key] = (now, place)
+    return Resolved(query=location, location=place)
+
+
+async def resolve_location(
+    location: str, *, reference: ConfirmedLocation | None = None, reference_location: str | None = None,
+) -> LocationResolution:
+    """Typed resolver for trusted backend callers. Provider errors carry safe categories."""
+    try:
+        return await _lookup_location(location, reference_location=reference_location,
+                                      reference_place=reference.as_legacy_place() if reference else None,
+                                      allow_spelling_match=True)
+    except httpx.TimeoutException:
+        return ProviderUnavailable(query=location, reason="timeout", retriable=True)
+    except httpx.HTTPStatusError as error:
+        status = error.response.status_code
+        return ProviderUnavailable(query=location, reason="provider_http_error", retriable=status == 429 or status >= 500)
+    except httpx.RequestError:
+        return ProviderUnavailable(query=location, reason="network_error", retriable=True)
+    except (JSONDecodeError, InvalidGeocodingResponse, ValidationError):
+        return ProviderUnavailable(query=location, reason="invalid_response", retriable=True)
+
+
+async def geocode_location(
+    location: str, *, reference_location: Optional[str] = None, reference_place: Optional[dict] = None
+):
+    """Legacy dictionary/None adapter. Provider exceptions still propagate to existing callers."""
+    outcome = await _lookup_location(location, reference_location=reference_location, reference_place=reference_place)
+    return outcome.location.as_legacy_place() if isinstance(outcome, Resolved) else None
 
 
 async def get_current_weather(latitude: float, longitude: float):
@@ -431,7 +549,11 @@ def scope_hourly_forecast(weather_data, period, current_time=None):
 
 
 def get_temporal_forecast_slice(weather_data, period="current", current_time=None):
-    hourly = scope_hourly_forecast(weather_data, period, current_time)["hourly"]
+    return summarize_scoped_forecast(scope_hourly_forecast(weather_data, period, current_time), period)
+
+
+def summarize_scoped_forecast(scoped, period):
+    hourly = scoped["hourly"]
     fields = {
         "times": "time", "temperatures": "temperature_2m", "apparent_temperatures": "apparent_temperature",
         "rain_probabilities": "precipitation_probability", "rain_amounts": "precipitation",

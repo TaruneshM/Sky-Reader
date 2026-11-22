@@ -142,7 +142,7 @@ def completion(text="", calls=()):
 
 def test_agentic_single_location_preserves_qualifiers_and_coordinates(open_meteo, monkeypatch):
     current = AsyncMock(return_value=observation())
-    monkeypatch.setitem(executor.available_func, "get_current_weather", current)
+    monkeypatch.setattr(agent, "get_current_weather", current)
     complete = AsyncMock(side_effect=[
         completion(calls=[
             tool_call("geocode_location", 1, location="Paris"),
@@ -155,11 +155,11 @@ def test_agentic_single_location_preserves_qualifiers_and_coordinates(open_meteo
     output = asyncio.run(agent.run_agent("Give a comprehensive weather briefing for Paris, Texas.", client=client))
     current.assert_awaited_once_with(latitude=PARIS_TX["latitude"], longitude=PARIS_TX["longitude"])
     open_meteo[1].assert_awaited_once()
-    for call in output["tool_calls"][:2]:
-        assert call["arguments"]["location"] == "Paris, Texas"
-        assert call["result"]["admin1"] == "Texas"
-        assert call["result"]["timezone"] == "America/Chicago"
-    assert "error" in output["tool_calls"][2]["result"]
+    lookup = output["tool_calls"][0]
+    assert lookup["arguments"]["location"] == "Paris, Texas"
+    assert lookup["result"]["admin1"] == "Texas"
+    assert lookup["result"]["timezone"] == "America/Chicago"
+    assert output["token_usage"]["suppressed_tool_requests"] == 3
     assert output["validation_report"]["is_trustworthy"]
 
 
@@ -179,7 +179,9 @@ def test_agentic_comparison_uses_shared_ranking_and_stops_on_ambiguity(open_mete
 @pytest.mark.parametrize("incomplete", ["Paris", "Paris, Texas"])
 def test_agentic_comparison_cannot_silently_drop_user_qualifier(open_meteo, incomplete, monkeypatch):
     forecast = {"current": {"time": "2026-11-21T16:00"},
-                "hourly": {"time": ["2026-11-21T16:00"], "temperature_2m": [20]}}
+                "hourly": {"time": ["2026-11-21T16:00"], "temperature_2m": [20],
+                           "precipitation_probability": [10], "precipitation": [0],
+                           "wind_speed_10m": [8], "weather_code": [0]}}
     monkeypatch.setattr(agent, "get_hourly_forecast", AsyncMock(return_value=forecast))
     complete = AsyncMock(side_effect=[
         completion(calls=[tool_call("geocode_location", 1, location=incomplete)]),
@@ -190,9 +192,9 @@ def test_agentic_comparison_cannot_silently_drop_user_qualifier(open_meteo, inco
         completion("I need more weather data."),
     ])
     client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=complete)))
-    output = asyncio.run(agent.run_agent("Compare Paris, Texas, USA and Tokyo.", client=client))
-    errors = [call["result"]["error"] for call in output["tool_calls"] if call["result"] and "error" in call["result"]]
-    assert any("comma-separated qualifiers" in error for error in errors)
+    output = asyncio.run(agent.run_agent("Compare Paris, Texas, USA and Tokyo in detail.", client=client))
+    assert output["token_usage"]["suppressed_tool_requests"] == 3
+    assert all("tools" not in invocation.kwargs for invocation in complete.call_args_list)
     assert output["tool_calls"][0]["result"]["admin1"] == "Texas"
     assert output["tool_calls"][1]["result"]["country"] == "Japan"
     assert open_meteo[1].await_count == 2
@@ -214,10 +216,9 @@ def test_tomorrow_fast_path_uses_ranked_tokyo_and_local_timezone(open_meteo, mon
     client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=complete)))
     output = asyncio.run(agent.run_agent("How windy will it be tomorrow in Tokyo?", client=client))
     hourly.assert_awaited_once_with(latitude=TOKYO["latitude"], longitude=TOKYO["longitude"])
-    facts = json.loads(complete.call_args.kwargs["messages"][1]["content"])
-    assert (facts["country"], facts["region"], facts["timezone"], facts["period"]) == (
-        "Japan", "Tokyo", "Asia/Tokyo", "tomorrow",
-    )
+    complete.assert_not_called()
+    assert output["tool_calls"][0]["result"]["timezone"] == "Asia/Tokyo"
+    assert "30 km/h" in output["response"] and "tomorrow" in output["response"]
     assert output["validation_report"]["is_trustworthy"]
 
 

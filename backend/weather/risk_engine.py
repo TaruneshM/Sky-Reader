@@ -427,6 +427,14 @@ class WeatherRiskEngine:
                     )
                 )
 
+        if any(code in (45, 48) for code in codes):
+            detected_risks.append(RiskItem(
+                risk_type=RiskType.FOG, severity=RiskLevel.MODERATE, condition="Fog and reduced visibility",
+                reason="Forecast weather codes indicate fog. A measured visibility distance is unavailable.",
+                measurements={}, forecast_window=period_label,
+                recommendations=["Allow extra travel time and slow down if visibility drops."],
+            ))
+
         # -------------------------------------------------------------
         # Determine Overall Risk Level
         # -------------------------------------------------------------

@@ -1,6 +1,7 @@
 import { local, readStorage, session, writeStorage } from "./browserStorage.js";
 
 const TOKEN_KEY = "skyreader_token";
+const GUEST_ACTIVE_KEY = "skyreader_guest_active";
 const AUTH_TIMEOUT_MS = 15_000;
 const isToken = (value) => typeof value === "string" && /^[A-Za-z0-9_-]{43}$/.test(value);
 const isProfile = (value) => Number.isSafeInteger(value?.id) && value.id > 0 &&
@@ -43,7 +44,7 @@ export function createAuthSession({ api, request = fetch, persistent = local, ta
     if (!isToken(stored)) {
       pending = null;
       clearCredentials();
-      publish("signin");
+      publish(readStorage(tab, GUEST_ACTIVE_KEY) === "1" ? "guest" : "signin");
       return;
     }
     publish("checking");
@@ -65,6 +66,7 @@ export function createAuthSession({ api, request = fetch, persistent = local, ta
         publish("signin", null, "Your saved session could not be restored. Please sign in again.");
         return;
       }
+      writeStorage(tab, GUEST_ACTIVE_KEY, null);
       token = stored;
       publish("account", user);
     } catch {
@@ -92,6 +94,7 @@ export function createAuthSession({ api, request = fetch, persistent = local, ta
       }
       if (!isToken(data?.token) || !isProfile(data?.user)) throw new Error("Invalid response from the sign-in server.");
       clearCredentials();
+      writeStorage(tab, GUEST_ACTIVE_KEY, null);
       token = data.token;
       writeStorage(remember ? persistent : tab, TOKEN_KEY, token);
       publish("account", data.user);
@@ -109,6 +112,7 @@ export function createAuthSession({ api, request = fetch, persistent = local, ta
     invalidate();
     const logoutGeneration = generation;
     clearCredentials();
+    writeStorage(tab, GUEST_ACTIVE_KEY, null);
     publish("signin");
     if (!isToken(previous)) return;
     try {
@@ -131,9 +135,14 @@ export function createAuthSession({ api, request = fetch, persistent = local, ta
       return () => listeners.delete(listener);
     },
     validate, signIn, logout, cancel: invalidate,
+    authorization: (userId) => token && snapshot.user?.id === userId ? `Bearer ${token}` : null,
+    showGuestRevocationFailure() {
+      if (snapshot.phase === "signin") publish("signin", null, "The guest session could not be revoked on the server.");
+    },
     continueAsGuest() {
       invalidate();
       clearCredentials();
+      writeStorage(tab, GUEST_ACTIVE_KEY, "1");
       publish("guest");
     },
   };
