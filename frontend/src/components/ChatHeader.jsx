@@ -1,6 +1,6 @@
 import {
   LayoutGrid,
-  Plus,
+  Pencil,
   Sun,
   Moon,
 } from "lucide-react";
@@ -13,7 +13,6 @@ export default function ChatHeader({
   onToggleTheme,
   atmosphereMode,
   onSelectAtmosphereMode,
-  activeScene,
   chatTitle = "New chat",
 }) {
   return (
@@ -40,7 +39,6 @@ export default function ChatHeader({
         <AtmosphereSelector
           selectedMode={atmosphereMode}
           onSelectMode={onSelectAtmosphereMode}
-          activeScene={activeScene}
         />
 
         {/* Quick Theme Toggle */}
@@ -54,14 +52,14 @@ export default function ChatHeader({
           {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
         </button>
 
-        {/* New Chat Button (Matches Video 1: "+ New Chat") */}
         <button
           type="button"
           className="new-chat-btn"
           onClick={onNewChat}
           title="Start fresh consultation"
+          aria-label="New Chat"
         >
-          <Plus size={15} />
+          <Pencil size={15} aria-hidden="true" />
           <span className="new-chat-label">New Chat</span>
         </button>
       </div>

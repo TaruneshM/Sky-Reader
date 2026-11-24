@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  SlidersHorizontal,
   ArrowUp,
   DollarSign,
   Mountain,
@@ -76,15 +75,6 @@ export default function WelcomeHero({ onSelectPrompt, onSendQuery }) {
 
       {/* Central Input Box (Matches Video 1) */}
       <div className="hero-center-input-capsule">
-        <button
-          type="button"
-          className="capsule-filter-icon-btn"
-          title="Filter and Preferences"
-          aria-label="Filter preferences"
-        >
-          <SlidersHorizontal size={15} />
-        </button>
-
         <input
           type="text"
           className="hero-capsule-input-field"

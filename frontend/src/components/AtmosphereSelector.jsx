@@ -5,7 +5,6 @@ import { WEATHER_SCENES } from "../utils/weatherAtmosphere";
 export default function AtmosphereSelector({
   selectedMode,
   onSelectMode,
-  activeScene,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -23,8 +22,6 @@ export default function AtmosphereSelector({
 
   const currentItem =
     WEATHER_SCENES.find((s) => s.id === selectedMode) || WEATHER_SCENES[0];
-  const activeSceneItem =
-    WEATHER_SCENES.find((s) => s.id === activeScene) || WEATHER_SCENES[1];
 
   return (
     <div className="atmosphere-selector-container" ref={containerRef}>
@@ -33,13 +30,11 @@ export default function AtmosphereSelector({
         className="atmosphere-pill-btn"
         onClick={() => setIsOpen((prev) => !prev)}
         title="Change ambient weather animation (Rain, Sunshine, Stars, Wind, Snow...)"
+        aria-label={`Change atmosphere. ${currentItem.label}`}
         aria-expanded={isOpen}
       >
-        <span className="atmosphere-active-icon">
-          {selectedMode === "auto" ? activeSceneItem.icon : currentItem.icon}
-        </span>
         <span className="atmosphere-active-label">
-          {selectedMode === "auto" ? `Auto: ${activeSceneItem.label}` : currentItem.label}
+          {currentItem.label}
         </span>
         <ChevronDown size={13} className={`chevron-icon ${isOpen ? "rotate" : ""}`} />
       </button>

@@ -9,15 +9,19 @@ const TOKEN = "a".repeat(43);
 const USER = { id: 7, email: "reader@example.test", name: "Reader" };
 const ACCOUNT_HISTORY = "skyreader_sessions:v2:account:7";
 const GUEST_HISTORY = "skyreader_sessions:v2:guest";
+const ATMOSPHERE_KEY = "skyreader_atmosphere_mode";
 
 let dom, vite, App, createRoot;
 
 before(async () => {
-  dom = new JSDOM("<div id='root'></div>", { url: "http://skyreader.test" });
+  dom = new JSDOM("<div id='root'></div>", { url: "http://skyreader.test", pretendToBeVisual: true });
   dom.window.HTMLCanvasElement.prototype.getContext = () => null;
+  dom.window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
   globalThis.window = dom.window;
   globalThis.document = dom.window.document;
   globalThis.localStorage = dom.window.localStorage;
+  globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
+  globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   ({ createRoot } = await import("react-dom/client"));
   vite = await createServer({
@@ -33,6 +37,8 @@ after(async () => {
   delete globalThis.window;
   delete globalThis.document;
   delete globalThis.localStorage;
+  delete globalThis.requestAnimationFrame;
+  delete globalThis.cancelAnimationFrame;
   delete globalThis.IS_REACT_ACT_ENVIRONMENT;
 });
 
@@ -53,9 +59,10 @@ function deferred() {
   return { result, resolve };
 }
 
-async function mount(t, pathname, { account = false, guest = false, sessions = [], request } = {}) {
+async function mount(t, pathname, { account = false, guest = false, sessions = [], request, atmosphereMode } = {}) {
   dom.window.localStorage.clear();
   dom.window.sessionStorage.clear();
+  if (atmosphereMode !== undefined) dom.window.localStorage.setItem(ATMOSPHERE_KEY, atmosphereMode);
   if (account) dom.window.localStorage.setItem("skyreader_token", TOKEN);
   if (guest) dom.window.sessionStorage.setItem("skyreader_guest_active", "1");
   (guest ? dom.window.sessionStorage : dom.window.localStorage)
@@ -318,6 +325,7 @@ test("dashboard consultation starts a clean thread and pending replies follow it
     },
   });
   await ui.click('a[href="/dashboard"]');
+  assertAtmosphereOff(ui);
   await ui.click(".consult-agent-hero-btn");
   const consultation = ui.location().pathname;
   assert.match(consultation, /^\/chat\/[^/]+$/);
@@ -359,4 +367,89 @@ test("the first WelcomeHero prompt replaces the empty chat URL", async (t) => {
   assert.deepEqual(sends[0].conversation_history, []);
   await ui.go(-1);
   assert.equal(ui.location().pathname, "/saved");
+});
+
+function assertAtmosphereOff(ui) {
+  assert.equal(localStorage.getItem(ATMOSPHERE_KEY), "none");
+  assert.equal(ui.container.querySelector(".atmosphere-active-label").textContent, "None");
+  assert.equal(ui.container.querySelector(".weather-atmosphere-canvas-wrapper"), null);
+  assert.equal(ui.container.querySelector("canvas"), null);
+  assert.ok(ui.container.querySelector(".sky-cloud-layer"));
+  assert.equal(ui.container.querySelector(".skyreader-root-environment").className, "skyreader-root-environment");
+}
+
+for (const [atmosphereMode, title] of [
+  [undefined, "missing preference defaults to None"],
+  ["auto", "stored Auto migrates to None"],
+  ["invalid-scene", "invalid preference migrates to None"],
+]) {
+  test(`${title} without creating a canvas or scheduling an animation frame`, async (t) => {
+    const context = t.mock.method(dom.window.HTMLCanvasElement.prototype, "getContext");
+    const frame = t.mock.method(globalThis, "requestAnimationFrame");
+    const ui = await mount(t, "/chat", { guest: true, atmosphereMode });
+    assertAtmosphereOff(ui);
+    assert.equal(context.mock.callCount(), 0);
+    assert.equal(frame.mock.callCount(), 0);
+  });
+}
+
+test("an incoming weather reply leaves the atmosphere off", async (t) => {
+  const reply = "Heavy rain, thunderstorms, and wind gusts are possible.";
+  const ui = await mount(t, "/chat", {
+    guest: true,
+    request: (url) => {
+      if (url.pathname === "/api/guest/session") return json({ credential: TOKEN }, 201);
+      if (url.pathname === "/api/chat/threads") {
+        return json({ thread_id: "e".repeat(32), thread_revision: 0 }, 201);
+      }
+      assert.equal(url.pathname, "/api/agent/chat");
+      return json({
+        response: reply,
+        claims: [{ variable: "precipitation_probability", claimed_value: 80 }],
+      }, 200, { "X-Thread-Revision": "1" });
+    },
+  });
+  await ui.click(".video1-starter-card");
+  assert.ok(ui.container.querySelector(".chat-thread-list").textContent.includes(reply));
+  assertAtmosphereOff(ui);
+});
+
+test("manual Rain still starts a canvas and switching to None stops its animation frame", async (t) => {
+  t.mock.method(dom.window.HTMLCanvasElement.prototype, "getContext", () => ({
+    clearRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, ellipse() {}, stroke() {},
+  }));
+  const pendingFrames = new Set();
+  let frameId = 0;
+  const frame = t.mock.method(globalThis, "requestAnimationFrame", () => {
+    pendingFrames.add(++frameId);
+    return frameId;
+  });
+  t.mock.method(globalThis, "cancelAnimationFrame", (id) => pendingFrames.delete(id));
+  const ui = await mount(t, "/preferences", { guest: true, atmosphereMode: "rain" });
+  const select = ui.container.querySelector("#atmosphere-scene");
+  assert.equal(select.value, "rain");
+  assert.equal(ui.container.querySelector(".atmosphere-active-label").textContent, "Rain Shower");
+  assert.ok(ui.container.querySelector(".scene-rain canvas"));
+  assert.equal(pendingFrames.size, 1);
+  const framesBeforeSwitchingOff = frame.mock.callCount();
+
+  await act(async () => {
+    select.value = "none";
+    select.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+  });
+  assertAtmosphereOff(ui);
+  assert.equal(pendingFrames.size, 0);
+  assert.equal(frame.mock.callCount(), framesBeforeSwitchingOff);
+
+  await ui.click(".atmosphere-pill-btn");
+  const rain = [...ui.container.querySelectorAll(".dropdown-scene-btn")]
+    .find((button) => button.textContent.includes("Rain Shower"));
+  assert.ok(rain);
+  await act(async () => rain.click());
+  assert.ok(ui.container.querySelector(".scene-rain canvas"));
+  assert.ok(ui.container.querySelector(".atmosphere-active-rain"));
+  assert.equal(select.value, "rain");
+  assert.equal(localStorage.getItem(ATMOSPHERE_KEY), "rain");
+  assert.equal(pendingFrames.size, 1);
+  assert.equal(frame.mock.callCount(), framesBeforeSwitchingOff + 1);
 });

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from "react";
+import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useMatch, useNavigate, useParams } from "react-router-dom";
 import { AppLayout, AuthLayout, WeatherLayout } from "./components/Layouts";
 import ChatMessage from "./components/ChatMessage";
@@ -8,14 +8,15 @@ import WelcomeHero from "./components/WelcomeHero";
 import CityLookup from "./components/CityLookup";
 import LoginPage from "./components/LoginPage";
 import PreferencesView from "./components/PreferencesView";
-import { detectWeatherScene } from "./utils/weatherAtmosphere";
+import { WEATHER_SCENES } from "./utils/weatherAtmosphere";
 import { createAuthSession } from "./utils/authSession";
 import { createConversations } from "./utils/conversations";
 import { createChatThreads } from "./utils/chatThreads";
-import { local, session as tabStorage } from "./utils/browserStorage";
+import { local, readStorage, session as tabStorage, writeStorage } from "./utils/browserStorage";
 import "./App.css";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
+const ATMOSPHERE_KEY = "skyreader_atmosphere_mode";
 
 export default function App() {
   const [session] = useState(() => createAuthSession({ api: API_BASE_URL }));
@@ -28,21 +29,6 @@ export default function App() {
   const signedIn = auth.phase === "account" || auth.phase === "guest";
   const workspaceKey = auth.user ? `account:${auth.user.id}` : signedIn ? "guest" : "signin";
   return <SkyReader key={workspaceKey} auth={auth} session={session} signedIn={signedIn} />;
-}
-
-function chatObservation(message) {
-  if (!message) return null;
-  const rain = message.claims?.find((claim) => claim.variable === "precipitation_probability");
-  const wind = message.claims?.find((claim) => claim.variable === "wind_speed")?.claimed_value ?? 0;
-  const text = message.text.toLowerCase();
-  let condition;
-  if (/thunder|storm/.test(text)) condition = "thunderstorm";
-  else if (/snow|blizzard/.test(text)) condition = "snow";
-  else if (/rain|shower/.test(text) || rain?.claimed_value > 40) condition = "rain";
-  else if (wind > 20) condition = "wind";
-  else if (/sunny|clear/.test(text)) condition = "clear";
-  else if (/cloud|overcast/.test(text)) condition = "cloudy";
-  return condition ? { condition, wind_speed: wind } : null;
 }
 
 function SkyReader({ auth, session, signedIn }) {
@@ -62,24 +48,13 @@ function SkyReader({ auth, session, signedIn }) {
   useEffect(() => conversations.cancel, [conversations]);
   const currentThread = chat.sessions.find((thread) => thread.id === chatId);
 
-  // Atmospheric simulation scene mode: 'auto' | 'sun' | 'rain' | 'stars' | 'wind' | 'snow' | 'thunder' | 'clouds'
   const [atmosphereMode, setAtmosphereMode] = useState(() => {
-    try {
-      return localStorage.getItem("skyreader_atmosphere_mode") || "auto";
-    } catch {
-      return "auto";
-    }
+    const storedMode = readStorage(local, ATMOSPHERE_KEY);
+    return WEATHER_SCENES.some(({ id }) => id === storedMode) ? storedMode : "none";
   });
 
-  // Track latest meteorological observations (from lookup or chat)
-  const [liveObservation, setLiveObservation] = useState(null);
-
   useEffect(() => {
-    try {
-      localStorage.setItem("skyreader_atmosphere_mode", atmosphereMode);
-    } catch (e) {
-      console.warn("Could not save atmosphere mode:", e);
-    }
+    writeStorage(local, ATMOSPHERE_KEY, atmosphereMode);
   }, [atmosphereMode]);
 
   // Theme state: dark (default, calming) or light
@@ -103,16 +78,6 @@ function SkyReader({ auth, session, signedIn }) {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
-  // Callback when CityLookup loads weather
-  const handleWeatherLoaded = useCallback((weatherData) => {
-    if (weatherData && weatherData.current) {
-      setLiveObservation({
-        weather_code: weatherData.current.weather_code,
-        condition: weatherData.current.condition,
-        wind_speed: weatherData.current.wind_speed,
-      });
-    }
-  }, [setLiveObservation]);
   function handleSendMessage(text, startNew = false) {
     const query = text.trim();
     if (!query) return;
@@ -142,21 +107,6 @@ function SkyReader({ auth, session, signedIn }) {
     void session.logout();
   }
 
-  const observation = chatObservation(
-    currentThread?.messages.findLast((message) => message.sender === "assistant"),
-  ) ?? liveObservation;
-
-  // Determine active ambient weather scene
-  const activeScene =
-    atmosphereMode === "auto"
-      ? detectWeatherScene({
-          weatherCode: observation?.weather_code,
-          condition: observation?.condition,
-          windSpeed: observation?.wind_speed,
-          isNight: theme === "dark",
-        })
-      : atmosphereMode;
-
   const loginProps = {
     onAuthenticate: session.signIn,
     onContinueAsGuest: session.continueAsGuest,
@@ -168,12 +118,12 @@ function SkyReader({ auth, session, signedIn }) {
   };
   const header = {
     onNewChat: handleNewChat, theme, onToggleTheme: toggleTheme, atmosphereMode,
-    onSelectAtmosphereMode: setAtmosphereMode, activeScene, chatTitle: currentThread?.title ?? "New chat",
+    onSelectAtmosphereMode: setAtmosphereMode, chatTitle: currentThread?.title ?? "New chat",
   };
   const sendNewChat = (text) => handleSendMessage(text, true);
 
   return (
-    <WeatherLayout activeScene={activeScene} theme={theme}>
+    <WeatherLayout scene={atmosphereMode} theme={theme}>
       {auth.phase === "checking" ? (
         <div className="floating-app-window-frame" role="status">Checking your session…</div>
       ) : (
@@ -192,7 +142,7 @@ function SkyReader({ auth, session, signedIn }) {
             } />
             <Route path="/dashboard" element={
               <main className="city-lookup-wrapper">
-                <CityLookup onConsultAgent={sendNewChat} onWeatherLoaded={handleWeatherLoaded} />
+                <CityLookup onConsultAgent={sendNewChat} />
               </main>
             } />
             <Route path="/saved" element={<ComingSoon title="Saved Places" />} />
@@ -205,10 +155,7 @@ function SkyReader({ auth, session, signedIn }) {
                   atmosphereMode={atmosphereMode}
                   onSelectAtmosphereMode={setAtmosphereMode}
                   user={user}
-                  onClearHistory={() => {
-                    conversations.clear();
-                    setLiveObservation(null);
-                  }}
+                  onClearHistory={conversations.clear}
                 />
               </main>
             } />

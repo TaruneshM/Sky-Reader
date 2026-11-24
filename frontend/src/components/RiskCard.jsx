@@ -54,7 +54,7 @@ export default function RiskCard({ riskAssessment }) {
     <div
       className={`risk-assessment-card ${levelMeta.colorClass}`}
       style={{
-        background: levelMeta.bgTint,
+        "--risk-tint": levelMeta.bgTint,
         borderColor: levelMeta.border,
       }}
     >

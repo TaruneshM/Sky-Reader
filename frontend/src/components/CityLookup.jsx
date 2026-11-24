@@ -20,7 +20,7 @@ import { WeatherIcon } from "../utils/weatherIcons";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-export default function CityLookup({ onConsultAgent, onWeatherLoaded }) {
+export default function CityLookup({ onConsultAgent }) {
   const [location, setLocation] = useState("Dehradun");
   const [weather, setWeather] = useState(null);
   const [lookupError, setLookupError] = useState("");
@@ -61,9 +61,6 @@ export default function CityLookup({ onConsultAgent, onWeatherLoaded }) {
 
       setWeather(data);
       setLocation(loc);
-      if (onWeatherLoaded) {
-        onWeatherLoaded(data);
-      }
     } catch (err) {
       setLookupError(err.message || "Failed to retrieve meteorological data.");
     } finally {
@@ -83,9 +80,6 @@ export default function CityLookup({ onConsultAgent, onWeatherLoaded }) {
         const data = await response.json();
         if (!ignore && response.ok) {
           setWeather(data);
-          if (onWeatherLoaded) {
-            onWeatherLoaded(data);
-          }
         }
       } catch (err) {
         if (!ignore) {
@@ -101,7 +95,7 @@ export default function CityLookup({ onConsultAgent, onWeatherLoaded }) {
     return () => {
       ignore = true;
     };
-  }, [onWeatherLoaded]);
+  }, []);
 
   // Compute stats from forecast
   const forecastHours = weather?.forecast || [];

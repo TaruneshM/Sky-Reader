@@ -43,10 +43,6 @@ export default function PreferencesView({
   const [autoExpandAudit, setAutoExpandAudit] = useState(() => {
     return localStorage.getItem("skyreader_auto_audit") === "true";
   });
-  const [particleAnimations, setParticleAnimations] = useState(() => {
-    return localStorage.getItem("skyreader_particles") !== "false";
-  });
-
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   // Sync state to localStorage
@@ -57,7 +53,6 @@ export default function PreferencesView({
     localStorage.setItem("skyreader_precip_unit", precipUnit);
     localStorage.setItem("skyreader_strict_val", strictValidation);
     localStorage.setItem("skyreader_auto_audit", autoExpandAudit);
-    localStorage.setItem("skyreader_particles", particleAnimations);
   }, [
     tempUnit,
     windUnit,
@@ -65,7 +60,6 @@ export default function PreferencesView({
     precipUnit,
     strictValidation,
     autoExpandAudit,
-    particleAnimations,
   ]);
 
   const handleSave = () => {
@@ -80,7 +74,6 @@ export default function PreferencesView({
     setPrecipUnit("mm");
     setStrictValidation(true);
     setAutoExpandAudit(false);
-    setParticleAnimations(true);
     if (onResetPreferences) onResetPreferences();
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2000);
@@ -168,33 +161,15 @@ export default function PreferencesView({
                 </div>
               </div>
 
-              {/* Particle Simulation Toggle */}
               <div className="pref-setting-row">
                 <div className="pref-setting-info">
-                  <span className="pref-setting-label">Weather Particle Engine</span>
+                  <label htmlFor="atmosphere-scene" className="pref-setting-label">Atmospheric Scene</label>
                   <span className="pref-setting-sub">
-                    Render live rain drops, blowing leaves, stars, snowflakes, and sunbeams
-                  </span>
-                </div>
-                <label className="pref-toggle-switch">
-                  <input
-                    type="checkbox"
-                    checked={particleAnimations}
-                    onChange={(e) => setParticleAnimations(e.target.checked)}
-                  />
-                  <span className="toggle-slider" />
-                </label>
-              </div>
-
-              {/* Active Weather Scene Selector */}
-              <div className="pref-setting-row">
-                <div className="pref-setting-info">
-                  <span className="pref-setting-label">Atmospheric Scene Override</span>
-                  <span className="pref-setting-sub">
-                    Lock simulation to a specific condition or sync with live weather
+                    Choose a particle effect or select None to turn particles off.
                   </span>
                 </div>
                 <select
+                  id="atmosphere-scene"
                   className="pref-select-dropdown"
                   value={atmosphereMode}
                   onChange={(e) => onSelectAtmosphereMode(e.target.value)}

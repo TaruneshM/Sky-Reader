@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import ChatHeader from "./ChatHeader";
 import Sidebar from "./Sidebar";
@@ -9,16 +9,32 @@ function canReturnTo(path) {
     && /^\/(?:dashboard|preferences|saved|notifications)\/?(?:[?#]|$)/i.test(path);
 }
 
-export function WeatherLayout({ activeScene, theme, children }) {
+function CloudBank() {
+  const layer = useRef(null);
+  useEffect(() => {
+    const clouds = layer.current;
+    const syncVisibility = () => clouds.toggleAttribute("data-paused", document.hidden);
+    syncVisibility();
+    document.addEventListener("visibilitychange", syncVisibility);
+    return () => document.removeEventListener("visibilitychange", syncVisibility);
+  }, []);
+
   return (
-    <div className={`skyreader-root-environment atmosphere-active-${activeScene}`}>
-      <WeatherAtmosphere scene={activeScene} isNight={theme === "dark"} />
-      <div className="video1-sky-cloud-layer" aria-hidden="true">
-        <div className="sky-cloud-puff puff-1" />
-        <div className="sky-cloud-puff puff-2" />
-        <div className="sky-cloud-puff puff-3" />
-        <div className="sky-cloud-puff puff-4" />
-      </div>
+    <div className="sky-cloud-layer" ref={layer} aria-hidden="true">
+      <div className="sky-cloud-sprite cloud-shelf" />
+      <div className="sky-cloud-sprite cloud-ridge" />
+      <div className="sky-cloud-sprite cloud-tower" />
+      <div className="sky-cloud-sprite cloud-bank" />
+    </div>
+  );
+}
+
+export function WeatherLayout({ scene, theme, children }) {
+  const sceneClass = scene === "none" ? "" : ` atmosphere-active-${scene}`;
+  return (
+    <div className={`skyreader-root-environment${sceneClass}`}>
+      <CloudBank />
+      <WeatherAtmosphere scene={scene} isNight={theme === "dark"} />
       {children}
     </div>
   );

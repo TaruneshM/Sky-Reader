@@ -5,7 +5,12 @@ import { useEffect, useRef } from "react";
  * High-performance, eye-friendly canvas-based meteorological particle simulation.
  * Supported scenes: 'sun', 'rain', 'stars', 'wind', 'snow', 'thunder', 'clouds'.
  */
-export default function WeatherAtmosphere({ scene = "stars", isNight = true }) {
+export default function WeatherAtmosphere({ scene = "none", isNight = true }) {
+  if (scene === "none") return null;
+  return <ParticleCanvas scene={scene} isNight={isNight} />;
+}
+
+function ParticleCanvas({ scene, isNight }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -15,6 +20,7 @@ export default function WeatherAtmosphere({ scene = "stars", isNight = true }) {
     if (!ctx) return;
 
     let animationFrameId;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
@@ -22,6 +28,7 @@ export default function WeatherAtmosphere({ scene = "stars", isNight = true }) {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
       initScene();
+      if (motion.matches && !document.hidden) render();
     };
 
     window.addEventListener("resize", handleResize);
@@ -276,21 +283,6 @@ export default function WeatherAtmosphere({ scene = "stars", isNight = true }) {
       // 3. SCENE: MIDNIGHT STARS & TWINKLING SKY
       // -------------------------------------------------------------------
       if (scene === "stars" || (scene === "wind" && isNight)) {
-        // Deep celestial ambient aura
-        const nightGlow = ctx.createRadialGradient(
-          width * 0.25,
-          height * 0.25,
-          40,
-          width * 0.25,
-          height * 0.25,
-          width * 0.7
-        );
-        nightGlow.addColorStop(0, "rgba(99, 102, 241, 0.12)");
-        nightGlow.addColorStop(0.5, "rgba(59, 130, 246, 0.05)");
-        nightGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.fillStyle = nightGlow;
-        ctx.fillRect(0, 0, width, height);
-
         // Twinkling stars
         stars.forEach((star) => {
           star.phase += star.twinkleSpeed;
@@ -432,13 +424,23 @@ export default function WeatherAtmosphere({ scene = "stars", isNight = true }) {
         });
       }
 
-      animationFrameId = requestAnimationFrame(render);
+      if (!document.hidden && !motion.matches) {
+        animationFrameId = requestAnimationFrame(render);
+      }
     };
 
-    render();
+    const syncMotion = () => {
+      cancelAnimationFrame(animationFrameId);
+      if (!document.hidden) render();
+    };
+    document.addEventListener("visibilitychange", syncMotion);
+    motion.addEventListener("change", syncMotion);
+    syncMotion();
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      document.removeEventListener("visibilitychange", syncMotion);
+      motion.removeEventListener("change", syncMotion);
       window.removeEventListener("resize", handleResize);
     };
   }, [scene, isNight]);

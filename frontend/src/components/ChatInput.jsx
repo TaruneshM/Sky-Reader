@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { Send, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowUp, AlertCircle, Loader2 } from "lucide-react";
 
 export default function ChatInput({
   input,
@@ -81,7 +81,7 @@ export default function ChatInput({
           {loading ? (
             <Loader2 size={18} className="spinner-animate" />
           ) : (
-            <Send size={18} />
+            <ArrowUp size={18} aria-hidden="true" />
           )}
         </button>
       </div>
