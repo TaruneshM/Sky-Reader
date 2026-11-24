@@ -4,7 +4,7 @@ The React and Vite workspace provides weather chat, city lookup, account and gue
 
 `src/App.jsx` composes the workspace. `src/utils/authSession.js`, `chatThreads.js`, and `conversations.js` handle authentication state, server thread revisions, and browser transcripts. `src/components/ChatMessage.jsx` renders the response and available audit or risk details.
 
-The checked-in API origin is `http://127.0.0.1:8000`. Start the backend and use Vite on port 5173. The browser does not require provider credentials.
+The checked-in API origin is `import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"`;. Start the backend and use Vite on port 5173. The browser does not require provider credentials.
 
 ```bash
 npm ci

@@ -17,7 +17,7 @@ import { createChatThreads } from "./utils/chatThreads";
 import { local, readStorage, session as tabStorage, writeStorage } from "./utils/browserStorage";
 import "./App.css";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 const ATMOSPHERE_KEY = "skyreader_atmosphere_mode";
 
 export default function App() {
