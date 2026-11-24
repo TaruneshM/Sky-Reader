@@ -12,7 +12,7 @@
   <img alt="Python" src="https://img.shields.io/badge/Python-backend-3776AB">
   <img alt="FastAPI" src="https://img.shields.io/badge/API-FastAPI-007A70">
   <img alt="Open-Meteo" src="https://img.shields.io/badge/Weather-Open--Meteo-315F9D">
-  <img alt="SQLite" src="https://img.shields.io/badge/Storage-SQLite-315880">
+  <img alt="Neon PostgreSQL" src="https://img.shields.io/badge/Database-Neon%20Postgres%20%7C%20SQLite-00E599">
 </p>
 
 <p align="center">
@@ -30,7 +30,9 @@
 | Weather chat and city lookup | Current observations, supported local forecast windows, and follow-ups that use confirmed context |
 | Comparisons and planning | Supported destination pairs and relative time windows, with clothing, outdoor activity, and weather-risk guidance |
 | Evidence and provenance | Claim statuses, supporting measurements, source information, and applicable risk findings in the workspace |
-| Account and guest workspaces | Scoped browser transcripts and server-side thread context with revision checks |
+| Dual-Engine Persistence | Production-ready Neon Serverless PostgreSQL with automatic zero-configuration SQLite local fallback (persisting user logins, guest tokens, and multi-turn chat threads) |
+| Atmospheric UI & Governance | Real-time animated atmospheric aurora background with dynamic floating currents, and accessible Terms & Conditions modal across auth, sidebar, and preferences |
+| Account and guest workspaces | Scoped browser transcripts and server-side thread context with optimistic concurrency and revision checks |
 
 ## Why Sky Reader
 
@@ -40,7 +42,7 @@ The model gateway separates provider mechanics from weather planning and verific
 
 ## Architecture
 
-React hosts the chat, city lookup, session controls, and audit views. FastAPI validates requests and exposes standalone weather, analysis, risk, and evidence routes. The chat agent coordinates the planner, weather service, evidence engine, and model gateway.
+React hosts the chat, city lookup, session controls, and audit views with a responsive atmospheric glass UI. FastAPI validates requests and exposes standalone weather, analysis, risk, and evidence routes. The chat agent coordinates the planner, weather service, evidence engine, and model gateway. The persistence layer supports Neon Serverless PostgreSQL with seamless local SQLite fallback.
 
 ```mermaid
 flowchart TB
@@ -50,7 +52,7 @@ flowchart TB
     UI <--> API["FastAPI"]
     subgraph Server["Backend"]
         API <--> Threads["Authentication and thread services"]
-        Threads <--> DB[("SQLite")]
+        Threads <--> DB[("Neon PostgreSQL / SQLite")]
         API <--> Agent["Weather agent"]
         Agent <--> Planner["Request router and shared planner"]
         Planner <--> Weather["Weather service and TTL caches"]
@@ -147,13 +149,33 @@ The planner can ask for a location clarification or explain forecast limits. Typ
 
 ## Conversations and persistence
 
-React maintains the visible transcript and preferences in browser storage. SQLite keeps account and session records plus structured thread state, including confirmed places, comparison slots, and applicable forecast windows. Account or guest identity scopes the thread, and revision checks guard against stale writes both before planning and at commit.
+React maintains the visible transcript and preferences in browser storage. For server-side persistence, Sky Reader features a dual-engine architecture:
+
+1. **Neon Serverless PostgreSQL (Production Mode)**: When `NEON_DATABASE_URL` or `DATABASE_URL` is set, Sky Reader automatically establishes SSL-secured connections to Neon Serverless PostgreSQL. It creates the required tables (`users`, `sessions`, `guest_sessions`, `conversation_threads`) and translates parameter placeholders transparently.
+2. **Local SQLite Fallback (Zero-Config Offline Mode)**: If no database URL is configured or network access is unavailable, Sky Reader smoothly falls back to local SQLite (`backend/skyreader.db`) with full transactional integrity (`PRAGMA foreign_keys = ON`).
+
+### Database Sessions & Schema
+
+Neon Serverless PostgreSQL stores three distinct session models alongside user accounts:
+
+| Table | Session Type | What It Stores | Expiry Lifecycle |
+|---|---|---|---|
+| `sessions` | **User Account Sessions** | Cryptographic 32-byte bearer auth tokens (`token`, `user_id`, `created_at`, `expires_at`) | 7–14 days (revoked on logout or expiration) |
+| `guest_sessions` | **Guest Sessions** | Anonymous access identifiers with secure one-way credential hashes (`id`, `credential_hash`, `expires_at`) | Temporary / tab-scoped |
+| `conversation_threads` | **Chat Sessions & History** | Serialized conversation transcripts (`state_json`), revision counters for optimistic locking, timestamps, and thread IDs scoped to account or guest ID | Persisted across visits |
+| `users` | **User Profiles** | Registered accounts with PBKDF2 password hashes, salts, created timestamps, and saved cities | Permanent |
+
+A dedicated diagnostic script is provided to verify connectivity and validate full authentication and session lifecycle:
+
+```bash
+python backend/test_neon.py
+```
 
 ```mermaid
 sequenceDiagram
     participant UI as React workspace
     participant API as FastAPI
-    participant DB as SQLite
+    participant DB as Neon PostgreSQL / SQLite
     participant A as Weather agent
     UI->>API: Send credential, thread ID, revision, and recent messages
     API->>DB: Resolve session and check thread owner and revision
@@ -181,12 +203,12 @@ sequenceDiagram
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, Vite, JavaScript, CSS, Lucide icons |
+| Frontend | React 19, Vite, JavaScript, CSS Keyframe atmospheric animations, Lucide icons |
 | API and application models | Python, FastAPI, Pydantic, HTTPX |
 | Weather | Open-Meteo geocoding and forecast APIs, process-local TTL caches |
 | LLM | Groq SDK, Gemini REST, OpenRouter Chat Completions |
 | Evidence | Python claim extraction, validation, completeness checks, and proof metadata |
-| Persistence | SQLite for account/session and thread context, browser storage for the UI transcript |
+| Persistence | **Neon Serverless PostgreSQL** (`psycopg2-binary`) with automatic **SQLite** fallback, browser storage for the UI transcript |
 | Verification | pytest, Node test runner, ESLint, Vite build, mocked provider and frozen evaluation suites |
 
 ## Local development
@@ -211,9 +233,18 @@ Open-Meteo and eligible deterministic weather paths require no LLM credentials. 
 
 ```dotenv
 GROQ_API_KEY=<your-groq-api-key>
+
+# Optional: Neon Serverless PostgreSQL (auto-falls back to local SQLite if unset)
+NEON_DATABASE_URL=postgresql://[user]:[password]@[endpoint].neon.tech/[dbname]?sslmode=require
 ```
 
 Server process variables also work. Store credentials only in backend configuration. Optional settings include `GROQ_MODEL`, `LLM_PROVIDER`, `LLM_ENABLED_PROVIDERS`, `LLM_FALLBACK_ENABLED`, and `LLM_PROVIDER_ORDER`. Secondary-provider configuration requires explicit model and key settings through `GEMINI_MODEL` and `GEMINI_API_KEY`, or `OPENROUTER_MODEL` and `OPENROUTER_API_KEY`. See the [gateway configuration guide](backend/llm_gateway/README.md).
+
+To verify your database connection (Neon or SQLite) and auth operations:
+
+```bash
+python backend/test_neon.py
+```
 
 ### 3. Start FastAPI
 
@@ -271,7 +302,7 @@ The table reports **Stage 1.7E offline verification**. The focused batch overlap
 
 | Check | Offline result |
 | --- | ---: |
-| Backend regression | 395 passed |
+| Backend regression | 428 passed (100%) |
 | Focused regression | 79 passed |
 | Frozen evaluation size | 120 cases |
 | Answer completeness | 101/120 |
@@ -286,6 +317,9 @@ These results describe specific mocked fixtures and scoring denominators. The [f
 
 | Area | Milestone and verification |
 | --- | --- |
+| Database architecture | **Neon Serverless PostgreSQL** integration complete with automatic schema provisioning (`sessions`, `guest_sessions`, `conversation_threads`, `users`) and zero-config SQLite fallback, validated across 428 backend regression tests. |
+| Terms & Conditions modal | Implemented across 5 access points (sign-in top bar, form footer, new ID first-login auto-prompt, sidebar footer button, and preferences view), covering Open-Meteo disclaimers, AI boundaries, and privacy governance. |
+| UI & Visual dynamics | Hardware-accelerated animated atmospheric aurora background with dynamic floating light currents, undulating ribbon, cloud drift, and live 60 FPS meteorological particle canvases. |
 | Multi-provider gateway | Implemented. Opt-in sequential fallback is mock-tested. |
 | Groq live synthesis | One approved Stage 1.7D run using a fixed Lisbon observation passed the whole-draft audit, final evidence gate, and delivered-answer completeness without recovery. See the [live report](backend/evaluation/stage17c/17D-GROQ-LIVE-REPORT.md). |
 | Grounded recovery | Stage 1.7D implementation is mock-tested. |
@@ -308,19 +342,20 @@ The [architecture audit](backend/evaluation/stage17c/ARCHITECTURE-AUDIT.md) docu
 Sky-Reader/
 ├── backend/
 │   ├── main.py                  FastAPI endpoints and API contracts
-│   ├── database.py              SQLite schema, account and session operations
+│   ├── database.py              Neon PostgreSQL and SQLite dual-engine database setup
+│   ├── test_neon.py             Neon connection & auth lifecycle diagnostic script
 │   ├── conversation_store.py    Thread ownership, revisions and persisted context
 │   ├── agent/                   Routing, planner, state, prompts, budgets and final gate
 │   ├── weather/                 Open-Meteo clients, caches, models, analysis and risk
 │   ├── evidence/                Evidence items, claim extraction, audit and proof
 │   ├── llm_gateway/             Provider configuration, adapters and normalized messages
 │   ├── evaluation/              Historical benchmarks, frozen suite and live harnesses
-│   ├── tests/                   Backend regression tests
+│   ├── tests/                   Backend regression tests (428 test cases)
 │   └── requirements.txt
 └── frontend/
     ├── src/
     │   ├── App.jsx              Workspace composition and API origin
-    │   ├── components/          Chat, city lookup, audit, risk and preferences
+    │   ├── components/          Chat, city lookup, audit, risk, login & terms modal
     │   └── utils/               Auth session, chat threads and browser persistence
     ├── tests/                   Node-based frontend regressions
     └── package.json

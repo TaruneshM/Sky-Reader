@@ -29,10 +29,23 @@ function CloudBank() {
   );
 }
 
+function AnimatedSkyBackground() {
+  return (
+    <div className="skyreader-ambient-bg" aria-hidden="true">
+      <div className="skyreader-ambient-glow glow-primary" />
+      <div className="skyreader-ambient-glow glow-secondary" />
+      <div className="skyreader-ambient-glow glow-tertiary" />
+      <div className="skyreader-ambient-glow glow-warm" />
+      <div className="skyreader-aurora-ribbon" />
+    </div>
+  );
+}
+
 export function WeatherLayout({ scene, theme, children }) {
   const sceneClass = scene === "none" ? "" : ` atmosphere-active-${scene}`;
   return (
     <div className={`skyreader-root-environment${sceneClass}`}>
+      <AnimatedSkyBackground />
       <CloudBank />
       <WeatherAtmosphere scene={scene} isNight={theme === "dark"} />
       {children}
@@ -54,7 +67,7 @@ export function AuthLayout({ phase, signedIn }) {
   return <Outlet />;
 }
 
-export function AppLayout({ signedIn, user, onLogout, chatSessions, header, notice }) {
+export function AppLayout({ signedIn, user, onLogout, onOpenTerms, chatSessions, header, notice }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   if (!signedIn) {
@@ -68,6 +81,7 @@ export function AppLayout({ signedIn, user, onLogout, chatSessions, header, noti
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onLogout={onLogout}
+        onOpenTerms={onOpenTerms}
         user={user}
         chatSessions={chatSessions}
       />

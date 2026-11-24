@@ -28,7 +28,7 @@ function ParticleCanvas({ scene, isNight }) {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
       initScene();
-      if (motion.matches && !document.hidden) render();
+      if (!document.hidden) render();
     };
 
     window.addEventListener("resize", handleResize);
@@ -424,7 +424,7 @@ function ParticleCanvas({ scene, isNight }) {
         });
       }
 
-      if (!document.hidden && !motion.matches) {
+      if (!document.hidden) {
         animationFrameId = requestAnimationFrame(render);
       }
     };
@@ -434,13 +434,11 @@ function ParticleCanvas({ scene, isNight }) {
       if (!document.hidden) render();
     };
     document.addEventListener("visibilitychange", syncMotion);
-    motion.addEventListener("change", syncMotion);
     syncMotion();
 
     return () => {
       cancelAnimationFrame(animationFrameId);
       document.removeEventListener("visibilitychange", syncMotion);
-      motion.removeEventListener("change", syncMotion);
       window.removeEventListener("resize", handleResize);
     };
   }, [scene, isNight]);

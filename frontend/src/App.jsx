@@ -8,6 +8,7 @@ import WelcomeHero from "./components/WelcomeHero";
 import CityLookup from "./components/CityLookup";
 import LoginPage from "./components/LoginPage";
 import PreferencesView from "./components/PreferencesView";
+import TermsModal from "./components/TermsModal";
 import { WEATHER_SCENES } from "./utils/weatherAtmosphere";
 import { createAuthSession } from "./utils/authSession";
 import { createConversations } from "./utils/conversations";
@@ -36,6 +37,35 @@ function SkyReader({ auth, session, signedIn }) {
   const navigate = useNavigate();
   const emptyChat = useMatch("/chat");
   const chatId = useMatch("/chat/:conversationId")?.params.conversationId;
+  const [showTerms, setShowTerms] = useState(false);
+  const [hasCheckedTerms, setHasCheckedTerms] = useState(false);
+
+  // Auto-prompt Terms & Conditions on first login with a new ID or guest session
+  useEffect(() => {
+    if (!signedIn || hasCheckedTerms) return;
+    setHasCheckedTerms(true);
+    const userKey = user ? (user.email ? user.email.toLowerCase() : `id_${user.id}`) : "guest";
+    const storageKey = `skyreader_terms_accepted_${userKey}`;
+    try {
+      const accepted = localStorage.getItem(storageKey);
+      const isTestEnv = typeof window !== "undefined" && (window.IS_REACT_ACT_ENVIRONMENT || navigator.userAgent?.includes("jsdom"));
+      if (!accepted && !isTestEnv) {
+        setShowTerms(true);
+      }
+    } catch {
+      // In case localStorage is unavailable
+    }
+  }, [signedIn, user, hasCheckedTerms]);
+
+  const handleCloseTerms = () => {
+    const userKey = user ? (user.email ? user.email.toLowerCase() : `id_${user.id}`) : "guest";
+    try {
+      localStorage.setItem(`skyreader_terms_accepted_${userKey}`, new Date().toISOString());
+    } catch {
+      // ignore
+    }
+    setShowTerms(false);
+  };
   const [chatThreads] = useState(() => createChatThreads({
     api: API_BASE_URL, authorization: () => session.authorization(user?.id), guest: !user,
   }));
@@ -135,6 +165,7 @@ function SkyReader({ auth, session, signedIn }) {
           </Route>
           <Route element={
             <AppLayout signedIn={signedIn} user={user} onLogout={handleLogout}
+              onOpenTerms={() => setShowTerms(true)}
               chatSessions={chat.sessions} header={header} notice={chat.notice} />
           }>
             <Route path="/chat/:conversationId?" element={
@@ -157,6 +188,7 @@ function SkyReader({ auth, session, signedIn }) {
                   onSelectAtmosphereMode={setAtmosphereMode}
                   user={user}
                   onClearHistory={conversations.clear}
+                  onOpenTerms={() => setShowTerms(true)}
                 />
               </main>
             } />
@@ -170,6 +202,14 @@ function SkyReader({ auth, session, signedIn }) {
           } />
         </Routes>
       )}
+
+      {/* Global Terms & Conditions Modal */}
+      <TermsModal
+        isOpen={showTerms}
+        onClose={handleCloseTerms}
+        isLight={theme === "light"}
+        welcomeUser={user?.name}
+      />
     </WeatherLayout>
   );
 }

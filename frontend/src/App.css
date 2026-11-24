@@ -7,7 +7,7 @@
    -------------------------------------------------------------------------- */
 :root {
   --bg-sky-deep: #183161;
-  --bg-sky: var(--bg-sky-deep);
+  --bg-sky: radial-gradient(120% 120% at 50% 20%, #1e3c74 0%, #183161 50%, #112347 100%);
   --bg-window-glass: rgba(255, 255, 255, 0.045);
   --bg-sidebar-glass: rgba(255, 255, 255, 0.05);
   --bg-sidebar-mobile: rgba(23, 45, 86, 0.97);
@@ -59,7 +59,7 @@
 
 [data-theme="light"] {
   --bg-sky-deep: #8ec5f5;
-  --bg-sky: linear-gradient(180deg, var(--bg-sky-deep), #cfe6fb);
+  --bg-sky: radial-gradient(120% 120% at 50% 20%, #a2d4fc 0%, #8ec5f5 50%, #c4e3fd 100%);
   --bg-window-glass: rgba(252, 254, 255, 0.34);
   --bg-sidebar-glass: rgba(248, 253, 255, 0.32);
   --bg-sidebar-mobile: rgba(225, 241, 254, 0.97);
@@ -149,8 +149,137 @@ input, textarea {
 }
 
 /* --------------------------------------------------------------------------
-   3. OUTER ENVIRONMENT & DRIFTING SKY CLOUDS (VIDEO 1 BACKGROUND)
+   3. OUTER ENVIRONMENT & ANIMATED ATMOSPHERIC SKY
    -------------------------------------------------------------------------- */
+
+.skyreader-ambient-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  isolation: isolate;
+}
+
+/* Glowing Aurora Orb 1: Cyan / Deep Sky Glow */
+.skyreader-ambient-glow.glow-primary {
+  position: absolute;
+  top: -10%;
+  left: 15%;
+  width: min(700px, 65vw);
+  height: min(700px, 65vw);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.42) 0%, rgba(24, 49, 97, 0) 70%);
+  filter: blur(55px);
+  opacity: 0.9;
+  animation: ambientFloat1 8s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Glowing Aurora Orb 2: Violet / Atmospheric Purple */
+.skyreader-ambient-glow.glow-secondary {
+  position: absolute;
+  top: 25%;
+  right: -5%;
+  width: min(750px, 70vw);
+  height: min(750px, 70vw);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(147, 51, 234, 0.38) 0%, rgba(24, 49, 97, 0) 70%);
+  filter: blur(65px);
+  opacity: 0.85;
+  animation: ambientFloat2 10s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Glowing Aurora Orb 3: Emerald / Teal Horizon Current */
+.skyreader-ambient-glow.glow-tertiary {
+  position: absolute;
+  bottom: -15%;
+  left: 5%;
+  width: min(650px, 60vw);
+  height: min(650px, 60vw);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.32) 0%, rgba(24, 49, 97, 0) 70%);
+  filter: blur(55px);
+  opacity: 0.8;
+  animation: ambientFloat3 9s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Glowing Aurora Orb 4: Warm Solar / Sunrise Amber Accent */
+.skyreader-ambient-glow.glow-warm {
+  position: absolute;
+  top: 40%;
+  left: 35%;
+  width: min(520px, 48vw);
+  height: min(520px, 48vw);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.28) 0%, rgba(24, 49, 97, 0) 70%);
+  filter: blur(50px);
+  opacity: 0.75;
+  animation: ambientFloat4 7s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Flowing Aurora Light Ribbon across mid-horizon */
+.skyreader-aurora-ribbon {
+  position: absolute;
+  inset: -25%;
+  width: 150%;
+  height: 150%;
+  background: radial-gradient(ellipse 80% 50% at 50% 50%, rgba(56, 189, 248, 0.16) 0%, transparent 75%);
+  filter: blur(40px);
+  animation: ribbonPulse 6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes ambientFloat1 {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  33%  { transform: translate3d(130px, 80px, 0) scale(1.22); }
+  66%  { transform: translate3d(-90px, 140px, 0) scale(0.88); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes ambientFloat2 {
+  0%   { transform: translate3d(0, 0, 0) scale(1.15); }
+  38%  { transform: translate3d(-150px, -70px, 0) scale(0.85); }
+  72%  { transform: translate3d(90px, -110px, 0) scale(1.2); }
+  100% { transform: translate3d(0, 0, 0) scale(1.15); }
+}
+
+@keyframes ambientFloat3 {
+  0%   { transform: translate3d(0, 0, 0) scale(0.92); }
+  50%  { transform: translate3d(120px, -90px, 0) scale(1.25); }
+  100% { transform: translate3d(0, 0, 0) scale(0.92); }
+}
+
+@keyframes ambientFloat4 {
+  0%   { transform: translate3d(0, 0, 0) scale(0.95); opacity: 0.45; }
+  50%  { transform: translate3d(-110px, 80px, 0) scale(1.28); opacity: 0.85; }
+  100% { transform: translate3d(0, 0, 0) scale(0.95); opacity: 0.45; }
+}
+
+@keyframes ribbonPulse {
+  0%, 100% { opacity: 0.35; transform: rotate(0deg) scale(1); }
+  50%      { opacity: 0.75; transform: rotate(6deg) scale(1.12); }
+}
+
+/* Light Theme Adaptations */
+[data-theme="light"] .skyreader-ambient-glow.glow-primary {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.45) 0%, rgba(142, 197, 245, 0) 70%);
+}
+[data-theme="light"] .skyreader-ambient-glow.glow-secondary {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.35) 0%, rgba(142, 197, 245, 0) 70%);
+}
+[data-theme="light"] .skyreader-ambient-glow.glow-tertiary {
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.35) 0%, rgba(142, 197, 245, 0) 70%);
+}
+[data-theme="light"] .skyreader-ambient-glow.glow-warm {
+  background: radial-gradient(circle, rgba(251, 146, 60, 0.30) 0%, rgba(142, 197, 245, 0) 70%);
+}
+
 .skyreader-root-environment {
   position: relative;
   width: 100vw;
@@ -159,7 +288,7 @@ input, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-sky);
+  background-color: var(--bg-sky-deep);
   overflow: hidden;
   isolation: isolate;
 }
@@ -284,14 +413,7 @@ input, textarea {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .sky-cloud-sprite {
-    opacity: var(--cloud-alpha);
-    transform: translate3d(0, 18%, 0);
-    animation: none;
-    will-change: auto;
-  }
-}
+
 
 /* --------------------------------------------------------------------------
    4. FLOATING GLASS APPLICATION WINDOW (MATCHES VIDEO 1)
@@ -585,6 +707,40 @@ input, textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.sidebar-terms-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.sidebar-terms-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.sidebar-terms-btn .terms-icon {
+  flex-shrink: 0;
+  color: var(--accent-amber);
+}
+
+@keyframes termsBackdropFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes termsModalZoom {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .sidebar-logout-btn {

@@ -7,6 +7,7 @@ import {
   LogOut,
   X,
   LayoutGrid,
+  ShieldCheck,
 } from "lucide-react";
 import { NavLink, useMatch } from "react-router-dom";
 
@@ -22,6 +23,7 @@ export default function Sidebar({
   isOpen,
   onClose,
   onLogout,
+  onOpenTerms,
   user,
   chatSessions = [],
 }) {
@@ -118,6 +120,18 @@ export default function Sidebar({
               <span className="user-email-sub">{user?.email || "History stays in this browser"}</span>
             </div>
           </div>
+
+          {onOpenTerms && (
+            <button
+              type="button"
+              className="sidebar-terms-btn"
+              onClick={onOpenTerms}
+              title="Review Terms & Conditions"
+            >
+              <ShieldCheck size={14} className="terms-icon" />
+              <span>Terms &amp; Conditions</span>
+            </button>
+          )}
 
           <button
             type="button"

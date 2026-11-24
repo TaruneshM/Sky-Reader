@@ -21,6 +21,7 @@ export default function PreferencesView({
   user,
   onClearHistory,
   onResetPreferences,
+  onOpenTerms,
 }) {
   // Meteorological Units Preferences (stored in localStorage)
   const [tempUnit, setTempUnit] = useState(() => {
@@ -374,6 +375,39 @@ export default function PreferencesView({
                   {user ? "Signed in" : "Guest"}
                 </span>
               </div>
+
+              {/* Terms & Conditions */}
+              {onOpenTerms && (
+                <div className="pref-setting-row">
+                  <div className="pref-setting-info">
+                    <span className="pref-setting-label">Terms &amp; Conditions</span>
+                    <span className="pref-setting-sub">
+                      Review meteorological advisories, AI verification limits, and privacy policy
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="pref-btn"
+                    onClick={onOpenTerms}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "7px 14px",
+                      borderRadius: 10,
+                      border: "1px solid var(--border-card)",
+                      background: "var(--bg-card-hover)",
+                      color: "var(--text-main)",
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <ShieldCheck size={14} className="text-emerald" />
+                    View Terms
+                  </button>
+                </div>
+              )}
 
               {/* Clear History Button */}
               <div className="pref-setting-row">

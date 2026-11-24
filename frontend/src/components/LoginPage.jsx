@@ -3,8 +3,10 @@ import { Link, useLocation } from "react-router-dom";
 import {
   Eye, EyeOff, Sparkles, AlertCircle,
   Sun, Moon, ArrowRight, User, Mail, Lock,
+  ShieldCheck, X,
 } from "lucide-react";
 import { hasIntroPlayed, markIntroPlayed } from "../utils/introState.js";
+import TermsModal from "./TermsModal.jsx";
 
 // Lazy-load SkyReaderIntro so it is not in bundle path for signed-in users
 const SkyReaderIntro = lazy(() => import("./SkyReaderIntro.jsx"));
@@ -23,10 +25,21 @@ export default function LoginPage({
   const [showPassword, setShowPassword] = useState(false);
   const [staySignedIn, setStaySignedIn] = useState(true);
   const [introActive,  setIntroActive]  = useState(false);
+  const [showTerms,    setShowTerms]    = useState(false);
   const brandRef = useRef(null);
   const { state } = useLocation();
 
   const isLight = theme === "light";
+
+  // Close Terms modal on ESC key
+  useEffect(() => {
+    if (!showTerms) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") setShowTerms(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showTerms]);
 
   // Check intro eligibility
   useEffect(() => {
@@ -96,6 +109,26 @@ export default function LoginPage({
       alignItems:     "center",
       gap:            8,
       padding:        "8px 18px",
+      borderRadius:   999,
+      border:         isLight
+        ? "1px solid rgba(160,140,110,0.4)"
+        : "1px solid rgba(255,255,255,0.18)",
+      background:     isLight
+        ? "rgba(255,250,242,0.55)"
+        : "rgba(255,255,255,0.08)",
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
+      color:          isLight ? "#3a3028" : "#ffffff",
+      fontSize:       12.5,
+      fontWeight:     600,
+      cursor:         "pointer",
+      transition:     "all 0.18s ease",
+    },
+    termsTopBtn: {
+      display:        "inline-flex",
+      alignItems:     "center",
+      gap:            7,
+      padding:        "8px 16px",
       borderRadius:   999,
       border:         isLight
         ? "1px solid rgba(160,140,110,0.4)"
@@ -399,11 +432,23 @@ export default function LoginPage({
           </button>
         ) : <div />}
 
-        {onToggleTheme && (
-          <button type="button" style={styles.themeBtn} onClick={onToggleTheme} title="Toggle theme">
-            {isLight ? <Moon size={17} /> : <Sun size={17} />}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            type="button"
+            style={styles.termsTopBtn}
+            onClick={() => setShowTerms(true)}
+            title="Review Terms & Conditions"
+          >
+            <ShieldCheck size={14} />
+            <span>Terms &amp; Conditions</span>
           </button>
-        )}
+
+          {onToggleTheme && (
+            <button type="button" style={styles.themeBtn} onClick={onToggleTheme} title="Toggle theme">
+              {isLight ? <Moon size={17} /> : <Sun size={17} />}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Glass card: hidden during intro, then fades and rises in */}
@@ -589,12 +634,44 @@ export default function LoginPage({
           </Link>
         </div>
 
+        {/* Terms agreement notice */}
+        <div style={{ marginTop: 14, textAlign: "center" }}>
+          <button
+            type="button"
+            onClick={() => setShowTerms(true)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              background: "none",
+              border: "none",
+              color: isLight ? "#b45309" : "#c084fc",
+              cursor: "pointer",
+              fontSize: 11.5,
+              fontWeight: 600,
+              padding: "4px 8px",
+              fontFamily: "inherit",
+              textDecoration: "underline",
+            }}
+          >
+            <ShieldCheck size={13} />
+            <span>Review Terms &amp; Conditions</span>
+          </button>
+        </div>
+
         {/* Security tag */}
         <div style={styles.secTag}>
           <Sparkles size={10} color={isLight ? "#c17a2a" : "#f59e0b"} />
           <span>Chat history stays in this browser</span>
         </div>
       </div>
+
+      {/* Terms & Conditions Modal */}
+      <TermsModal
+        isOpen={showTerms}
+        onClose={() => setShowTerms(false)}
+        isLight={isLight}
+      />
 
       {/* Keyframe injection */}
       <style>{`
