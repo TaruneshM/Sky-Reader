@@ -588,3 +588,35 @@ def health():
         "status": "ok",
         "service": "Sky Reader backend"
     }
+
+
+@app.get("/api/diag")
+async def diag(location: str = "Dehradun"):
+    import traceback
+    out = {}
+    try:
+        place = await geocode_location(location)
+        out["geocode"] = place
+        if not place:
+            return out
+    except Exception as e:
+        out["geocode_error"] = str(e)
+        out["geocode_tb"] = traceback.format_exc()
+        return out
+
+    try:
+        current = await get_current_weather(place["latitude"], place["longitude"])
+        out["current_sample"] = {k: v for k, v in current.items() if k != "hourly"}
+    except Exception as e:
+        out["current_error"] = str(e)
+        out["current_tb"] = traceback.format_exc()
+        return out
+
+    try:
+        hourly = await get_hourly_forecast(place["latitude"], place["longitude"])
+        out["hourly_keys"] = list(hourly.keys())
+    except Exception as e:
+        out["hourly_error"] = str(e)
+        out["hourly_tb"] = traceback.format_exc()
+
+    return out
