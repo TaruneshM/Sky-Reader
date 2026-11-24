@@ -9,7 +9,7 @@ from fastapi import routing
 from backend import database, main
 from backend.agent import agent
 from backend.weather.location_models import (
-    Ambiguous, CandidateSummary, ConfirmedLocation, ProviderUnavailable, Resolved, ResolutionProvenance,
+    Ambiguous, CandidateSummary, ConfirmedLocation, NotFound, ProviderUnavailable, Resolved, ResolutionProvenance,
 )
 
 
@@ -275,7 +275,7 @@ def test_logout_during_an_inflight_turn_invalidates_its_commit(app_client, monke
 def test_provider_errors_do_not_commit_a_thread_revision(app_client, monkeypatch, caplog):
     from types import SimpleNamespace
 
-    from groq import RateLimitError
+    from groq import APIStatusError, RateLimitError
 
     provider_request = httpx.Request("POST", "https://example.invalid")
     error = RateLimitError(
@@ -283,7 +283,15 @@ def test_provider_errors_do_not_commit_a_thread_revision(app_client, monkeypatch
         response=httpx.Response(429, request=provider_request, headers={"Retry-After": "120"}),
         body=None,
     )
-    create = AsyncMock(side_effect=error)
+    service_errors = [
+        APIStatusError(
+            "synthetic-provider-secret",
+            response=httpx.Response(status, request=provider_request),
+            body={"code": "tool_use_failed"} if status == 400 else None,
+        )
+        for status in (400, 503)
+    ]
+    create = AsyncMock(side_effect=[error, *service_errors])
     monkeypatch.setattr(agent, "get_groq_client", lambda **_: SimpleNamespace(
         chat=SimpleNamespace(completions=SimpleNamespace(create=create))
     ))
@@ -295,9 +303,11 @@ def test_provider_errors_do_not_commit_a_thread_revision(app_client, monkeypatch
             headers = await guest_session(client)
             thread = await open_thread(client, headers)
             state_before = dict(stored(thread))
-            for message, expected_status, category in [
-                ("Hello!", 429, "groq_quota_exhausted"),
-                ("Weather in Offline?", 503, "weather_provider_unavailable"),
+            for message, expected_status, category, provider_status in [
+                ("Tell me a joke.", 429, "groq_quota_exhausted", 429),
+                ("Tell me a joke.", 502, "groq_service_failure", 400),
+                ("Tell me a joke.", 502, "groq_service_failure", 503),
+                ("Weather in Offline?", 503, "weather_provider_unavailable", None),
             ]:
                 response = await client.post("/api/agent/chat", headers=headers, json=turn(thread, message))
                 assert response.status_code == expected_status
@@ -306,8 +316,69 @@ def test_provider_errors_do_not_commit_a_thread_revision(app_client, monkeypatch
                 assert "X-Thread-Revision" not in response.headers
                 assert "synthetic-provider-secret" not in response.text
                 assert dict(stored(thread)) == state_before
+                if provider_status:
+                    call, = response.json()["token_usage"]["llm_calls"]
+                    assert call["provider_status"] == provider_status
+                    assert call["transient"] == (provider_status in {429, 503})
                 if expected_status == 429:
                     assert response.headers["Retry-After"] == "120"
     asyncio.run(workflow())
-    create.assert_awaited_once()
+    assert create.await_count == 3
     assert "synthetic-provider-secret" not in caplog.text
+
+
+def test_bare_destination_replaces_completed_weather_task_and_commits(app_client, monkeypatch):
+    coordinates = {"Bhimtal": (29.35, 79.57), "Khatima": (28.92, 79.97)}
+
+    async def resolve(location, **kwargs):
+        name = location.title()
+        assert not kwargs
+        if name not in coordinates:
+            return NotFound(query=location, reason="no_candidates")
+        latitude, longitude = coordinates[name]
+        return Resolved(query=location, location=ConfirmedLocation(
+            name=name, latitude=latitude, longitude=longitude,
+            provenance=ResolutionProvenance(method="standalone"),
+        ))
+
+    async def current(latitude, longitude):
+        return {"current": {
+            "temperature_2m": 22 if (latitude, longitude) == coordinates["Khatima"] else 16,
+            "weather_code": 0,
+        }}
+
+    geocoder = AsyncMock(side_effect=resolve)
+    fetch = AsyncMock(side_effect=current)
+    monkeypatch.setattr(agent, "resolve_location", geocoder)
+    monkeypatch.setattr(agent, "get_current_weather", fetch)
+    monkeypatch.setattr(agent, "get_groq_client", lambda **_: pytest.fail("Weather turn reached Groq"))
+
+    async def workflow():
+        async with app_client as client:
+            headers = await guest_session(client)
+            thread = await open_thread(client, headers)
+            fresh = await open_thread(client, headers)
+
+            async def send(thread_id, message, revision):
+                return await client.post("/api/agent/chat", headers=headers, json=turn(thread_id, message, revision))
+
+            first = await send(thread, "What's the weather in Bhimtal?", 0)
+            assert "Bhimtal" in first.json()["response"]
+            switched = await send(thread, "khatima", 1)
+            assert switched.status_code == 200
+            assert switched.headers["X-Thread-Revision"] == "2"
+            assert "Khatima" in switched.json()["response"] and "22 °C" in switched.json()["response"]
+            assert switched.json()["token_usage"]["llm_calls"] == []
+            assert '"name":"Khatima"' in stored(thread)["state_json"]
+            assert (await send(thread, "khatima", 1)).status_code == 409
+
+            question = await send(fresh, "khatima", 0)
+            assert "What would you like to know about khatima?" in question.json()["response"]
+            unresolved = await send(thread, "zorbword", 2)
+            assert unresolved.json()["response"] == "What would you like to know about zorbword?"
+            assert '"name":"Khatima"' in stored(thread)["state_json"]
+            assert '"last_turn_answered_weather":false' in stored(thread)["state_json"]
+            assert fetch.await_count == 2
+            assert [call.kwargs["location"] for call in geocoder.await_args_list] == ["Bhimtal", "khatima", "zorbword"]
+
+    asyncio.run(workflow())

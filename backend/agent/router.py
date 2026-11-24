@@ -167,22 +167,43 @@ NON_LOCATION_CHECK = re.compile(
     r"^(?:(?:a|the|my|this|these|those|your) )?(?:grammar|spelling|math|code|account|email|answer|password|numbers?|"
     r"weather|forecast|message|work|history|settings)\b", re.I,
 )
+_SMALL_TALK_PLACE_NAMES = {"Nice", "Cool"}
 
 
 def location_reply(query: str) -> Optional[str]:
     """Parse a terse place reply only when the caller has a weather context."""
-    query = unicodedata.normalize("NFC", query).strip(" .?!")
+    query = unicodedata.normalize("NFC", query).strip()
+    place_name = query.rstrip(" .?") in _SMALL_TALK_PLACE_NAMES
+    query = query.strip(" .?!")
     if not re.fullmatch(r"[^\W\d_][\w .,‘’'&-]{0,79}", query, re.UNICODE):
         return None
-    if len(query.split()) > 8 or query.casefold() in {
+    if len(query.split()) > 8 or (not place_name and query.casefold() in {
         "thanks", "thank you", "ok", "okay", "yes", "no", "please", "hello", "hi", "hey", "there",
-    }:
+        "nice", "cool", "great", "lol", "hmm",
+    }):
         return None
     if NON_LOCATION_CHECK.match(query) or re.match(
         r"^(?:i|you|we|can|could|would|should|tell|give|show|explain|find|how|what|where|why|it|is)\b", query, re.I
     ):
         return None
     return ", ".join(re.split(r"\s+in\s+", query, maxsplit=1, flags=re.I))
+
+
+def _small_talk_key(text: str) -> str:
+    return re.sub(r"([a-z])\1+", r"\1", " ".join(text.casefold().split()))
+
+
+_SMALL_TALK = frozenset(map(_small_talk_key, (
+    "nice", "cool", "great", "lol", "hmm", "got it", "ok", "okay", "thanks", "thank you", "cheers",
+    "hi", "hey", "hello", "hello there", "good morning", "good afternoon", "good evening", "bye", "goodbye",
+)))
+
+
+def is_small_talk(text: str) -> bool:
+    # These exact title-case words can also be destinations.
+    phrase = text.strip()
+    return (phrase.rstrip(" .?") not in _SMALL_TALK_PLACE_NAMES
+            and _small_talk_key(phrase.rstrip(" .!?…")) in _SMALL_TALK)
 
 
 def _weather_command_location(query: str) -> Optional[str]:

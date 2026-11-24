@@ -42,9 +42,11 @@ export function createConversations({
   let snapshot;
 
   function publish() {
+    const failure = errors.get(active);
     snapshot = {
       sessions, active, messages: sessions.find((thread) => thread.id === active)?.messages ?? [],
-      loading: requests.has(active) || Boolean(clearing), error: errors.get(active) ?? "", notice,
+      loading: requests.has(active) || Boolean(clearing),
+      error: failure?.message ?? "", canRetry: failure?.canRetry ?? false, notice,
     };
     listeners.forEach((listener) => listener());
   }
@@ -57,15 +59,13 @@ export function createConversations({
 
   function save() {
     writeStorage(storage, storageKey(owner), sessions.length ? JSON.stringify(sessions) : null);
-    writeStorage(storage, `${storageKey(owner)}:active`, sessions.some((thread) => thread.id === active) ? active : null);
   }
 
   function append(threadId, message) {
     const existing = sessions.find((thread) => thread.id === threadId);
-    const first = message.text.length > 36 ? `${message.text.slice(0, 36)}...` : message.text;
     const thread = existing
       ? { ...existing, messages: [...existing.messages, message], updatedAt: Date.now() }
-      : { id: threadId, title: first, messages: [message], updatedAt: Date.now() };
+      : { id: threadId, title: message.text, messages: [message], updatedAt: Date.now() };
     sessions = [thread, ...sessions.filter((item) => item.id !== threadId)];
     save();
   }
@@ -77,22 +77,20 @@ export function createConversations({
 
   publish();
 
-  return {
+  const actions = {
     getSnapshot: () => snapshot,
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
     setOwner(userId, allowed = true) {
-      const next = allowed ? ownerKey(userId) : null;
-      if (next === owner) return;
       cancelRequests();
-      owner = next;
+      owner = allowed ? ownerKey(userId) : null;
       clearing = null;
       notice = "";
       sessions = owner ? loadSessions(storage, owner) : [];
-      const savedActive = owner ? readStorage(storage, `${storageKey(owner)}:active`) : null;
-      active = owner ? (sessions.some((thread) => thread.id === savedActive) ? savedActive : id()) : null;
+      active = owner ? id() : null;
+      if (owner) writeStorage(storage, `${storageKey(owner)}:active`, null);
       publish();
     },
     cancel() {
@@ -102,14 +100,16 @@ export function createConversations({
     newChat() {
       if (!owner) return;
       active = id();
-      save();
       publish();
+      return active;
     },
-    select(threadId) {
-      if (!sessions.some((thread) => thread.id === threadId)) return;
-      active = threadId;
-      save();
-      publish();
+    activate(threadId) {
+      if (!sessions.some((thread) => thread.id === threadId)) return false;
+      if (active !== threadId) {
+        active = threadId;
+        publish();
+      }
+      return true;
     },
     clear({ server = true } = {}) {
       if (!owner || clearing) return;
@@ -135,16 +135,22 @@ export function createConversations({
       }
       publish();
     },
-    async send(text) {
+    retry() {
+      const failure = errors.get(active);
+      if (failure?.canRetry) return actions.send(failure.text, failure.id);
+    },
+    async send(text, retryId) {
       const message = text.trim();
       const threadId = active;
       if (!message || !owner || !threadId || clearing || requests.has(threadId)) return;
-      const request = { owner, id: id(), controller: new AbortController() };
+      const request = { owner, id: retryId ?? id(), controller: new AbortController() };
       const isCurrent = () => owner === request.owner && requests.get(threadId) === request;
-      const history = snapshot.messages.slice(-6).map(({ sender, text }) => ({ role: sender, content: text }));
+      const priorMessages = retryId ? snapshot.messages.filter((entry) => entry.id !== retryId) : snapshot.messages;
+      const history = priorMessages.slice(-6)
+        .map(({ sender, text }) => ({ role: sender, content: text }));
       requests.set(threadId, request);
       errors.delete(threadId);
-      append(threadId, { id: request.id, sender: "user", text: message, timestamp: timestamp() });
+      if (!retryId) append(threadId, { id: request.id, sender: "user", text: message, timestamp: timestamp() });
       publish();
       let identity = sessions.find((thread) => thread.id === threadId)?.server;
       try {
@@ -177,7 +183,10 @@ export function createConversations({
           else if (identity && error.status === 409 && Number.isSafeInteger(error.revision)) {
             setThreadIdentity(threadId, { ...identity, revision: error.revision });
           }
-          errors.set(threadId, error.message || "Failed to communicate with Sky Reader backend.");
+          errors.set(threadId, {
+            message: error.message || "Failed to communicate with Sky Reader backend.",
+            id: request.id, text: message, canRetry: ![400, 401, 403, 422].includes(error.status),
+          });
         }
       } finally {
         if (isCurrent()) {
@@ -187,4 +196,5 @@ export function createConversations({
       }
     },
   };
+  return actions;
 }

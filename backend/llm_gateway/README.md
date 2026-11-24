@@ -76,3 +76,25 @@ passed both evidence layers and completeness for one fixed Lisbon sample. Gemini
 and OpenRouter have mocked adapter and fallback coverage. Their approved live
 requests returned HTTP 404, and their successful live readiness remains unverified.
 See the [diagnostic outcomes](../evaluation/stage17c/FIX2-REPORT.md).
+
+## Catalog-only diagnostics
+
+After approval, run this module from the repository root with `GEMINI_API_KEY`,
+`GEMINI_MODEL`, `OPENROUTER_API_KEY`, and `OPENROUTER_MODEL` already set in
+the process environment.
+
+```bash
+python -m backend.llm_gateway.catalog_diagnostics --live
+```
+
+The module makes one Gemini ListModels GET and one OpenRouter models GET. It
+prints only the configured model's catalog match, recognized Gemini generation
+methods, and OpenRouter prompt/completion price and endpoint-list indicators.
+An unknown result is shown as JSON `null`. The Gemini check compares the
+catalog's `models/…` name with the configured ID. The production adapter
+expects a bare Gemini ID.
+
+A model's presence in a catalog does not prove serving availability.
+OpenRouter's catalog may include a top-provider summary or a link to endpoint
+details. These do not enumerate serving endpoints, so the module reports
+endpoint details as unknown and stays within the two-request budget.

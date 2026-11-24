@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useSyncExternalStore } from "react";
-import ChatHeader from "./components/ChatHeader";
+import { Link, Navigate, Route, Routes, useLocation, useMatch, useNavigate, useParams } from "react-router-dom";
+import { AppLayout, AuthLayout, WeatherLayout } from "./components/Layouts";
 import ChatMessage from "./components/ChatMessage";
 import ThinkingIndicator from "./components/ThinkingIndicator";
 import ChatInput from "./components/ChatInput";
 import WelcomeHero from "./components/WelcomeHero";
 import CityLookup from "./components/CityLookup";
-import Sidebar from "./components/Sidebar";
-import WeatherAtmosphere from "./components/WeatherAtmosphere";
 import LoginPage from "./components/LoginPage";
 import PreferencesView from "./components/PreferencesView";
 import { detectWeatherScene } from "./utils/weatherAtmosphere";
@@ -48,6 +47,9 @@ function chatObservation(message) {
 
 function SkyReader({ auth, session, signedIn }) {
   const user = auth.user;
+  const navigate = useNavigate();
+  const emptyChat = useMatch("/chat");
+  const chatId = useMatch("/chat/:conversationId")?.params.conversationId;
   const [chatThreads] = useState(() => createChatThreads({
     api: API_BASE_URL, authorization: () => session.authorization(user?.id), guest: !user,
   }));
@@ -56,13 +58,9 @@ function SkyReader({ auth, session, signedIn }) {
     controller.setOwner(user?.id, signedIn);
     return controller;
   });
-  const { sessions: chatSessions, messages, loading, error, notice } = useSyncExternalStore(
-    conversations.subscribe, conversations.getSnapshot, conversations.getSnapshot,
-  );
+  const chat = useSyncExternalStore(conversations.subscribe, conversations.getSnapshot, conversations.getSnapshot);
   useEffect(() => conversations.cancel, [conversations]);
-  const [activeTab, setActiveTab] = useState("agent"); // "agent" or "lookup"
-  const [input, setInput] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const currentThread = chat.sessions.find((thread) => thread.id === chatId);
 
   // Atmospheric simulation scene mode: 'auto' | 'sun' | 'rain' | 'stars' | 'wind' | 'snow' | 'thunder' | 'clouds'
   const [atmosphereMode, setAtmosphereMode] = useState(() => {
@@ -105,16 +103,6 @@ function SkyReader({ auth, session, signedIn }) {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
-  const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, loading]);
-
   // Callback when CityLookup loads weather
   const handleWeatherLoaded = useCallback((weatherData) => {
     if (weatherData && weatherData.current) {
@@ -124,27 +112,28 @@ function SkyReader({ auth, session, signedIn }) {
         wind_speed: weatherData.current.wind_speed,
       });
     }
-  }, []);
-  function handleSendMessage(customText = input) {
-    const query = customText.trim();
-    if (!query || conversations.getSnapshot().loading) return;
-    setInput("");
+  }, [setLiveObservation]);
+  function handleSendMessage(text, startNew = false) {
+    const query = text.trim();
+    if (!query) return;
+    const threadId = startNew ? conversations.newChat() : conversations.getSnapshot().active;
+    const before = conversations.getSnapshot();
+    if (!threadId || before.loading) return;
+    const saved = before.sessions.some((thread) => thread.id === threadId);
+    // send() appends the user message synchronously, before server provisioning.
     void conversations.send(query);
+    if (!saved && conversations.getSnapshot().sessions.some((thread) => thread.id === threadId)) {
+      navigate(`/chat/${encodeURIComponent(threadId)}`, { replace: Boolean(emptyChat) });
+    }
   }
 
   function handleNewChat() {
     conversations.newChat();
-    setInput("");
-    setActiveTab("agent");
-  }
-
-  function handleSelectSession(sessionId) {
-    conversations.select(sessionId);
-    setInput("");
-    setActiveTab("agent");
+    navigate("/chat", { replace: Boolean(emptyChat) });
   }
 
   function handleLogout() {
+    navigate("/login", { replace: true, state: null });
     if (!user) {
       conversations.clear({ server: false });
       void chatThreads.revokeGuest().catch(session.showGuestRevocationFailure);
@@ -153,9 +142,9 @@ function SkyReader({ auth, session, signedIn }) {
     void session.logout();
   }
 
-  const observation = activeTab === "agent"
-    ? chatObservation(messages.findLast((message) => message.sender === "assistant")) ?? liveObservation
-    : liveObservation;
+  const observation = chatObservation(
+    currentThread?.messages.findLast((message) => message.sender === "assistant"),
+  ) ?? liveObservation;
 
   // Determine active ambient weather scene
   const activeScene =
@@ -168,111 +157,47 @@ function SkyReader({ auth, session, signedIn }) {
         })
       : atmosphereMode;
 
+  const loginProps = {
+    onAuthenticate: session.signIn,
+    onContinueAsGuest: session.continueAsGuest,
+    onRetrySession: auth.phase === "unavailable" ? session.validate : undefined,
+    authError: auth.notice,
+    isSubmitting: auth.phase === "submitting",
+    theme,
+    onToggleTheme: toggleTheme,
+  };
+  const header = {
+    onNewChat: handleNewChat, theme, onToggleTheme: toggleTheme, atmosphereMode,
+    onSelectAtmosphereMode: setAtmosphereMode, activeScene, chatTitle: currentThread?.title ?? "New chat",
+  };
+  const sendNewChat = (text) => handleSendMessage(text, true);
+
   return (
-    <div className={`skyreader-root-environment atmosphere-active-${activeScene}`}>
-      {/* Dynamic atmospheric particle simulation canvas (Rain, Sun, Stars, Wind Leaves, Snow...) */}
-      <WeatherAtmosphere scene={activeScene} isNight={theme === "dark"} />
-
-      {/* Realistic Moving Sky Clouds Layer (Matches Video 1) */}
-      <div className="video1-sky-cloud-layer" aria-hidden="true">
-        <div className="sky-cloud-puff puff-1" />
-        <div className="sky-cloud-puff puff-2" />
-        <div className="sky-cloud-puff puff-3" />
-        <div className="sky-cloud-puff puff-4" />
-      </div>
-
-      {/* Conditionally Render: Login Page (Video 2) or Floating App Canvas (Video 1) */}
+    <WeatherLayout activeScene={activeScene} theme={theme}>
       {auth.phase === "checking" ? (
         <div className="floating-app-window-frame" role="status">Checking your session…</div>
-      ) : !signedIn ? (
-        <LoginPage
-          onAuthenticate={session.signIn}
-          onContinueAsGuest={session.continueAsGuest}
-          onRetrySession={auth.phase === "unavailable" ? session.validate : undefined}
-          authError={auth.notice}
-          isSubmitting={auth.phase === "submitting"}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-        />
       ) : (
-        /* Floating Glass Application Window (Matches Video 1) */
-        <div className="floating-app-window-frame">
-          {/* Left Sidebar inside Floating Window */}
-          <Sidebar
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            onOpenLogin={handleLogout}
-            user={user}
-            chatSessions={chatSessions}
-            onSelectSession={handleSelectSession}
-          />
-
-          {/* Right Main Content Area inside Floating Window */}
-          <div className="floating-main-canvas">
-            {/* Top Navigation Bar with Model Selector and New Chat button */}
-            <ChatHeader
-              onNewChat={handleNewChat}
-              onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
-              theme={theme}
-              onToggleTheme={toggleTheme}
-              atmosphereMode={atmosphereMode}
-              onSelectAtmosphereMode={setAtmosphereMode}
-              activeScene={activeScene}
-            />
-
-            {/* Content Body: Chat Agent Tab */}
-            {activeTab === "agent" && (
-              <main className="chat-interface-wrapper">
-                <div className="chat-messages-scroll-area">
-                  {messages.length === 0 ? (
-                    <WelcomeHero
-                      onSelectPrompt={(q) => handleSendMessage(q)}
-                      onSendQuery={(q) => handleSendMessage(q)}
-                    />
-                  ) : (
-                    <div className="chat-thread-list">
-                      {messages.map((msg) => (
-                        <ChatMessage key={msg.id} message={msg} />
-                      ))}
-
-                      {loading && <ThinkingIndicator />}
-                      <div ref={messagesEndRef} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Sticky Bottom Input Bar (shown when thread is active) */}
-                {messages.length > 0 && (
-                  <ChatInput
-                    input={input}
-                    setInput={setInput}
-                    onSend={() => handleSendMessage()}
-                    loading={loading}
-                    error={error}
-                  />
-                )}
-              </main>
-            )}
-
-            {/* Content Body: Visual Weather Dashboard Tab */}
-            {activeTab === "lookup" && (
+        <Routes>
+          <Route element={<AuthLayout phase={auth.phase} signedIn={signedIn} />}>
+            <Route path="/login" element={<LoginPage key="signin" mode="signin" {...loginProps} />} />
+            <Route path="/signup" element={<LoginPage key="signup" mode="signup" {...loginProps} />} />
+          </Route>
+          <Route element={
+            <AppLayout signedIn={signedIn} user={user} onLogout={handleLogout}
+              chatSessions={chat.sessions} header={header} notice={chat.notice} />
+          }>
+            <Route path="/chat/:conversationId?" element={
+              <ChatRoute conversations={conversations} chat={chat}
+                onSend={handleSendMessage} onStartChat={sendNewChat} />
+            } />
+            <Route path="/dashboard" element={
               <main className="city-lookup-wrapper">
-                <CityLookup
-                  onConsultAgent={(prompt) => {
-                    setActiveTab("agent");
-                    handleSendMessage(prompt);
-                  }}
-                  onWeatherLoaded={handleWeatherLoaded}
-                />
+                <CityLookup onConsultAgent={sendNewChat} onWeatherLoaded={handleWeatherLoaded} />
               </main>
-            )}
-
-            {notice && <p role="alert">{notice}</p>}
-
-            {/* Content Body: Preferences & Settings Tab */}
-            {activeTab === "preferences" && (
+            } />
+            <Route path="/saved" element={<ComingSoon title="Saved Places" />} />
+            <Route path="/notifications" element={<ComingSoon title="Notifications" />} />
+            <Route path="/preferences" element={
               <main className="preferences-tab-wrapper">
                 <PreferencesView
                   theme={theme}
@@ -282,15 +207,92 @@ function SkyReader({ auth, session, signedIn }) {
                   user={user}
                   onClearHistory={() => {
                     conversations.clear();
-                    setInput("");
                     setLiveObservation(null);
                   }}
                 />
               </main>
-            )}
-          </div>
-        </div>
+            } />
+          </Route>
+          <Route path="/" element={<Navigate to="/chat" replace />} />
+          <Route path="*" element={
+            <main className="route-empty-state route-not-found">
+              <h1>Page not found</h1>
+              <Link to="/chat">Back to chat</Link>
+            </main>
+          } />
+        </Routes>
       )}
-    </div>
+    </WeatherLayout>
+  );
+}
+
+function ComingSoon({ title }) {
+  return (
+    <main className="route-empty-state">
+      <h1>{title}</h1>
+      <p>Coming soon</p>
+    </main>
+  );
+}
+
+function ChatRoute({ conversations, chat, onSend, onStartChat }) {
+  const { conversationId } = useParams();
+  const { key } = useLocation();
+
+  useEffect(() => {
+    if (conversationId) {
+      conversations.activate(conversationId);
+    } else {
+      const { active, sessions } = conversations.getSnapshot();
+      if (sessions.some((thread) => thread.id === active)) conversations.newChat();
+    }
+    // Apply only on navigation. A send can save the active chat before its URL updates.
+  }, [conversations, conversationId, key]);
+
+  if (conversationId && !chat.sessions.some((thread) => thread.id === conversationId)) {
+    return <Navigate to="/chat" replace />;
+  }
+  if (conversationId ? chat.active !== conversationId : chat.sessions.some((thread) => thread.id === chat.active)) {
+    return null;
+  }
+  return <ChatView key={chat.active} chat={chat} onSend={onSend}
+    onStartChat={onStartChat} onRetry={conversations.retry} />;
+}
+
+function ChatView({ chat, onSend, onStartChat, onRetry }) {
+  const { messages, loading, error, canRetry } = chat;
+  const [input, setInput] = useState("");
+  const messagesEndRef = useRef(null);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView?.({ behavior: "smooth" });
+  }, [messages, loading]);
+
+  return (
+    <main className="chat-interface-wrapper">
+      <div className="chat-messages-scroll-area">
+        {messages.length === 0 ? (
+          <WelcomeHero onSelectPrompt={onStartChat} onSendQuery={onStartChat} />
+        ) : (
+          <div className="chat-thread-list">
+            {messages.map((message) => <ChatMessage key={message.id} message={message} />)}
+            {loading && <ThinkingIndicator />}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </div>
+      {messages.length > 0 && (
+        <ChatInput
+          input={input}
+          setInput={setInput}
+          onSend={() => {
+            onSend(input);
+            setInput("");
+          }}
+          loading={loading}
+          error={error}
+          onRetry={canRetry ? onRetry : undefined}
+        />
+      )}
+    </main>
   );
 }

@@ -7,6 +7,7 @@ export default function ChatInput({
   onSend,
   loading,
   error,
+  onRetry,
 }) {
   const textareaRef = useRef(null);
 
@@ -41,9 +42,16 @@ export default function ChatInput({
     <div className="chat-input-wrapper">
       {/* Error banner */}
       {error && (
-        <div className="chat-error-banner" role="alert">
-          <AlertCircle size={16} className="error-icon-svg" />
-          <span className="error-text">{error}</span>
+        <div className="chat-error-banner">
+          <span className="error-text" role="alert">
+            <AlertCircle size={16} aria-hidden="true" />
+            {error}
+          </span>
+          {onRetry && (
+            <button type="button" className="chat-retry-btn" onClick={onRetry} disabled={loading}>
+              Retry
+            </button>
+          )}
         </div>
       )}
 

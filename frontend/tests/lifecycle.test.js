@@ -44,7 +44,7 @@ test("switching chats while pending keeps replies and loading with the owning th
   chats.newChat();
   const secondId = chats.getSnapshot().active;
   const second = chats.send("Paris");
-  chats.select(firstId);
+  assert.equal(chats.activate(firstId), true);
   assert.equal(chats.getSnapshot().loading, true);
   calls[1].resolve({ response: "Paris reply" });
   await second;
@@ -53,7 +53,7 @@ test("switching chats while pending keeps replies and loading with the owning th
   calls[0].resolve({ response: "Tokyo reply" });
   await first;
   assert.deepEqual(texts(chats), ["Tokyo", "Tokyo reply"]);
-  chats.select(secondId);
+  assert.equal(chats.activate(secondId), true);
   assert.deepEqual(texts(chats), ["Paris", "Paris reply"]);
 });
 
@@ -70,6 +70,13 @@ test("New Chat starts empty and cannot reuse a pending thread's context", async 
   assert.deepEqual(calls[1].args[0].conversation_history, []);
   calls[1].resolve({ response: "New forecast" });
   await next;
+});
+
+test("activate rejects unknown session IDs and leaves the draft active", () => {
+  const { chats } = chatHarness();
+  const before = chats.getSnapshot();
+  assert.equal(chats.activate("unknown"), false);
+  assert.equal(chats.getSnapshot(), before);
 });
 
 test("same-thread sends are synchronous single-flight and follow-up includes the completed exchange", async () => {

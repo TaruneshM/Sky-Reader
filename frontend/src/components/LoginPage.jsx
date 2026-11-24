@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   Eye, EyeOff, Sparkles, AlertCircle,
   Sun, Moon, ArrowRight, User, Mail, Lock,
@@ -15,6 +16,7 @@ function LoginCanvas({ theme }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     const isLight = theme === "light";
 
@@ -148,14 +150,14 @@ function LoginCanvas({ theme }) {
    ───────────────────────────────────────────────────────────────── */
 export default function LoginPage({
   onAuthenticate, onContinueAsGuest, onRetrySession, authError = "",
-  isSubmitting = false, theme = "dark", onToggleTheme,
+  mode, isSubmitting = false, theme = "dark", onToggleTheme,
 }) {
   const [email,        setEmail]        = useState("");
   const [password,     setPassword]     = useState("");
   const [name,         setName]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [staySignedIn, setStaySignedIn] = useState(true);
-  const [mode,         setMode]         = useState("signin"); // "signin" | "signup"
+  const { state } = useLocation();
 
   const isLight = theme === "light";
 
@@ -646,14 +648,16 @@ export default function LoginPage({
         {/* Footer switch */}
         <div style={styles.footer}>
           <span>{mode === "signin" ? "New to Sky Reader?" : "Already have an account?"}</span>
-          <button
-            type="button"
+          <Link
+            to={mode === "signin" ? "/signup" : "/login"}
+            state={state}
             style={styles.footerAction}
-            disabled={isSubmitting}
-            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            aria-disabled={isSubmitting || undefined}
+            tabIndex={isSubmitting ? -1 : undefined}
+            onClick={(event) => { if (isSubmitting) event.preventDefault(); }}
           >
             {mode === "signin" ? "Join Now" : "Sign In"}
-          </button>
+          </Link>
         </div>
 
         {/* Security tag */}

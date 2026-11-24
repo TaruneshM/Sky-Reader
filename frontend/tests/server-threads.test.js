@@ -25,7 +25,7 @@ function deferred() {
 
 const json = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), { status, headers });
 
-test("refresh restores the selected server thread and its revision within the account", async () => {
+test("setOwner starts a fresh draft and an explicitly activated chat restores the server revision", async () => {
   const browser = storage();
   let next = 0;
   const threadSends = [];
@@ -41,11 +41,22 @@ test("refresh restores the selected server thread and its revision within the ac
   original.setOwner(7);
   await original.send("Weather in Tokyo?");
   const selected = original.getSnapshot().active;
+  const staleKey = "skyreader_sessions:v2:account:7:active";
+  browser().setItem(staleKey, selected);
   const refreshed = make();
   refreshed.setOwner(7);
+  assert.notEqual(refreshed.getSnapshot().active, selected);
+  assert.deepEqual(refreshed.getSnapshot().messages, []);
+  assert.equal(refreshed.getSnapshot().sessions.length, 1);
+  assert.equal(browser().getItem(staleKey), null);
+  assert.equal(refreshed.activate(selected), true);
   assert.equal(refreshed.getSnapshot().active, selected);
   await refreshed.send("What about tomorrow?");
+  assert.equal(browser().getItem(staleKey), null);
   assert.deepEqual(threadSends, [{ id: THREAD, revision: 0 }, { id: THREAD, revision: 1 }]);
+  refreshed.setOwner(7);
+  assert.notEqual(refreshed.getSnapshot().active, selected);
+  assert.deepEqual(refreshed.getSnapshot().messages, []);
   refreshed.setOwner(8);
   assert.deepEqual(refreshed.getSnapshot().sessions, []);
 });
@@ -161,9 +172,43 @@ test("a provider error stays outside the transcript and keeps the thread revisio
   const chats = createConversations({ storage: storage(), threads });
   chats.setOwner(7);
   await chats.send("Hello");
-  assert.equal(chats.getSnapshot().error, "AI usage limit reached.");
+  assert.match(chats.getSnapshot().error, /AI usage limit/);
+  assert.equal(chats.getSnapshot().canRetry, true);
   assert.deepEqual(chats.getSnapshot().messages.map(({ sender }) => sender), ["user"]);
-  await chats.send("How is the weather?");
+  await chats.retry();
   assert.deepEqual(sent.map(({ thread_revision }) => thread_revision), [0, 0]);
-  assert.ok(sent[1].conversation_history.every(({ content }) => content !== "AI usage limit reached."));
+  assert.equal(sent[1].message, "Hello");
+  assert.deepEqual(sent[1].conversation_history, []);
+  assert.equal(chats.getSnapshot().canRetry, false);
+  assert.deepEqual(chats.getSnapshot().messages.map(({ sender }) => sender), ["user", "assistant"]);
+});
+
+test("chat distinguishes provider failures from a place clarification without showing provider details", async () => {
+  const options = "Which place did you mean?\n- Tanakpur, Uttarakhand, India\n- Tanakpur, Bihar, India";
+  const responses = [
+    json({ detail: "private provider error", error: { category: "groq_service_failure" } }, 502),
+    json({ detail: "private provider error", error: { category: "llm_provider_throttled" } }, 429),
+    json({ detail: "private provider error", error: { category: "unknown_error" } }, 502),
+    json({ response: options, token_usage: { failure_category: "geocoding_ambiguity" } }, 200, {
+      "X-Thread-Revision": "1",
+    }),
+  ];
+  const threads = createChatThreads({
+    api: "", guest: false, authorization: () => "Bearer fixture",
+    request: async (path) => path === "/api/chat/threads"
+      ? json({ thread_id: THREAD, thread_revision: 0 }, 201)
+      : responses.shift(),
+  });
+  const chats = createConversations({ storage: storage(), threads });
+  chats.setOwner(7);
+  await chats.send("Weather in Tanakpur?");
+  assert.match(chats.getSnapshot().error, /service is unavailable/);
+  await chats.retry();
+  assert.match(chats.getSnapshot().error, /temporarily rate limited/);
+  await chats.retry();
+  assert.equal(chats.getSnapshot().error, "Sky Reader could not process this request.");
+  await chats.retry();
+  assert.equal(chats.getSnapshot().error, "");
+  assert.equal(chats.getSnapshot().canRetry, false);
+  assert.equal(chats.getSnapshot().messages.at(-1).text, options);
 });

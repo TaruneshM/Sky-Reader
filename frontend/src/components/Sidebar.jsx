@@ -8,17 +8,32 @@ import {
   X,
   LayoutGrid,
 } from "lucide-react";
+import { NavLink, useMatch } from "react-router-dom";
+
+const navigation = [
+  { path: "/chat", label: "Chat", Icon: MessageSquare },
+  { path: "/dashboard", label: "Dashboard & Trips", Icon: Compass },
+  { path: "/saved", label: "Saved Places", Icon: Bookmark },
+  { path: "/preferences", label: "Preferences", Icon: Sliders },
+  { path: "/notifications", label: "Notifications", Icon: Bell },
+];
 
 export default function Sidebar({
   isOpen,
   onClose,
-  activeTab,
-  setActiveTab,
-  onOpenLogin,
+  onLogout,
   user,
   chatSessions = [],
-  onSelectSession,
 }) {
+  const activeId = useMatch("/chat/:conversationId")?.params.conversationId;
+  const recent = chatSessions.slice(0, 10);
+  const activeChat = chatSessions.find((thread) => thread.id === activeId);
+  if (activeChat && !recent.includes(activeChat)) recent.push(activeChat);
+
+  function closeOnMobile() {
+    if (window.innerWidth < 1024) onClose();
+  }
+
   return (
     <>
       {/* Mobile Backdrop Overlay */}
@@ -65,85 +80,29 @@ export default function Sidebar({
 
         {/* Navigation Menu List (Matches Video 1 layout exactly) */}
         <nav className="sidebar-nav-menu" aria-label="Main App Navigation">
-          <button
-            type="button"
-            className={`nav-pill-btn ${activeTab === "agent" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("agent");
-              if (window.innerWidth < 1024) onClose();
-            }}
-          >
-            <MessageSquare size={17} className="nav-item-icon" />
-            <span className="nav-item-text">Chat</span>
-          </button>
+          {navigation.map(({ path, label, Icon }) => (
+            <NavLink key={path} to={path} end className="nav-pill-btn" onClick={closeOnMobile}>
+              <Icon size={17} className="nav-item-icon" aria-hidden="true" />
+              <span className="nav-item-text">{label}</span>
+            </NavLink>
+          ))}
 
-          <button
-            type="button"
-            className={`nav-pill-btn ${activeTab === "lookup" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("lookup");
-              if (window.innerWidth < 1024) onClose();
-            }}
-          >
-            <Compass size={17} className="nav-item-icon" />
-            <span className="nav-item-text">Dashboard & Trips</span>
-          </button>
-
-          <button
-            type="button"
-            className={`nav-pill-btn ${activeTab === "saved" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("lookup");
-              if (window.innerWidth < 1024) onClose();
-            }}
-          >
-            <Bookmark size={17} className="nav-item-icon" />
-            <span className="nav-item-text">Saved Places</span>
-          </button>
-
-          <button
-            type="button"
-            className={`nav-pill-btn ${activeTab === "preferences" ? "active" : ""}`}
-            onClick={() => {
-              setActiveTab("preferences");
-              if (window.innerWidth < 1024) onClose();
-            }}
-          >
-            <Sliders size={17} className="nav-item-icon" />
-            <span className="nav-item-text">Preferences</span>
-          </button>
-
-          <button
-            type="button"
-            className={`nav-pill-btn ${activeTab === "notifications" ? "active" : ""}`}
-            onClick={() => {
-              alert("No critical weather front warnings for your saved locations.");
-            }}
-          >
-            <Bell size={17} className="nav-item-icon" />
-            <span className="nav-item-text">Notifications</span>
-            <span className="nav-item-badge">Live</span>
-          </button>
-
-          {/* Recent Consultation Threads */}
-          {chatSessions.length > 0 && (
+          {recent.length > 0 && (
             <div className="sidebar-recents-group">
               <span className="sidebar-recents-heading">Recent Inquiries</span>
               <div className="sidebar-recents-list">
-                {chatSessions.slice(0, 4).map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
+                {recent.map((thread) => (
+                  <NavLink
+                    key={thread.id}
+                    to={`/chat/${encodeURIComponent(thread.id)}`}
+                    end
                     className="sidebar-recent-item-btn"
-                    onClick={() => {
-                      if (onSelectSession) onSelectSession(s.id);
-                      if (window.innerWidth < 1024) onClose();
-                    }}
-                    title={s.title}
+                    onClick={closeOnMobile}
+                    title={thread.title}
                   >
-                    <MessageSquare size={13} className="recent-msg-icon" />
-                    <span className="recent-msg-title">{s.title}</span>
-                  </button>
+                    <MessageSquare size={13} className="recent-msg-icon" aria-hidden="true" />
+                    <span className="recent-msg-title">{thread.title}</span>
+                  </NavLink>
                 ))}
               </div>
             </div>
@@ -163,7 +122,7 @@ export default function Sidebar({
           <button
             type="button"
             className="sidebar-logout-btn"
-            onClick={onOpenLogin}
+            onClick={onLogout}
             title={user ? "Log out" : "Sign in"}
           >
             <LogOut size={16} className="logout-icon" />

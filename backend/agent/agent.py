@@ -37,6 +37,7 @@ try:
     from backend.agent.request_planner import plan_weather_request
     from backend.agent.router import (
         describe_period,
+        is_small_talk,
         parse_weather_request,
         weather_facts,
         synthesize_deterministic_weather_buddy_response,
@@ -72,6 +73,7 @@ except ImportError:
     from agent.request_planner import plan_weather_request
     from agent.router import (
         describe_period,
+        is_small_talk,
         parse_weather_request,
         weather_facts,
         synthesize_deterministic_weather_buddy_response,
@@ -472,7 +474,10 @@ async def run_agent(
                 request, planned_single, evidence, hallucination_controller, user_message,
             )
             if recovery is None:
-                text = "I couldn’t verify the weather for the requested location and period."
+                text = (
+                    "I couldn’t verify the weather for the requested location and period."
+                    if weather_query else "I can help with weather. Which place and time would you like?"
+                )
                 audit = None
                 outcome = FailureCategory.FORECAST_WINDOW_UNAVAILABLE
                 evidence = evidence or evidence_engine.generate_evidence()
@@ -499,14 +504,30 @@ async def run_agent(
                 active_tracer.deterministic_selected = False
                 active_tracer.failure_category = FailureCategory.FORECAST_WINDOW_UNAVAILABLE.value
             proof = explanation_engine.generate_proof(user_message, text, evidence, report, report.validation_results)
+        conversation_update = {}
+        if plan and request_scope is not None:
+            answered_weather = bool(
+                plan.destinations and report and report.is_trustworthy
+                and active_tracer.answer_complete and not active_tracer.failure_category
+            )
+            conversation_update["conversation_state"] = plan.state.model_copy(
+                update={"last_turn_answered_weather": answered_weather},
+            )
         return {
             "response": text, "tool_calls": list(executed), "iterations": iterations,
             "claims": [claim.model_dump() for claim in claims],
             "validation_report": report.model_dump() if report is not None else None,
             "explanation": proof.model_dump() if proof is not None else None,
             "risk_assessment": risk, "token_usage": active_tracer.get_summary(),
-            **({"conversation_state": plan.state} if plan and request_scope is not None else {}),
+            **conversation_update,
         }
+
+    if is_small_talk(user_message):
+        active_tracer.deterministic_selected = True
+        reply = result("Hello! I’m here if you have a weather question.")
+        if trusted_state is not None:
+            reply["conversation_state"] = trusted_state
+        return reply
 
     t_parse_start = time.time()
     complexity = classify_query_complexity(user_message)
@@ -579,8 +600,30 @@ async def run_agent(
             if decision.kind == "NOT_FOUND":
                 return result(f"I couldn’t find a unique place for {decision.query}. Check the spelling or specify the city, region, and country.",
                               executed_tools, outcome=FailureCategory.LOCATION_NOT_FOUND)
-            return result(messages_by_kind.get(decision.kind) or clarify(decision.query), executed_tools,
-                          outcome=FailureCategory.AMBIGUOUS if decision.kind == "AMBIGUOUS" else None)
+            if decision.kind == "place_intent_required":
+                return result(f"What would you like to know about {decision.query}?", executed_tools)
+            if decision.kind == "AMBIGUOUS":
+                pending = plan.state.pending_clarification
+                options = {}
+                for candidate in pending.candidates if pending else ():
+                    label = ", ".join(
+                        " ".join(part.split())[:80] for part in (candidate.name, candidate.region, candidate.country)
+                        if part and part.strip()
+                    )
+                    options.setdefault(label.casefold(), label)
+                    if len(options) == 5:
+                        break
+                text = clarify(decision.query)
+                if options:
+                    choices = "\n".join(f"- {label}" for label in options.values())
+                    text = (
+                        f"I couldn’t resolve {decision.query} to a unique place. Which one did you mean?\n"
+                        f"{choices}\n\n"
+                        "Reply with a region or country, adding the district if needed. "
+                        "If none of these match, specify the city, region, and country."
+                    )
+                return result(text, executed_tools, outcome=FailureCategory.AMBIGUOUS)
+            return result(messages_by_kind[decision.kind], executed_tools)
         if plan.destinations and not comparison:
             planned_single = plan.destinations[0]
             place = planned_single.place.as_legacy_place()

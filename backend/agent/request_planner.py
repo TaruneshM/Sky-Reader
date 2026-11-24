@@ -30,7 +30,7 @@ else:
 
 @dataclass(frozen=True)
 class PlanningDecision:
-    kind: Literal["location_required", "comparison_required", "same_location", "relative_time_required", "relative_place_required", "sunset_required",
+    kind: Literal["location_required", "place_intent_required", "comparison_required", "same_location", "relative_time_required", "relative_place_required", "sunset_required",
                   "AMBIGUOUS", "NOT_FOUND", "PROVIDER_UNAVAILABLE"]
     query: str | None = None
     retriable: bool | None = None
@@ -162,6 +162,9 @@ async def plan_weather_request(
         state.requested_location or state.comparison
     )
     qualifiers = _qualifier_tokens(message, state) if reply_location and state.pending_clarification else ()
+    bare_reply = reply_location and "," not in reply_location and not (explicit.activity or explicit.components)
+    inferred_switch = False
+    previous_state = state
     if reply_location and (waiting_for_location or (state.pending_clarification and (qualifiers or "," in reply_location))):
         request = _prior(state)
         if waiting_for_location or "," in reply_location:
@@ -179,6 +182,14 @@ async def plan_weather_request(
             request = WeatherRequest("current_weather", "current", reply_location, False, None)
         state = begin_task(state, scope, uuid4().hex, request, inherit_context=bool(state.last_confirmed_location))
         reference = state.last_confirmed_location
+    elif (bare_reply and trusted and state.last_turn_answered_weather and state.task_status == "READY"
+          and state.intent and not (state.pending_clarification or state.comparison)):
+        inferred_switch = True
+        request = replace(_prior(state), location=reply_location)
+        state = begin_task(state, scope, uuid4().hex, request, inherit_context=True, explicit_time=False)
+        reference = None
+    elif bare_reply and state.task_id is None and (trusted or not history):
+        return WeatherPlan(request, state, decision=PlanningDecision("place_intent_required", reply_location))
     else:
         named_weather = request.location and re.search(
             r"\b(weather|forecast|temperature|rain|wind|humidity)\b", message, re.I
@@ -211,6 +222,8 @@ async def plan_weather_request(
 
     state, decision = await resolve_slots(state, request, reference=reference)
     if decision:
+        if inferred_switch and decision.kind == "NOT_FOUND":
+            return WeatherPlan(explicit, previous_state, decision=PlanningDecision("place_intent_required", reply_location))
         return WeatherPlan(request, state, decision=decision)
 
     slots = tuple(_slots(state))
@@ -221,18 +234,23 @@ async def plan_weather_request(
     prepared = []
     baseline = None
     planning_time = datetime.now(timezone.utc).isoformat()
+    if inferred_switch:
+        explicit_current = state.time.explicit and state.time.period == "current"
+        includes_forecast = "forecast" in request.components
+    else:
+        explicit_current = _requested_period(message.casefold()) == "current"
+        includes_forecast = bool(re.search(r"\bforecast\b", message, re.I))
+    requested_forecast = includes_forecast and not explicit_current
     for slot, item in slots:
         place = item.confirmed
         period = request.period
-        requested_forecast = bool(re.search(r"\bforecast\b", message, re.I)) and _requested_period(message.casefold()) != "current"
         forecast = request.comparison or request.safety or request.relative_baseline or requested_forecast or bool(
             {"rain", "umbrella", "safety"} & set(request.components)
         ) or period != "current" or request.intent in {
             "rain_check", "umbrella", "morning_walk", "coat_clothing",
         }
         if forecast and period == "current":
-            now = _requested_period(message.casefold()) == "current"
-            period = "next_1h" if request.comparison or request.safety or now else "next_24h"
+            period = "next_1h" if request.comparison or request.safety or explicit_current else "next_24h"
         fetch = hourly_forecast if forecast else current_weather
         try:
             raw = await fetch(latitude=place.latitude, longitude=place.longitude)

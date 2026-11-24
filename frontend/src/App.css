@@ -390,6 +390,7 @@ input, textarea {
   color: rgba(203, 213, 225, 0.85);
   transition: all var(--transition-fast);
   text-align: left;
+  text-decoration: none;
   position: relative;
 }
 .nav-pill-btn:hover:not(.active) {
@@ -415,15 +416,6 @@ input, textarea {
   flex: 1;
 }
 
-.nav-item-badge {
-  font-size: 10px;
-  padding: 1px 7px;
-  border-radius: var(--radius-pill);
-  background: rgba(56, 189, 248, 0.2);
-  color: var(--accent-sky);
-  font-weight: 600;
-}
-
 /* Sidebar Recents */
 .sidebar-recents-group {
   margin-top: 14px;
@@ -445,6 +437,8 @@ input, textarea {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-height: min(16rem, 40vh);
+  overflow-y: auto;
 }
 .sidebar-recent-item-btn {
   display: flex;
@@ -455,11 +449,17 @@ input, textarea {
   font-size: 12px;
   color: var(--text-secondary);
   text-align: left;
+  text-decoration: none;
+  flex-shrink: 0;
   transition: all var(--transition-fast);
 }
-.sidebar-recent-item-btn:hover {
+.sidebar-recent-item-btn:hover,
+.sidebar-recent-item-btn.active {
   background: var(--bg-card-hover);
   color: #ffffff;
+}
+.sidebar-recent-item-btn.active {
+  font-weight: 700;
 }
 .recent-msg-icon {
   flex-shrink: 0;
@@ -580,34 +580,47 @@ input, textarea {
   color: #ffffff;
 }
 
-/* Model Dropdown Pill (Matches Video 1: "Estos 4 v") */
 .chat-header-center {
-  display: flex;
-  align-items: center;
+  flex: 1;
+  min-width: 0;
+  margin-inline: 12px;
+  text-align: center;
 }
 
-.model-selector-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-pill);
+.chat-header-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text-main);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  cursor: default;
-}
-.model-chevron {
-  color: var(--text-muted);
 }
 
 .chat-header-actions {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
+}
+
+.route-empty-state {
+  padding: 2rem;
+  color: var(--text-main);
+}
+
+.route-empty-state p {
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+.route-not-found {
+  text-align: center;
+  z-index: 1;
+}
+
+.route-not-found a {
+  color: var(--accent-sky);
 }
 
 .header-icon-btn {
@@ -1003,6 +1016,29 @@ input, textarea {
 }
 
 /* Sticky Bottom Input Bar */
+.chat-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+}
+
+.chat-error-banner .error-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chat-retry-btn {
+  padding: 0.25rem 0.65rem;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--accent-sky);
+  cursor: pointer;
+}
+
 .chat-input-wrapper {
   padding: 8px 20px 16px;
   position: relative;
@@ -2594,7 +2630,8 @@ input, textarea {
 }
 
 /* Recent items hover */
-[data-theme="light"] .sidebar-recent-item-btn:hover {
+[data-theme="light"] .sidebar-recent-item-btn:hover,
+[data-theme="light"] .sidebar-recent-item-btn.active {
   background: var(--bg-card-hover);
   color: #2c2520;
 }
@@ -2604,12 +2641,6 @@ input, textarea {
 [data-theme="light"] .header-icon-btn:hover {
   background: var(--bg-card-hover);
   color: #2c2520;
-}
-
-/* Model selector pill: warm glass */
-[data-theme="light"] .model-selector-pill {
-  background: rgba(180, 160, 130, 0.12);
-  box-shadow: 0 2px 8px rgba(80, 60, 40, 0.08);
 }
 
 /* New Chat button */

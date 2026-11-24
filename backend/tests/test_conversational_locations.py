@@ -8,8 +8,10 @@ from unittest.mock import AsyncMock
 import pytest
 
 from backend.agent import agent, executor
-from backend.agent.router import parse_weather_request
+from backend.agent.conversation_state import ConversationScope, ConversationWeatherContext
+from backend.agent.router import location_reply, parse_weather_request
 from backend.weather import service
+from backend.weather.location_models import Ambiguous, Resolved
 
 
 OUTING = "i ma going out in bhimtal tonight wht type of cloths should i wear"
@@ -17,6 +19,7 @@ ALTERNATIVE = "ok soo i was also thinking abt the tanakpur any thoughts on that"
 HISTORY = [{"role": "user", "content": OUTING}]
 BHIMTAL = (29.35, 79.5667)
 TANAKPUR = (29.074, 80.11139)
+KHATIMA = (28.92, 79.97)
 
 
 def location(identifier, name, coordinates, country, region, feature="PPL", population=None):
@@ -33,6 +36,7 @@ def provider(monkeypatch):
     # Based on live Open-Meteo metadata. Bhimtal's returned admin1 is used only for display.
     places = {
         "bhimtal": [location(7667772, "Bhimtal", BHIMTAL, "IN", "Uttar Pradesh")],
+        "khatima": [location(1266813, "Khatima", KHATIMA, "IN", "Uttarakhand")],
         "tanakpur": [
             location(10656643, "Tanakpur", (27.18893, 83.51603), "IN", "Uttar Pradesh"),
             location(7958918, "Tanakpur", (29.06346, 80.13251), "NP", "Sudurpashchim Pradesh", "PPLL"),
@@ -46,7 +50,7 @@ def provider(monkeypatch):
         return {"results": places.get(params["name"].casefold(), [])}
 
     async def weather(latitude, longitude):
-        temperature = {BHIMTAL: 12, TANAKPUR: 26}[(latitude, longitude)]
+        temperature = {BHIMTAL: 12, TANAKPUR: 26, KHATIMA: 22}[(latitude, longitude)]
         start = datetime(2026, 11, 21)
         return {
             "timezone": "Asia/Kolkata",
@@ -300,3 +304,170 @@ def test_model_cannot_inject_untrusted_geographic_reference(provider):
             "location": "Tanakpur", "reference_place": {"latitude": 29.35, "longitude": 79.5667},
         }))
     search.assert_not_called()
+
+
+def test_tanakpur_requires_a_qualifier_without_context(provider):
+    places, _, _ = provider
+    places["tanakpur"].append(dict(places["tanakpur"][2], id=987))
+    bare = asyncio.run(service.resolve_location("Tanakpur"))
+    assert isinstance(bare, Ambiguous)
+    assert len(bare.candidates) == 5  # Duplicate coordinates are already collapsed by the ranker.
+    qualified = asyncio.run(service.resolve_location("Tanakpur, Uttarakhand, India"))
+    assert isinstance(qualified, Resolved)
+    assert (qualified.location.latitude, qualified.location.longitude) == TANAKPUR
+    hinted = asyncio.run(service.resolve_location("Tanakpur", reference_location="Khatima"))
+    assert isinstance(hinted, Resolved)
+    assert hinted.location.provenance.method == "geographic_hint"
+    assert (hinted.location.latitude, hinted.location.longitude) == TANAKPUR
+    assert isinstance(asyncio.run(service.resolve_location("Tanakpur")), Ambiguous)
+
+
+@pytest.mark.parametrize("reply", ["Uttarakhand", "Tanakpur, Uttarakhand"])
+def test_tanakpur_options_and_qualifier_preserve_the_outing(provider, reply):
+    scope = ConversationScope(owner_kind="guest", owner_id="test", thread_id="outing")
+    question = "I'm going out in Tanakpur tonight. What should I wear?"
+    waiting = asyncio.run(agent.run_agent(question, api_key="", request_scope=scope))
+    state = waiting["conversation_state"]
+    text = waiting["response"]
+    assert "Tanakpur, Uttarakhand, India" in text
+    assert "Tanakpur, Bihar, India" in text
+    assert text.count("Tanakpur, Sudurpashchim Pradesh, Nepal") == 1
+    assert "region" in text
+
+    answer = asyncio.run(agent.run_agent(reply, api_key="", request_scope=scope, trusted_state=state))
+    updated = answer["conversation_state"]
+    assert updated.pending_clarification is None
+    assert updated.task_id == state.task_id
+    assert (updated.intent, updated.time.period, updated.activity, updated.components) == (
+        state.intent, "tonight", "going out", state.components,
+    )
+    assert "26 °C" in answer["response"] and "tonight" in answer["response"]
+    assert answer["validation_report"]["is_trustworthy"]
+
+
+def test_far_away_tanakpur_reference_stays_ambiguous(provider):
+    places, _, _ = provider
+    places["faraway"] = [location(3, "Faraway", (12.97, 77.59), "IN", "Karnataka")]
+    result = asyncio.run(service.resolve_location("Tanakpur", reference_location="Faraway"))
+    assert isinstance(result, Ambiguous)
+
+
+@pytest.mark.parametrize("acknowledgement", ["nice", "Cool!", "great", "lol", "ok", "hmm"])
+def test_acknowledgement_is_not_a_place_reply(acknowledgement):
+    assert location_reply(acknowledgement) is None
+
+
+def test_completed_outing_does_not_hint_a_bare_or_explicit_tanakpur_request(provider):
+    scope = ConversationScope(owner_kind="guest", owner_id="test", thread_id="outing")
+    initial = asyncio.run(agent.run_agent(OUTING, api_key="", request_scope=scope))
+    state = initial["conversation_state"]
+    assert state.last_turn_answered_weather
+    _, search, forecast = provider
+    for question in ("Tanakpur", "What's the weather in Tanakpur?"):
+        response = asyncio.run(agent.run_agent(question, api_key="", request_scope=scope, trusted_state=state))
+        assert response["token_usage"]["failure_category"] == "geocoding_ambiguity"
+        assert "Tanakpur, Uttarakhand, India" in response["response"]
+        assert response["conversation_state"].last_confirmed_location.name == "Bhimtal"
+        assert search.await_args.args[1]["name"] == "Tanakpur"
+    forecast.assert_awaited_once()
+
+
+def test_bare_switch_preserves_the_verified_outing_task(provider):
+    scope = ConversationScope(owner_kind="guest", owner_id="test", thread_id="outing")
+    initial = asyncio.run(agent.run_agent(OUTING, api_key="", request_scope=scope))
+    state = initial["conversation_state"]
+    client = client_for()
+    response = asyncio.run(agent.run_agent("khatima", client=client, request_scope=scope, trusted_state=state))
+    updated = response["conversation_state"]
+    assert updated.task_id != state.task_id
+    assert (updated.intent, updated.time, updated.activity, updated.components) == (
+        state.intent, state.time, state.activity, state.components,
+    )
+    assert "Khatima" in response["response"] and "22 °C" in response["response"] and "tonight" in response["response"]
+    assert response["validation_report"]["is_trustworthy"]
+    provider[2].assert_awaited_with(latitude=KHATIMA[0], longitude=KHATIMA[1])
+    client.chat.completions.create.assert_not_called()
+
+
+def test_intervening_model_assisted_turn_does_not_leave_bare_switch_enabled(provider):
+    scope = ConversationScope(owner_kind="guest", owner_id="test", thread_id="outing")
+    initial = asyncio.run(agent.run_agent(OUTING, api_key="", request_scope=scope))
+    client = client_for(completion("Here is a joke."), completion("What would you like to know about Khatima?"))
+    acknowledgement = asyncio.run(agent.run_agent(
+        "Tell me a joke.", client=client, request_scope=scope, trusted_state=initial["conversation_state"],
+    ))
+    assert acknowledgement["response"] == "Here is a joke."
+    assert not acknowledgement["conversation_state"].last_turn_answered_weather
+    reply = asyncio.run(agent.run_agent(
+        "khatima", client=client, request_scope=scope, trusted_state=acknowledgement["conversation_state"],
+    ))
+    assert reply["response"] == "What would you like to know about Khatima?"
+    _, search, forecast = provider
+    search.assert_awaited_once()
+    forecast.assert_awaited_once()
+
+
+SMALL_TALK_REPLY = "Hello! I’m here if you have a weather question."
+
+
+@pytest.mark.parametrize("prompt", [
+    "nice", "coool!", "thanks", "thank yooou", "OK", "hii", "hellooo there", "Good morning!", "byeee",
+])
+def test_small_talk_answers_without_planning_claims_or_model(prompt, monkeypatch):
+    planner = AsyncMock()
+    monkeypatch.setattr(agent, "plan_weather_request", planner)
+    model = client_for()
+    result = asyncio.run(agent.run_agent(prompt, client=model))
+    assert result["response"] == SMALL_TALK_REPLY
+    assert result["claims"] == []
+    assert result["validation_report"] is None
+    assert result["token_usage"]["llm_calls_attempted"] == 0
+    planner.assert_not_awaited()
+    model.chat.completions.create.assert_not_awaited()
+
+
+def test_nice_has_the_same_reply_in_fresh_and_verified_delhi_threads(monkeypatch):
+    scope = ConversationScope(owner_kind="guest", owner_id="test", thread_id="delhi")
+    fresh = ConversationWeatherContext(scope=scope)
+    model = client_for()
+    geocoder = AsyncMock(side_effect=lambda location: Resolved(query=location, location={
+        "name": location.split(",")[0], "latitude": 28.61, "longitude": 77.21,
+        "provenance": {"method": "standalone"},
+    }))
+    current = AsyncMock(return_value={"current": {"temperature_2m": 21, "weather_code": 0}})
+    monkeypatch.setattr(agent, "resolve_location", geocoder)
+    monkeypatch.setattr(agent, "get_current_weather", current)
+
+    initial = asyncio.run(agent.run_agent(
+        "What's the weather in Delhi?", client=model, request_scope=scope, trusted_state=fresh,
+    ))
+    delhi = initial["conversation_state"]
+    assert delhi.last_turn_answered_weather and delhi.last_confirmed_location.name == "Delhi"
+    assert initial["validation_report"]["is_trustworthy"]
+
+    for state in (fresh, delhi):
+        reply = asyncio.run(agent.run_agent("nice", client=model, request_scope=scope, trusted_state=state))
+        assert reply["response"] == SMALL_TALK_REPLY
+        assert reply["conversation_state"] is state
+        assert reply["claims"] == []
+        assert reply["token_usage"]["llm_calls_attempted"] == 0
+
+    # The title-case destination still follows the normal switch path.
+    switched = asyncio.run(agent.run_agent("Nice?", client=model, request_scope=scope, trusted_state=delhi))
+    assert switched["conversation_state"].last_confirmed_location.name == "Nice"
+    assert geocoder.await_count == current.await_count == 2
+    model.chat.completions.create.assert_not_awaited()
+
+
+@pytest.mark.parametrize("prompt", ["Nice", "Nice, France", "What's the weather in Nice?", "Hilo", "São Paulo"])
+def test_small_talk_does_not_match_place_requests(prompt):
+    assert not agent.is_small_talk(prompt)
+
+
+def test_unverified_weather_in_chit_chat_is_withheld_with_neutral_message():
+    model = client_for(completion("Here’s a joke. It is 17 °C in Delhi."))
+    answer = asyncio.run(agent.run_agent("Tell me a joke.", client=model))
+    assert answer["response"] == "I can help with weather. Which place and time would you like?"
+    assert answer["claims"] == []
+    assert answer["token_usage"]["answer_complete"] is False
+    model.chat.completions.create.assert_awaited_once()

@@ -127,6 +127,7 @@ class ConversationWeatherContext(FrozenModel):
     pending_clarification: PendingClarification | None = None
     task_status: Literal["IDLE", "RESOLVING", "AWAITING_CLARIFICATION", "LOCATION_UNAVAILABLE", "READY"] = "IDLE"
     superseded_locations: tuple[LocationMention, ...] = Field(default=(), max_length=3)
+    last_turn_answered_weather: bool = False
 
 
 def _update(model, **fields):
@@ -173,6 +174,7 @@ def begin_task(
         pending_clarification=None,
         task_status="READY" if requested and requested.confirmed else "RESOLVING",
         superseded_locations=tuple(_update(item, status="SUPERSEDED") for item in previous if item),
+        last_turn_answered_weather=False,
     )
 
 

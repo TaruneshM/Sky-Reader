@@ -25,7 +25,7 @@ def client_for(draft):
 def test_unprepared_model_weather_claims_are_withheld_even_on_unclassified_turn(draft, weather):
     output = asyncio.run(agent.run_agent("What do you think of the plans?", client=client_for(draft)))
     assert draft not in output["response"]
-    assert "couldn’t verify" in output["response"]
+    assert output["response"] == "I can help with weather. Which place and time would you like?"
     assert not output["validation_report"]["is_trustworthy"]
     assert output["token_usage"]["answer_complete"] is False
     weather[0].assert_not_called()
@@ -41,6 +41,12 @@ def test_weather_claims_outside_prepared_evidence_are_withheld(draft, weather):
     output = asyncio.run(agent.run_agent("Explain the temperature in Lyon tomorrow in detail.", client=client_for(draft)))
     assert all(fragment not in output["response"] for fragment in ("3 km", "sunny", "Rome"))
     assert output["response"] != draft
+
+
+def test_final_gate_keeps_the_existing_message_for_a_weather_request(weather):
+    draft = "Tomorrow in Lyon the temperature will be 22 °C. The sky is clear."
+    output = asyncio.run(agent.run_agent("Explain the temperature in Lyon tomorrow in detail.", client=client_for(draft)))
+    assert output["response"] == "I couldn’t verify the weather for the requested location and period."
 
 
 def test_ordinary_conversation_remains_available_without_weather_calls(weather):

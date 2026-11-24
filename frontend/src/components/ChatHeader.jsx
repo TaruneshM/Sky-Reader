@@ -3,7 +3,6 @@ import {
   Plus,
   Sun,
   Moon,
-  ChevronDown,
 } from "lucide-react";
 import AtmosphereSelector from "./AtmosphereSelector";
 
@@ -15,6 +14,7 @@ export default function ChatHeader({
   atmosphereMode,
   onSelectAtmosphereMode,
   activeScene,
+  chatTitle = "New chat",
 }) {
   return (
     <header className="chat-header">
@@ -31,12 +31,8 @@ export default function ChatHeader({
         </button>
       </div>
 
-      {/* Center: Model / Version Selector Pill (Matches Video 1) */}
       <div className="chat-header-center">
-        <div className="model-selector-pill" title="AI Meteorological Model Engine">
-          <span className="model-name-text">Sky Reader 4</span>
-          <ChevronDown size={14} className="model-chevron" />
-        </div>
+        <span className="chat-header-title" title={chatTitle}>{chatTitle}</span>
       </div>
 
       <div className="chat-header-actions">

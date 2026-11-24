@@ -34,9 +34,13 @@ def test_gemini_preserves_system_tools_ids_signatures_and_usage(monkeypatch):
             "thoughtSignature": "opaque"}
 
     def fake(request):
+        assert request.method == "POST"
+        assert str(request.url) == "https://generativelanguage.googleapis.com/v1beta/models/gemini-fixture:generateContent"
+        assert request.headers["x-goog-api-key"] == "mock"
+        assert request.headers["content-type"] == "application/json"
+        assert "authorization" not in request.headers
         payload = json.loads(request.content)
         requests.append(payload)
-        assert request.url.path == "/v1beta/models/gemini-fixture:generateContent"
         parts = [call] if len(requests) == 1 else [{"text": "A forecast summary."}]
         return httpx.Response(200, json={
             "candidates": [{"content": {"parts": parts}, "finishReason": "STOP"}],
@@ -59,6 +63,19 @@ def test_gemini_preserves_system_tools_ids_signatures_and_usage(monkeypatch):
     assert requests[1]["contents"][2]["parts"][0]["functionResponse"]["id"] == "provider-id"
 
 
+def test_gemini_requires_a_bare_model_id_and_never_dispatches_a_prefixed_name(monkeypatch):
+    monkeypatch.setenv("LLM_ENABLED_PROVIDERS", "gemini")
+    monkeypatch.setenv("GEMINI_API_KEY", "mock")
+
+    def unexpected_request(_request):
+        pytest.fail("A model resource name must be rejected before dispatch")
+
+    gateway = Gateway("gemini", transport=httpx.MockTransport(unexpected_request))
+    with pytest.raises(RequestFailure) as caught:
+        asyncio.run(gateway.complete(Request("models/gemini-2.5-flash", START, 80)))
+    assert caught.value.category is FailureCategory.LLM_UNAVAILABLE
+
+
 @pytest.fixture
 def router_gateway(monkeypatch):
     monkeypatch.setenv("LLM_ENABLED_PROVIDERS", "openrouter")
@@ -68,8 +85,13 @@ def router_gateway(monkeypatch):
 
 def test_openrouter_free_only_and_normalizes_response(router_gateway):
     def mock(request):
+        assert request.method == "POST"
         assert str(request.url) == "https://openrouter.ai/api/v1/chat/completions"
+        assert request.headers["authorization"] == "Bearer mock"
+        assert request.headers["content-type"] == "application/json"
+        assert "x-goog-api-key" not in request.headers
         payload = json.loads(request.content)
+        assert payload["model"] == "qwen/qwen3-coder:free"
         assert payload["provider"] == {"allow_fallbacks": False, "require_parameters": True,
                                        "max_price": {"prompt": 0, "completion": 0}}
         return httpx.Response(200, json={"choices": [{"message": {"role": "assistant", "content": "Fixture"}}]})

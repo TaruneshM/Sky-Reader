@@ -94,7 +94,7 @@ def test_failed_provider_attempt_has_safe_metrics(error, category, status, caplo
     create = AsyncMock(side_effect=error)
     client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
     with pytest.raises(RequestFailure) as info:
-        asyncio.run(agent.run_agent("Hello!", client=client))
+        asyncio.run(agent.run_agent("Tell me a joke.", client=client))
     assert info.value.category is category
     assert info.value.status_code == status
     assert info.value.metrics["llm_calls_attempted"] == 1
@@ -109,7 +109,7 @@ def test_missing_usage_stays_unknown():
         SimpleNamespace(message=SimpleNamespace(content="Hello!", tool_calls=None), finish_reason="stop"),
     ]))
     client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
-    output = asyncio.run(agent.run_agent("Hello!", client=client))
+    output = asyncio.run(agent.run_agent("Tell me a joke.", client=client))
     assert output["token_usage"]["llm_calls_completed"] == 1
     assert output["token_usage"]["llm_calls_with_usage"] == 0
     assert output["token_usage"]["total_tokens"] is None

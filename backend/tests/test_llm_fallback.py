@@ -58,7 +58,7 @@ def providers(monkeypatch):
 
 def test_primary_success_does_not_contact_secondaries(providers):
     groq, calls, _ = providers
-    result = asyncio.run(agent.run_agent("Hello!"))
+    result = asyncio.run(agent.run_agent("Tell me a joke."))
     assert result["token_usage"]["attempted_providers"] == ["groq"]
     assert groq.await_count == 1 and calls == []
 
@@ -69,7 +69,7 @@ def test_transient_failures_follow_priority_and_preserve_unknown_usage(providers
     groq.side_effect = sdk_error(status)
     if status == 503:
         statuses["gemini"] = 502
-    result = asyncio.run(agent.run_agent("Hello!"))
+    result = asyncio.run(agent.run_agent("Tell me a joke."))
     trace = result["token_usage"]
     assert trace["attempted_providers"] == (["groq", "gemini"] if status == 429 else ["groq", "gemini", "openrouter"])
     assert trace["successful_provider"] == trace["attempted_providers"][-1]
@@ -84,7 +84,7 @@ def test_terminal_and_explicit_errors_do_not_fall_back(providers, status, explic
     groq, calls, _ = providers
     groq.side_effect = sdk_error(status)
     with pytest.raises(RequestFailure):
-        asyncio.run(agent.run_agent("Hello!", provider="groq" if explicit else None))
+        asyncio.run(agent.run_agent("Tell me a joke.", provider="groq" if explicit else None))
     assert calls == []
 
 
@@ -92,7 +92,7 @@ def test_disabled_and_paid_models_are_skipped(providers, monkeypatch):
     groq, calls, _ = providers
     monkeypatch.setenv("LLM_ENABLED_PROVIDERS", "gemini,openrouter")
     monkeypatch.setenv("OPENROUTER_MODEL", "paid/model")
-    result = asyncio.run(agent.run_agent("Hello!", provider_priority=("openrouter", "groq", "gemini")))
+    result = asyncio.run(agent.run_agent("Tell me a joke.", provider_priority=("openrouter", "groq", "gemini")))
     assert result["token_usage"]["attempted_providers"] == ["gemini"]
     assert groq.await_count == 0 and len(calls) == 1
 
@@ -102,7 +102,7 @@ def test_budget_shared_across_providers(providers, limits):
     groq, calls, _ = providers
     groq.side_effect = sdk_error(503)
     with pytest.raises(RequestFailure) as caught:
-        asyncio.run(agent.run_agent("Hello!", llm_limits=limits))
+        asyncio.run(agent.run_agent("Tell me a joke.", llm_limits=limits))
     assert caught.value.category is FailureCategory.LLM_BUDGET_EXHAUSTED
     assert calls == []
 
@@ -110,7 +110,7 @@ def test_budget_shared_across_providers(providers, limits):
 def test_timeout_can_replay_initial_prompt(providers):
     groq, calls, _ = providers
     groq.side_effect = APITimeoutError(request=httpx.Request("POST", "https://api.groq.com"))
-    assert asyncio.run(agent.run_agent("Hello!"))["token_usage"]["successful_provider"] == "gemini"
+    assert asyncio.run(agent.run_agent("Tell me a joke."))["token_usage"]["successful_provider"] == "gemini"
     assert len(calls) == 1
 
 
@@ -124,9 +124,9 @@ def test_deadline_and_cancellation_stop_chain(providers):
 
     async def run():
         with pytest.raises(RequestFailure) as caught:
-            await agent.run_agent("Hello!", llm_limits=LLMLimits(deadline_seconds=0.02))
+            await agent.run_agent("Tell me a joke.", llm_limits=LLMLimits(deadline_seconds=0.02))
         assert caught.value.category is FailureCategory.LLM_BUDGET_EXHAUSTED
-        task = asyncio.create_task(agent.run_agent("Hello!"))
+        task = asyncio.create_task(agent.run_agent("Tell me a joke."))
         await asyncio.sleep(0)
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
@@ -160,7 +160,7 @@ def test_malformed_provider_reply_does_not_fall_back(providers):
     groq, calls, _ = providers
     groq.return_value = SimpleNamespace(choices=[])
     with pytest.raises(RequestFailure):
-        asyncio.run(agent.run_agent("Hello!"))
+        asyncio.run(agent.run_agent("Tell me a joke."))
     assert calls == []
 
 
@@ -201,7 +201,7 @@ def test_tertiary_terminal_failure_is_returned_without_repeating_any_provider(pr
     groq.side_effect = sdk_error(503)
     statuses.update(gemini=503, openrouter=401)
     with pytest.raises(RequestFailure) as caught:
-        asyncio.run(agent.run_agent("Hello!"))
+        asyncio.run(agent.run_agent("Tell me a joke."))
     assert caught.value.provider == "openrouter"
     assert caught.value.category is FailureCategory.LLM_AUTHENTICATION
     assert caught.value.metrics["attempted_providers"] == ["groq", "gemini", "openrouter"]
@@ -212,10 +212,10 @@ def test_input_reservation_is_not_refunded_on_switch(providers):
     groq, calls, _ = providers
     groq.side_effect = sdk_error(503)
     with pytest.raises(RequestFailure) as first:
-        asyncio.run(agent.run_agent("Hello!", llm_limits=LLMLimits(attempts=1)))
+        asyncio.run(agent.run_agent("Tell me a joke.", llm_limits=LLMLimits(attempts=1)))
     estimate = first.value.metrics["llm_calls"][0]["estimated_prompt_tokens"]
     with pytest.raises(RequestFailure) as second:
-        asyncio.run(agent.run_agent("Hello!", llm_limits=LLMLimits(input_tokens=estimate + 16)))
+        asyncio.run(agent.run_agent("Tell me a joke.", llm_limits=LLMLimits(input_tokens=estimate + 16)))
     assert second.value.category is FailureCategory.LLM_BUDGET_EXHAUSTED
     assert second.value.metrics["attempted_providers"] == ["groq"]
     assert calls == []
@@ -233,7 +233,7 @@ def test_total_provider_failure_leaves_thread_revision_unchanged(providers, app_
             headers = await guest_session(client)
             thread = await open_thread(client, headers)
             before = dict(stored(thread))
-            response = await client.post("/api/agent/chat", headers=headers, json=turn(thread, "Hello!"))
+            response = await client.post("/api/agent/chat", headers=headers, json=turn(thread, "Tell me a joke."))
             assert response.status_code == 502
             assert response.json()["token_usage"]["attempted_providers"] == ["groq", "gemini", "openrouter"]
             assert "X-Thread-Revision" not in response.headers

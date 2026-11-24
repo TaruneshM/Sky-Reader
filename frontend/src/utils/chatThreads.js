@@ -5,6 +5,25 @@ const credentialPattern = /^[A-Za-z0-9_-]{43}$/;
 const threadPattern = /^[A-Za-z0-9_-]{32}$/;
 const lifecycleTimeout = () => AbortSignal.timeout(15_000);
 
+const aiUnavailable = "The AI service is unavailable right now. Try again shortly or ask a simpler weather question.";
+const aiRateLimited = "The AI service is temporarily rate limited. Wait a moment before retrying.";
+const aiTimeout = "The AI service took too long to reply. Try again or ask a shorter question.";
+const chatErrors = new Map([
+  ["groq_service_failure", aiUnavailable],
+  ["groq_authentication_failure", aiUnavailable],
+  ["llm_provider_unavailable", aiUnavailable],
+  ["llm_provider_service_failure", aiUnavailable],
+  ["llm_provider_authentication_failure", aiUnavailable],
+  ["groq_temporary_throttling", aiRateLimited],
+  ["llm_provider_throttled", aiRateLimited],
+  ["groq_quota_exhausted", "Sky Reader has reached its AI usage limit. Try again later or ask a simpler weather question."],
+  ["groq_timeout", aiTimeout],
+  ["llm_provider_timeout", aiTimeout],
+  ["weather_provider_unavailable", "The weather data service is unavailable right now. Try again shortly."],
+  ["llm_budget_exhausted", "This question exceeded the AI request limits. Try asking one part at a time."],
+  ["internal_application_error", "Sky Reader encountered an unexpected error. Try again."],
+]);
+
 export function createChatThreads({ api, authorization, guest, request = fetch, tab = session }) {
   let guestCredential = guest ? readStorage(tab, GUEST_KEY) : null;
   let pendingGuest;
@@ -36,10 +55,17 @@ export function createChatThreads({ api, authorization, guest, request = fetch, 
     return { "X-Guest-Session": credential };
   }
 
-  async function checked(response, fallback) {
+  async function checked(response, fallback, chat = false) {
     if (response.ok) return response;
     const data = await response.json().catch(() => null);
-    const error = new Error(typeof data?.detail === "string" ? data.detail : fallback);
+    const message = chat
+      ? chatErrors.get(data?.error?.category) ?? (
+        response.status === 429 ? "Too many requests. Wait a moment before retrying."
+          : response.status === 409 ? "This conversation changed or the request was cancelled. Try again."
+          : fallback
+      )
+      : typeof data?.detail === "string" ? data.detail : fallback;
+    const error = new Error(message);
     error.status = response.status;
     const revision = response.headers.get("X-Thread-Revision");
     if (revision !== null && /^\d+$/.test(revision) && Number.isSafeInteger(Number(revision))) {
@@ -64,7 +90,7 @@ export function createChatThreads({ api, authorization, guest, request = fetch, 
         method: "POST", signal,
         headers: { ...await headers(), "Content-Type": "application/json" },
         body: JSON.stringify({ ...payload, thread_id: thread.id, thread_revision: thread.revision }),
-      }), "Sky Reader could not process this request.");
+      }), "Sky Reader could not process this request.", true);
       const rawRevision = response.headers.get("X-Thread-Revision");
       const revision = rawRevision !== null && /^\d+$/.test(rawRevision) ? Number(rawRevision) : undefined;
       return { data: await response.json(), revision };
