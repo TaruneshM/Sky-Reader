@@ -1,10 +1,21 @@
-import { Sparkles, Radio, CloudSun } from "lucide-react";
+import { Sparkles, Radio } from "lucide-react";
+import botAvatar from "../assets/avatars/bot-avatar.png";
+import botAvatar2x from "../assets/avatars/bot-avatar@2x.png";
 
 export default function ThinkingIndicator() {
   return (
     <div className="chat-message-row assistant-row thinking-row">
       <div className="message-avatar assistant-avatar" aria-hidden="true">
-        <CloudSun size={18} className="thinking-avatar-icon" />
+        <img
+          src={botAvatar}
+          srcSet={`${botAvatar} 1x, ${botAvatar2x} 2x`}
+          alt=""
+          aria-hidden="true"
+          width={40}
+          height={40}
+          loading="eager"
+          draggable={false}
+        />
       </div>
 
       <div className="message-bubble assistant-bubble thinking-bubble">

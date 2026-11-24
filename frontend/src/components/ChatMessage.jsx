@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { User, Bot, Copy, Check, Sparkles } from "lucide-react";
+import { Copy, Check, Sparkles } from "lucide-react";
 import WeatherSnapshot from "./WeatherSnapshot";
 import AuditDrawer from "./AuditDrawer";
 import RiskCard from "./RiskCard";
+import botAvatar from "../assets/avatars/bot-avatar.png";
+import botAvatar2x from "../assets/avatars/bot-avatar@2x.png";
+import userAvatar from "../assets/avatars/user-avatar.png";
+import userAvatar2x from "../assets/avatars/user-avatar@2x.png";
 
 function renderFormattedText(text) {
   if (!text) return null;
@@ -148,7 +152,16 @@ export default function ChatMessage({ message }) {
     <div className={`chat-message-row ${isUser ? "user-row" : "assistant-row"}`}>
       {!isUser && (
         <div className="message-avatar assistant-avatar" aria-hidden="true">
-          <Bot size={17} />
+          <img
+            src={botAvatar}
+            srcSet={`${botAvatar} 1x, ${botAvatar2x} 2x`}
+            alt=""
+            aria-hidden="true"
+            width={40}
+            height={40}
+            loading="eager"
+            draggable={false}
+          />
         </div>
       )}
 
@@ -211,7 +224,16 @@ export default function ChatMessage({ message }) {
 
       {isUser && (
         <div className="message-avatar user-avatar" aria-hidden="true">
-          <User size={17} />
+          <img
+            src={userAvatar}
+            srcSet={`${userAvatar} 1x, ${userAvatar2x} 2x`}
+            alt=""
+            aria-hidden="true"
+            width={40}
+            height={40}
+            loading="eager"
+            draggable={false}
+          />
         </div>
       )}
     </div>

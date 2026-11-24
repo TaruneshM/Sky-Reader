@@ -115,6 +115,7 @@ function SkyReader({ auth, session, signedIn }) {
     isSubmitting: auth.phase === "submitting",
     theme,
     onToggleTheme: toggleTheme,
+    authPhase: auth.phase,
   };
   const header = {
     onNewChat: handleNewChat, theme, onToggleTheme: toggleTheme, atmosphereMode,

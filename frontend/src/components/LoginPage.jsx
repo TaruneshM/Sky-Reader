@@ -1,149 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Eye, EyeOff, Sparkles, AlertCircle,
   Sun, Moon, ArrowRight, User, Mail, Lock,
 } from "lucide-react";
+import { hasIntroPlayed, markIntroPlayed } from "../utils/introState.js";
 
-/* ─────────────────────────────────────────────────────────────────
-   Animated Canvas Background — aurora / particle field
-   ───────────────────────────────────────────────────────────────── */
-function LoginCanvas({ theme }) {
-  const canvasRef = useRef(null);
-  const animRef  = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const isLight = theme === "light";
-
-    // Particle data
-    const PARTICLE_COUNT = 90;
-    const particles = [];
-    let W = 0, H = 0;
-
-    const resize = () => {
-      W = canvas.width  = canvas.offsetWidth;
-      H = canvas.height = canvas.offsetHeight;
-    };
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(canvas);
-
-    // Build particles
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      particles.push({
-        x:    Math.random() * W,
-        y:    Math.random() * H,
-        r:    Math.random() * 2.2 + 0.4,
-        vx:   (Math.random() - 0.5) * 0.35,
-        vy:   (Math.random() - 0.5) * 0.35,
-        alpha: Math.random() * 0.5 + 0.15,
-        hue:  Math.random() * 60 + (isLight ? 20 : 200), // warm for light, cool-purple for dark
-      });
-    }
-
-    // Aurora bands state
-    const bands = [
-      { y: 0.25, spread: 0.18, hue: isLight ? 35 : 270, speed: 0.0008 },
-      { y: 0.55, spread: 0.14, hue: isLight ? 50 : 230, speed: 0.0012 },
-      { y: 0.78, spread: 0.12, hue: isLight ? 25 : 300, speed: 0.0006 },
-    ];
-    let t = 0;
-
-    const draw = () => {
-      t += 1;
-
-      // Background gradient
-      const grad = ctx.createLinearGradient(0, 0, 0, H);
-      if (isLight) {
-        grad.addColorStop(0,   "#f0ebe2");
-        grad.addColorStop(0.5, "#e4ddd3");
-        grad.addColorStop(1,   "#d4ccbf");
-      } else {
-        grad.addColorStop(0,   "#0a0718");
-        grad.addColorStop(0.5, "#0e0c22");
-        grad.addColorStop(1,   "#07050f");
-      }
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, W, H);
-
-      // Aurora bands
-      bands.forEach((b) => {
-        const cy = H * (b.y + Math.sin(t * b.speed) * 0.06);
-        const spread = H * b.spread;
-        const ag = ctx.createRadialGradient(W * 0.5, cy, 0, W * 0.5, cy, spread * 3.5);
-        if (isLight) {
-          ag.addColorStop(0,   `hsla(${b.hue}, 55%, 68%, 0.28)`);
-          ag.addColorStop(0.5, `hsla(${b.hue + 20}, 50%, 72%, 0.12)`);
-          ag.addColorStop(1,   "transparent");
-        } else {
-          ag.addColorStop(0,   `hsla(${b.hue}, 70%, 55%, 0.22)`);
-          ag.addColorStop(0.5, `hsla(${b.hue + 30}, 60%, 45%, 0.10)`);
-          ag.addColorStop(1,   "transparent");
-        }
-        ctx.fillStyle = ag;
-        ctx.fillRect(0, 0, W, H);
-      });
-
-      // Floating particles
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = W;
-        if (p.x > W) p.x = 0;
-        if (p.y < 0) p.y = H;
-        if (p.y > H) p.y = 0;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        if (isLight) {
-          ctx.fillStyle = `hsla(${p.hue}, 50%, 55%, ${p.alpha * 0.5})`;
-        } else {
-          ctx.fillStyle = `hsla(${p.hue}, 80%, 75%, ${p.alpha})`;
-        }
-        ctx.fill();
-      });
-
-      // Soft bottom glow
-      const glow = ctx.createLinearGradient(0, H * 0.6, 0, H);
-      if (isLight) {
-        glow.addColorStop(0, "transparent");
-        glow.addColorStop(1, "rgba(200, 170, 120, 0.15)");
-      } else {
-        glow.addColorStop(0, "transparent");
-        glow.addColorStop(1, "rgba(130, 60, 200, 0.18)");
-      }
-      ctx.fillStyle = glow;
-      ctx.fillRect(0, 0, W, H);
-
-      animRef.current = requestAnimationFrame(draw);
-    };
-
-    animRef.current = requestAnimationFrame(draw);
-    return () => {
-      cancelAnimationFrame(animRef.current);
-      ro.disconnect();
-    };
-  }, [theme]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: "absolute",
-        inset: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-        zIndex: 0,
-      }}
-    />
-  );
-}
+// Lazy-load SkyReaderIntro so it is not in bundle path for signed-in users
+const SkyReaderIntro = lazy(() => import("./SkyReaderIntro.jsx"));
 
 /* ─────────────────────────────────────────────────────────────────
    Main Login Page
@@ -151,15 +15,52 @@ function LoginCanvas({ theme }) {
 export default function LoginPage({
   onAuthenticate, onContinueAsGuest, onRetrySession, authError = "",
   mode, isSubmitting = false, theme = "dark", onToggleTheme,
+  authPhase = "signin",
 }) {
   const [email,        setEmail]        = useState("");
   const [password,     setPassword]     = useState("");
   const [name,         setName]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [staySignedIn, setStaySignedIn] = useState(true);
+  const [introActive,  setIntroActive]  = useState(false);
+  const brandRef = useRef(null);
   const { state } = useLocation();
 
   const isLight = theme === "light";
+
+  // Check intro eligibility
+  useEffect(() => {
+    // 1. Play once per page load (in-memory flag)
+    if (hasIntroPlayed()) return;
+    // 2. Never while auth.phase is checking
+    if (authPhase === "checking") return;
+    // 3. Skip if auth.phase is unavailable or an error notice is already showing
+    if (authPhase === "unavailable" || Boolean(authError)) {
+      markIntroPlayed();
+      return;
+    }
+    // 4. prefers-reduced-motion: skip intro entirely
+    const prefersReducedMotion = typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (prefersReducedMotion) {
+      markIntroPlayed();
+      return;
+    }
+
+    // Start intro on next frame to avoid synchronous setState inside effect
+    const frame = requestAnimationFrame(() => {
+      setIntroActive(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [authPhase, authError]);
+
+  const handleIntroComplete = useCallback(() => {
+    markIntroPlayed();
+    setIntroActive(false);
+    requestAnimationFrame(() => {
+      document.getElementById("login-email")?.focus();
+    });
+  }, []);
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -470,11 +371,27 @@ export default function LoginPage({
 
   return (
     <div style={styles.wrapper}>
-      {/* Animated canvas background */}
-      <LoginCanvas theme={theme} />
+      {/* One-time Sky Reader Intro (only when signed out, lazy-loaded) */}
+      {introActive && (
+        <Suspense fallback={null}>
+          <SkyReaderIntro
+            onComplete={handleIntroComplete}
+            onSkip={handleIntroComplete}
+            cardBrandRef={brandRef}
+          />
+        </Suspense>
+      )}
 
       {/* Top bar: back button + theme toggle */}
-      <div style={styles.topBar}>
+      <div
+        style={{
+          ...styles.topBar,
+          opacity: introActive ? 0 : 1,
+          pointerEvents: introActive ? "none" : "auto",
+          transition: introActive ? "none" : "opacity 0.5s ease",
+        }}
+        aria-hidden={introActive ? "true" : undefined}
+      >
         {onContinueAsGuest ? (
           <button type="button" style={styles.backBtn} onClick={onContinueAsGuest}>
             <ArrowRight size={14} style={{ transform: "rotate(180deg)" }} />
@@ -489,10 +406,22 @@ export default function LoginPage({
         )}
       </div>
 
-      {/* Glass card */}
-      <div style={styles.card}>
+      {/* Glass card: hidden during intro, then fades and rises in */}
+      <div
+        style={{
+          ...styles.card,
+          opacity: introActive ? 0 : 1,
+          pointerEvents: introActive ? "none" : "auto",
+          transform: introActive ? "translateY(24px)" : "translateY(0)",
+          transition: introActive
+            ? "none"
+            : "opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+        inert={introActive ? true : undefined}
+        aria-hidden={introActive ? "true" : undefined}
+      >
         {/* Brand */}
-        <div style={styles.brandRow}>
+        <div ref={brandRef} style={styles.brandRow}>
           <div style={styles.brandBadge}>
             <Sparkles size={20} color="#fff" />
           </div>
