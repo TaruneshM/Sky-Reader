@@ -9,6 +9,7 @@ import CityLookup from "./components/CityLookup";
 import LoginPage from "./components/LoginPage";
 import PreferencesView from "./components/PreferencesView";
 import TermsModal from "./components/TermsModal";
+import CustomCursor from "./components/CustomCursor";
 import { WEATHER_SCENES } from "./utils/weatherAtmosphere";
 import { createAuthSession } from "./utils/authSession";
 import { createConversations } from "./utils/conversations";
@@ -202,6 +203,9 @@ function SkyReader({ auth, session, signedIn }) {
           } />
         </Routes>
       )}
+
+      {/* Global Futuristic Atmospheric Cursor */}
+      <CustomCursor />
 
       {/* Global Terms & Conditions Modal */}
       <TermsModal

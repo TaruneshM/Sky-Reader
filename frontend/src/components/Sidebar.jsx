@@ -52,7 +52,7 @@ export default function Sidebar({
         <div className="sidebar-header">
           <div className="sidebar-brand">
             <div className="brand-logo-amber-box">
-              <span className="brand-letter-e">S</span>
+              <img src="/skyreader-logo.png" alt="Sky Reader" style={{ width: 24, height: 24, objectFit: "contain" }} />
             </div>
             <div className="brand-meta">
               <h2 className="brand-name">Sky Reader</h2>

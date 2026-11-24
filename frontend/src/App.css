@@ -107,6 +107,18 @@
   padding: 0;
 }
 
+/* --------------------------------------------------------------------------
+   CUSTOM FUTURISTIC ATMOSPHERIC CURSOR
+   -------------------------------------------------------------------------- */
+@media (hover: hover) and (pointer: fine) {
+  html, body, button, a, [role="button"], .sky-tab-btn, .sidebar-terms-btn, .sidebar-logout-btn, .sidebar-recent-item-btn {
+    cursor: none !important;
+  }
+  input, textarea {
+    cursor: text;
+  }
+}
+
 body {
   margin: 0;
   padding: 0;
